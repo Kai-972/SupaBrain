@@ -49,6 +49,7 @@ export const AppFileSchema = z
       intentTtlSec: z.number().int().positive(),
       attestationTtlSec: z.number().int().positive(),
       maxRootsPerAttestation: z.number().int().positive(),
+      eip712: z.object({ name: z.string().min(1), version: z.string().min(1) }), // BrainVault EIP-712 domain (constructor args)
     }),
     arkivExpirySec: z.object({
       memory: z.number().int().positive(),

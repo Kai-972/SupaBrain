@@ -1,0 +1,14 @@
+{
+  "name": "@supabrain/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@supabrain/shared": "workspace:*",
+    "viem": "^2.57.16"
+  }
+}

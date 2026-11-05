@@ -1,0 +1,24 @@
+{
+  "name": "supabrain",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@10.24.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm -r --filter \"!supabrain\" build",
+    "test": "vitest run",
+    "typecheck": "pnpm -r typecheck",
+    "lint:hardcode": "node scripts/check-hardcode.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "doctor": "tsx scripts/doctor.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

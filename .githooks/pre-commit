@@ -1,0 +1,5 @@
+#!/bin/sh
+# Installed by `pnpm i` (prepare -> git config core.hooksPath .githooks).
+set -e
+node scripts/check-hardcode.mjs
+node scripts/check-secrets.mjs --staged

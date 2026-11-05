@@ -144,7 +144,7 @@
 ### 3.3 Session start routine (`/start`)
 1. `git pull --rebase`.
 2. Read `docs/PROGRESS.md` (the Board, your lane's checklist, open Requests addressed to you) and the last 10 entries of `docs/DECISIONS.md`.
-3. Run `pnpm doctor` once it exists. It reports missing env names, balances and chain checks.
+3. Run `pnpm run doctor` once it exists (plain `pnpm doctor` is a pnpm built-in). It reports missing env names, balances and chain checks.
 4. Post a 5-line status:
    - lane;
    - current stage/step;

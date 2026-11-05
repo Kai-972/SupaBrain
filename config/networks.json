@@ -1,0 +1,30 @@
+{
+  "sepolia": {
+    "chainId": 11155111,
+    "name": "Ethereum Sepolia",
+    "rpcEnv": "SEPOLIA_RPC_URL",
+    "explorer": {
+      "base": "https://sepolia.etherscan.io",
+      "tx": "https://sepolia.etherscan.io/tx/{hash}",
+      "address": "https://sepolia.etherscan.io/address/{address}"
+    },
+    "source": "https://chainlist.org/chain/11155111",
+    "verifiedAt": "2026-11-06"
+  },
+  "rabdi": {
+    "chainId": 7794095,
+    "name": "Arkiv Rabdi DB-Chain testnet",
+    "rpc": "https://rpc.rabdi.db-chain.testnet.arkiv.network",
+    "ws": "wss://rpc.rabdi.db-chain.testnet.arkiv.network",
+    "explorer": {
+      "base": "https://rabdi.explorer.arkiv.network",
+      "tx": "https://rabdi.explorer.arkiv.network/tx/{hash}",
+      "address": "https://rabdi.explorer.arkiv.network/address/{address}"
+    },
+    "faucet": "https://hub.arkiv.network/faucet",
+    "accessKeys": "https://hub.arkiv.network/access-keys",
+    "nativeSymbol": "tGLM",
+    "source": "https://docs.arkiv.network/",
+    "verifiedAt": "2026-11-06"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "appNamespace": "supabrain-mumbai26",
+  "team": { "id": "team1", "displayName": "Demo Team" },
+  "server": { "port": 3001 },
+  "ens": {
+    "teamLabel": null,
+    "leaseDays": 7,
+    "teamNameDurationDays": 28,
+    "textKeys": {
+      "role": "sb.role",
+      "scope": "sb.scope",
+      "payCap": "sb.pay.cap",
+      "payDaily": "sb.pay.daily",
+      "status": "sb.status",
+      "memoryHead": "sb.memory.head",
+      "vendor": "sb.vendor",
+      "agentContext": "agent-context",
+      "agentEndpointMcp": "agent-endpoint[mcp]"
+    }
+  },
+  "agents": [
+    { "label": "lead-claude",  "vendor": "claude", "role": "lead",   "scope": "*",        "payCapUsdc": "4", "payDailyUsdc": "30", "vaultDailyCeilingUsdc": "30" },
+    { "label": "gem-research", "vendor": "gemini", "role": "worker", "scope": "research", "payCapUsdc": "2", "payDailyUsdc": "4",  "vaultDailyCeilingUsdc": "4" },
+    { "label": "gpt-writer",   "vendor": "openai", "role": "worker", "scope": "comms",    "payCapUsdc": "0", "payDailyUsdc": "0",  "vaultDailyCeilingUsdc": "0" }
+  ],
+  "vendors": [{ "label": "acme", "displayName": "Acme Studio" }],
+  "trust": { "human": 3, "agent": 2, "evidence": 1 },
+  "readSet": { "ttlSec": 1800 },
+  "keep": { "defaultDays": 7, "maxDays": 30 },
+  "payments": { "intentTtlSec": 900, "attestationTtlSec": 300, "maxRootsPerAttestation": 8 },
+  "arkivExpirySec": {
+    "memory": 172800,
+    "evidence": 172800,
+    "edge": "follow-child",
+    "taint": "follow-memory",
+    "notice": 172800,
+    "paymentIntent": 900,
+    "paymentDecision": 2592000,
+    "revocation": "max"
+  },
+  "refs": { "allowedKinds": ["github", "notion", "url"] }
+}

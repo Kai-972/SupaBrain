@@ -16,8 +16,8 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
-| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S0 | ⏳ not started | – |
-| C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (waits for A's push) | ⏳ | A: S0 push |
+| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S0 ✅ → S1 ENS step 1 | 🔨 in progress | ASK: team label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY, keygen OK |
+| C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · vault done; next World spike | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
@@ -27,7 +27,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ## Stage checklist (tick with a proof link or commit hash)
 
 ### S0: Scaffold
-- [ ] A: monorepo, config + zod, types + interfaces, fakes, guards, `.env.example`, MIT, first push
+- [x] A: monorepo, config + zod, types + interfaces, fakes, guards, `.env.example`, MIT, first push (1f0390c)
 - [ ] B: pulled; Foundry init; `packages/payments` skeleton builds
 - [ ] C: pulled; Next app, tokens, fixture loader, `?mock=1` banner
 
@@ -82,9 +82,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
-- [ ] A → B, C: S0 pushed; pull and start (fill in when done)
 - [ ] B → A: vault pay() calls `getOwner(labelhash)` on the team UserRegistry; `ens.sepolia.json` needs per-agent `labelhash` (uint256 of keccak(label)) + `registry` + `wallet` for `set-agents` (2026-11-06)
 - [ ] B → A: `config/app.json` needs `payments.eip712 {name, version}` for the vault domain (vault takes them as constructor args) (2026-11-06)
+- [x] A → B, C: **S0 pushed: B and C can pull** (1f0390c, 2026-11-06 04:42). Notes for you:
+  - Import types/interfaces from `@supabrain/shared` (browser-safe). Node config loader: `@supabrain/shared/config` (`loadConfig()`, `requireEnv()`). Fakes: `@supabrain/shared/testing` (`FakeEns`, `FakeGraph`, `FakeArkivWriter`), unit tests only.
+  - Run the doctor as `pnpm run doctor`: plain `pnpm doctor` is a pnpm built-in and prints nothing.
+  - B: `packages/payments/src/index.ts` exports a throwing `createPayments` stub for you to fill. `contracts/` keeps your Foundry setup (my `.gitkeep` is harmless; delete it if you like). `config/world.json` is yours; the loader accepts it loosely (`WorldFileSchema` in `config-schema.ts`), so tighten it via a Requests line.
+  - C: `apps/web` is a bare Next 16 shell (no Tailwind/shadcn yet); `transpilePackages` already includes `@supabrain/shared`. Port 3000; the server is on 3001.
+  - `pnpm build` = `tsc` typecheck per package + `next build`. The server runs TS directly with `tsx` (`pnpm --filter @supabrain/server dev|start`).
 
 ## Hand-offs (when a Claude account hits its limit)
 <!-- ### <time> · <lane> · state / next step / open questions -->
@@ -96,6 +101,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane A (Brain)
 <!-- newest first; format in CLAUDE.md §3.4 -->
+
+### 2026-11-06 04:42 IST · A · S0 / scaffold
+- did: pnpm workspace (apps/server, apps/web shell, packages/{shared,ens,payments}, scripts, contracts/), zod config loader + §6 types/interfaces verbatim + fakes, config seeded with source/verifiedAt, guards (lint:hardcode, check:secrets, doctor) + pre-commit hook, server `/healthz` with `createPaymentsDisabled()`, skeleton docs, MIT, `.env.example`
+- proof: fresh clone → `pnpm i --frozen-lockfile && pnpm build && pnpm test` (25/25) `&& pnpm lint:hardcode` all green; `pnpm run doctor` checked Rabdi `eth_chainId` live = 7794095; USDC address verified on developers.circle.com
+- result: PASS
+- commit: 1f0390c
+- next: S1 ENS step 1 (`pnpm keys:new`, after the ASK)
+- asks/blockers: team ENS label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY (testnet burner), OK to generate keys. Tooling: installed the Arkiv plugin 0.5.4 (Mumbai MCP connected) and the Context7 MCP
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->

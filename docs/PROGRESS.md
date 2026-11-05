@@ -16,7 +16,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
-| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S0 ✅ → S1 ENS step 1 | 🔨 in progress | ASK: team label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY, keygen OK |
+| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS: steps 1–2 ✅ → step 3 register team | 🛑 blocked | Funding: Sepolia ETH (owner, agents, acme); tGLM + ARKIV_ACCESS_KEY for S2 |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · World spike: switched to IDKit 4 (OIDC portal needs enterprise Google); client + 46 tests done, live approve/deny waiting on WORLD_RP_ID + WORLD_SIGNING_KEY | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
@@ -103,6 +103,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane A (Brain)
 <!-- newest first; format in CLAUDE.md §3.4 -->
+
+### 2026-11-06 04:52 IST · A · S1 ENS / steps 1–2 (keys, verify-deployments)
+- did: generated dev keys into `.env.local` (owner, team, 3 agents, acme vendor; Kai OK'd it); filled `config/ens.sepolia.json` (13 contracts, commit 07e55a05, from the live deployments page); pinned ABIs in `packages/ens/src/abis`; `pnpm run ens:verify` checks code, registry wiring, registrar and label availability; chose team label `supabrain` (AVAILABLE)
+- proof: `pnpm run ens:verify` → all 13 addresses have code · `RootRegistry.getSubregistry("eth") == ETHRegistry` · `rentPriceOracle == StandardRentPriceOracle` · MockUSDC 6 decimals. MIN_COMMITMENT_AGE 60 s, MIN_REGISTER_DURATION 28 d
+- result: PASS (steps 1–2). Step 3 (register team) waits on funding
+- commit: 6bf386a
+- next: S1 step 3 `register-team.ts` (needs owner Sepolia ETH; mints MockUSDC itself)
+- asks/blockers: fund with Sepolia ETH: owner, 3 agents, acme. Arkiv: tGLM for team + 3 agents, and `ARKIV_ACCESS_KEY`. Public addresses: `pnpm run doctor`
 
 ### 2026-11-06 04:42 IST · A · S0 / scaffold
 - did: pnpm workspace (apps/server, apps/web shell, packages/{shared,ens,payments}, scripts, contracts/), zod config loader + §6 types/interfaces verbatim + fakes, config seeded with source/verifiedAt, guards (lint:hardcode, check:secrets, doctor) + pre-commit hook, server `/healthz` with `createPaymentsDisabled()`, skeleton docs, MIT, `.env.example`

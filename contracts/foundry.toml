@@ -1,0 +1,22 @@
+[profile.default]
+src = "src"
+out = "out"
+test = "test"
+script = "script"
+libs = ["lib"]
+solc_version = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 10_000
+fs_permissions = [{ access = "read", path = "../config" }]
+remappings = [
+  "forge-std/=lib/forge-std/src/",
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+]
+
+[fuzz]
+runs = 512
+
+# RPC URLs come from env only (never committed).
+[rpc_endpoints]
+sepolia = "${SEPOLIA_RPC_URL}"

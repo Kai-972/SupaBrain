@@ -4,7 +4,9 @@
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@10.24.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
@@ -13,7 +15,9 @@
     "typecheck": "pnpm -r typecheck",
     "lint:hardcode": "node scripts/check-hardcode.mjs",
     "check:secrets": "node scripts/check-secrets.mjs",
-    "doctor": "tsx scripts/doctor.ts"
+    "doctor": "tsx scripts/doctor.ts",
+    "ens:verify": "tsx scripts/ens/verify-deployments.ts",
+    "keys:new": "tsx scripts/keys-new.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

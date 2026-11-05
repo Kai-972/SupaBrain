@@ -86,6 +86,8 @@ export const EnsFileSchema = z.object({
   source: z.url(),
   verifiedAt: VerifiedAt.nullable(),
   redeployedAt: z.string().nullable(),
+  commit: z.string().regex(/^[0-9a-f]{40}$/).optional(),
+  abiSource: z.url().optional(),
   contracts: z.record(z.string(), HexAddress),
 });
 

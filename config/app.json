@@ -3,7 +3,7 @@
   "team": { "id": "team1", "displayName": "Demo Team" },
   "server": { "port": 3001 },
   "ens": {
-    "teamLabel": null,
+    "teamLabel": "supabrain",
     "leaseDays": 7,
     "teamNameDurationDays": 28,
     "textKeys": {

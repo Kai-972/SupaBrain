@@ -1,7 +1,23 @@
 {
-  "note": "ENSv2 Sepolia addresses. Copy ONLY from the Sepolia v2 section of the deployments page, in S1 (Lane A). Empty until then.",
+  "note": "ENSv2 Sepolia contracts, copied from the Sepolia (ENSv2) table of the official deployments page. Subset used by Supabrain; verify with `pnpm run ens:verify`.",
   "source": "https://docs.ens.domains/learn/deployments/",
-  "verifiedAt": null,
-  "redeployedAt": null,
-  "contracts": {}
+  "verifiedAt": "2026-11-06",
+  "redeployedAt": "2026-10-01",
+  "commit": "07e55a056f5b6a9c90119f501bdd05714e67dddd",
+  "abiSource": "https://github.com/ensdomains/contracts-v2/tree/07e55a056f5b6a9c90119f501bdd05714e67dddd/contracts/deployments/sepolia",
+  "contracts": {
+    "RootRegistry": "0xb458d6a3a77919449d03e7a6903c26827c1ec43f",
+    "ETHRegistry": "0xd4ebcbbdf463c9c45784603db0ddd499bc44a8b4",
+    "ETHRegistrar": "0xf633e7fc17e2bbe0d0965d18ec1821dcb754a3d3",
+    "StandardRentPriceOracle": "0x8196665d4ca7488b6474a9ec8e7d2719fb42263a",
+    "MockUSDC": "0x240b0316df57887dbbe58b586508b19e633a14aa",
+    "MockDAI": "0xf6fac8a58a0be13b9197f27c41b73162fe32572b",
+    "VerifiableFactory": "0xda70306c98e97ece36f997a21368e53298572991",
+    "UserRegistryImpl": "0x9bd8a88719068d09ecee662f36c0e3856708366a",
+    "PermissionedResolverImpl": "0x115eb53f0c60696633855f90b138178fb40b2b2c",
+    "UniversalResolverV2": "0x24e1d8e068620b647ca097f961a61055f4f42d72",
+    "UpgradableUniversalResolverProxy": "0xeEeEEEeE14D718C2B47D9923Deab1335E144EeEe",
+    "ManagedUniversalResolverProxy": "0x6d80F2172CFdEc5730fE683860C33d26fC42e6F1",
+    "UniversalHelper": "0xd453e5bdb62cc3bea84341b1e306319c8ffd7dfe"
+  }
 }

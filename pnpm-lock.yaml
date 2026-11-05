@@ -70,6 +70,9 @@ importers:
       '@supabrain/shared':
         specifier: workspace:*
         version: link:../shared
+      viem:
+        specifier: ^2.57.16
+        version: 2.57.16(typescript@7.0.2)(zod@4.6.7)
 
   packages/payments:
     dependencies:
@@ -98,6 +101,9 @@ importers:
 
   scripts:
     dependencies:
+      '@supabrain/ens':
+        specifier: workspace:*
+        version: link:../packages/ens
       '@supabrain/shared':
         specifier: workspace:*
         version: link:../packages/shared

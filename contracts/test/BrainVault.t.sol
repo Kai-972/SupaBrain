@@ -7,7 +7,8 @@ import {IAgentRegistry} from "../src/interfaces/IAgentRegistry.sol";
 import {MockAgentRegistry} from "./mocks/MockAgentRegistry.sol";
 import {MockUSDC} from "./mocks/MockUSDC.sol";
 
-contract BrainVaultTest is Test {
+/// Shared setup + helpers (no tests here, so suites that inherit it don't re-run the base tests).
+abstract contract BrainVaultFixture is Test {
     // test-only values (unit tests never touch real config)
     string constant NAME = "BrainVault";
     string constant VERSION = "1";
@@ -107,7 +108,9 @@ contract BrainVaultTest is Test {
     function _sign(BrainVault.Payment memory p) internal view returns (bytes memory) {
         return _sign(p, policyKey);
     }
+}
 
+contract BrainVaultTest is BrainVaultFixture {
     // ---------- happy path ----------
 
     function test_pay_happyPath_transfersExactAmount() public {
@@ -320,7 +323,9 @@ contract BrainVaultTest is Test {
     function test_pay_revertsForTooManyRoots() public {
         BrainVault.Payment memory p = _payment(agent, 1 * USDC);
         bytes32[] memory roots = new bytes32[](MAX_ROOTS + 1);
-        for (uint256 i; i < roots.length; i++) roots[i] = keccak256(abi.encode(i));
+        for (uint256 i; i < roots.length; i++) {
+            roots[i] = keccak256(abi.encode(i));
+        }
         p.roots = roots;
         bytes memory sig = _sign(p);
         vm.prank(agent);
@@ -486,7 +491,14 @@ contract BrainVaultTest is Test {
         address next = makeAddr("next-owner");
         vm.prank(owner);
         vault.transferOwnership(next);
+        assertEq(vault.owner(), owner, "two-step: unchanged until accepted");
+        vm.prank(makeAddr("typo"));
+        vm.expectRevert(BrainVault.NotPendingOwner.selector);
+        vault.acceptOwnership();
+        vm.prank(next);
+        vault.acceptOwnership();
         assertEq(vault.owner(), next);
+        assertEq(vault.pendingOwner(), address(0));
         vm.prank(owner);
         vm.expectRevert(BrainVault.NotOwner.selector);
         vault.withdraw(owner, 1);

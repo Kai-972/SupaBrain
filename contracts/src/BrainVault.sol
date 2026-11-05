@@ -17,6 +17,10 @@ import {IAgentRegistry} from "./interfaces/IAgentRegistry.sol";
 ///   5. the owner-set daily ceiling is not exceeded.
 /// The guardian can only tighten (revoke a root, pause an agent). Only the owner can loosen or withdraw.
 /// Skipping the off-chain server does not help an attacker: every check above lives here.
+/// @dev Worst case with every server key stolen (agents + policy signer + guardian): the loss is bounded by the
+///      owner-set ceilings, i.e. sum(dailyCeiling) per UTC day. Because the ceiling rolls at UTC midnight (not a
+///      rolling 24 h window), up to 2x that can move across a midnight boundary. The owner stops it with
+///      `pauseAgent` / `removeAgent` / `setPolicySigner`.
 contract BrainVault is EIP712, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -47,6 +51,7 @@ contract BrainVault is EIP712, ReentrancyGuard {
     uint256 public immutable MAX_ROOTS;
 
     address public owner;
+    address public pendingOwner;
     address public guardian;
     address public policySigner;
 
@@ -56,6 +61,7 @@ contract BrainVault is EIP712, ReentrancyGuard {
 
     // ---- errors ----
     error NotOwner();
+    error NotPendingOwner();
     error NotOwnerOrGuardian();
     error ZeroAddress();
     error NotAgentCaller();
@@ -87,6 +93,8 @@ contract BrainVault is EIP712, ReentrancyGuard {
     event RootUnrevoked(bytes32 indexed root);
     event PolicySignerSet(address indexed signer);
     event GuardianSet(address indexed guardian);
+    event IntentCancelled(bytes32 indexed intentId, address indexed by);
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event Withdrawn(address indexed to, uint256 amount);
 
@@ -111,7 +119,9 @@ contract BrainVault is EIP712, ReentrancyGuard {
         string memory name_,
         string memory version_
     ) EIP712(name_, version_) {
-        if (address(token_) == address(0) || owner_ == address(0) || policySigner_ == address(0)) revert ZeroAddress();
+        if (address(token_) == address(0) || owner_ == address(0) || policySigner_ == address(0)) {
+            revert ZeroAddress();
+        }
         token = token_;
         MAX_ROOTS = maxRoots_;
         owner = owner_;
@@ -146,12 +156,14 @@ contract BrainVault is EIP712, ReentrancyGuard {
             if (revokedRoot[p.roots[i]]) revert RootRevoked(p.roots[i]);
         }
 
-        (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(_hashTypedDataV4(_structHash(p)), signature);
+        (address recovered, ECDSA.RecoverError err,) =
+            ECDSA.tryRecoverCalldata(_hashTypedDataV4(_structHash(p)), signature);
         if (err != ECDSA.RecoverError.NoError || recovered != policySigner) revert BadAttestation();
 
         uint64 today = _today();
         uint256 spent = a.day == today ? a.spentToday : 0;
-        if (spent + p.amount > a.dailyCeiling) revert OverDailyCeiling();
+        // overflow-safe form of `spent + amount > ceiling` (also holds if the owner lowered the ceiling below spent)
+        if (p.amount > a.dailyCeiling || spent > a.dailyCeiling - p.amount) revert OverDailyCeiling();
 
         // effects
         usedIntent[p.intentId] = true;
@@ -178,6 +190,12 @@ contract BrainVault is EIP712, ReentrancyGuard {
         emit AgentPausedBy(wallet, msg.sender);
     }
 
+    /// @notice Burn one signed-but-unused attestation (e.g. a payment cancelled after approval was signed).
+    function cancelIntent(bytes32 intentId) external onlyOwnerOrGuardian {
+        usedIntent[intentId] = true;
+        emit IntentCancelled(intentId, msg.sender);
+    }
+
     // =====================================================================
     // owner only: loosen, configure, withdraw
     // =====================================================================
@@ -194,12 +212,19 @@ contract BrainVault is EIP712, ReentrancyGuard {
         emit AgentSet(wallet, address(registry), labelhash, dailyCeiling);
     }
 
+    /// @dev Keeps `day`, `spentToday` and `paused` as a tombstone, so remove + re-add on the same day neither
+    ///      grants a fresh ceiling nor silently clears a guardian pause.
     function removeAgent(address wallet) external onlyOwner {
-        delete _agents[wallet];
+        Agent storage a = _agents[wallet];
+        if (address(a.registry) == address(0)) revert AgentUnknown();
+        a.registry = IAgentRegistry(address(0));
+        a.labelhash = 0;
+        a.dailyCeiling = 0;
         emit AgentRemoved(wallet);
     }
 
     function unpauseAgent(address wallet) external onlyOwner {
+        if (address(_agents[wallet].registry) == address(0)) revert AgentUnknown();
         _agents[wallet].paused = false;
         emit AgentUnpaused(wallet);
     }
@@ -221,10 +246,18 @@ contract BrainVault is EIP712, ReentrancyGuard {
         emit GuardianSet(guardian_);
     }
 
+    /// @notice Two-step: `newOwner` must call `acceptOwnership`, so a typo can't brick owner powers.
     function transferOwnership(address newOwner) external onlyOwner {
         if (newOwner == address(0)) revert ZeroAddress();
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
+        pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner, newOwner);
+    }
+
+    function acceptOwnership() external {
+        if (msg.sender != pendingOwner) revert NotPendingOwner();
+        emit OwnershipTransferred(owner, msg.sender);
+        owner = msg.sender;
+        pendingOwner = address(0);
     }
 
     function withdraw(address to, uint256 amount) external onlyOwner {

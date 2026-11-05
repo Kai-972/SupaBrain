@@ -20,3 +20,4 @@ export {
   type PollResult,
 } from "./world/deviceFlow";
 export { IdTokenValidator, type IdTokenClaims } from "./world/idToken";
+export { parseWorldConfig, WorldConfigSchema, type WorldConfig } from "./world/config";

@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S0 | ⏳ not started | – |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (waits for A's push) | ⏳ | A: S0 push |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S0 (waits for A's push) | ⏳ | A: S0 push |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · vault done; next World spike | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -36,7 +36,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] A · S2 Arkiv: batch ok · `$creator ≠ $owner` · queries ok · **extend-on-readonly result: ___** · watcher fires · friction logged
 - [ ] A · S3 MCP: public URL · Claude Code ✓ · Claude.ai ✓ · Antigravity ✓ · bad token 401
 - [ ] B · S4 World: discovery logged · approve · deny · expire/cancel
-- [ ] B · S5 Vault: `forge test` green (mock registry)
+- [x] B · S5 Vault: `forge test` green (mock registry) · 47 passed · V1 review done (0 crit/high/med; L-2/L-3/L-4 fixed) · 34f9228
 - [ ] C: static graph with all encodings + list view (screenshot)
 
 ### S2: Memory core
@@ -83,6 +83,8 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
 - [ ] A → B, C: S0 pushed; pull and start (fill in when done)
+- [ ] B → A: vault pay() calls `getOwner(labelhash)` on the team UserRegistry; `ens.sepolia.json` needs per-agent `labelhash` (uint256 of keccak(label)) + `registry` + `wallet` for `set-agents` (2026-11-06)
+- [ ] B → A: `config/app.json` needs `payments.eip712 {name, version}` for the vault domain (vault takes them as constructor args) (2026-11-06)
 
 ## Hand-offs (when a Claude account hits its limit)
 <!-- ### <time> · <lane> · state / next step / open questions -->
@@ -97,6 +99,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S1 / S5 vault (mock registry) + V1 review
+- did: Foundry in `contracts/` (pinned deps via `install-deps.sh`, lib/ gitignored); `BrainVault.sol` written test-first against a mock ENSv2 registry; V1 adversarial review; fixed L-2 (remove+re-add reset), L-3 (two-step ownership), L-4 (`cancelIntent`), I-4/I-6; documented 2x-at-UTC-midnight worst case (L-1)
+- proof: `forge test` → 47 passed, 0 failed (incl. 512-run ceiling fuzz, cast-signed EIP-712 vector); ENSv2 `getOwner(uint256)` returns 0 when `block.timestamp >= expiry` (contracts-v2 07e55a05, verified in source)
+- result: PASS
+- commit: 6ef9e01, bae2df6, 33f9e9c, 34f9228
+- next: S1 World device-flow spike (needs WORLD_CLIENT_ID/SECRET + issuer); then vault deploy script once config/ + `ens.sepolia.json` land
+- asks/blockers: none for this step. Deploy needs SEPOLIA_RPC_URL, POLICY_SIGNER/GUARDIAN keys, A's `ens.sepolia.json`
 
 ## Log: Lane C (Face)
 <!-- newest first -->

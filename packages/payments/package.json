@@ -3,12 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "build": "tsc -p .",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@supabrain/shared": "workspace:*"
+    "@supabrain/shared": "workspace:*",
+    "jose": "^6.2.15",
+    "zod": "^4.6.7"
   }
 }

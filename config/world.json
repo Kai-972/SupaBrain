@@ -1,0 +1,11 @@
+{
+  "issuer": "https://auth.world.org",
+  "scope": "openid",
+  "requireEnrolledSub": false,
+  "approvalTtlSec": 900,
+  "authTimeSkewSec": 5,
+  "pollMaxIntervalSec": 30,
+  "notes": "Production issuer per auth.world.org/docs. Sandbox issuer is https://sandbox.auth.world.org (separate portal, credentials and test World IDs). ASK the World booth which one to use for judging; endpoints are never hard-coded, they come from ${issuer}/.well-known/openid-configuration.",
+  "source": "https://auth.world.org/docs and https://auth.world.org/.well-known/openid-configuration",
+  "verifiedAt": "2026-11-06"
+}

@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S0 ✅ → S1 ENS step 1 | 🔨 in progress | ASK: team label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY, keygen OK |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · vault done; next World spike | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · World spike: client + tests done, live approve/deny waiting on credentials | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -35,7 +35,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] A · S1 ENS: team name + registry · agent + own resolver · `sb.memory.head` ✓ · `sb.pay.cap` revert tx · UR read-back · unregister → null · transfer revert · **handoff `ens.sepolia.json` to B**
 - [ ] A · S2 Arkiv: batch ok · `$creator ≠ $owner` · queries ok · **extend-on-readonly result: ___** · watcher fires · friction logged
 - [ ] A · S3 MCP: public URL · Claude Code ✓ · Claude.ai ✓ · Antigravity ✓ · bad token 401
-- [ ] B · S4 World: discovery logged · approve · deny · expire/cancel
+- [ ] B · S4 World: discovery logged ✓ (52c950e) · approve · deny · expire/cancel  ← needs WORLD_CLIENT_ID/SECRET
 - [x] B · S5 Vault: `forge test` green (mock registry) · 47 passed · V1 review done (0 crit/high/med; L-2/L-3/L-4 fixed) · 34f9228
 - [ ] C: static graph with all encodings + list view (screenshot)
 
@@ -112,6 +112,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S1 / S4 World spike (client, tests, live discovery)
+- did: World device-flow client in `packages/payments/src/world/` (discovery, client_secret_basic start/poll, RFC 8628 interval + slow_down, 503 keep-waiting, 429 terminal, cancel, local expiry); backend `id_token` validation with jose (iss, aud, exp, sig, auth_time freshness, one-time jti, optional enrolled sub); `config/world.json`; `world:spike` script; WORLD_DEBRIEF.md started
+- proof: vitest 37 World tests pass (62 workspace total); live `world:spike -- --discover` → issuer auth.world.org, device endpoint /api/v1/device_authorization, token /api/v1/token, RS256; sandbox issuer discovery also advertises the device grant
+- result: PASS (discovery) · approve/deny/expire live still to do
+- commit: 1b58ae5, c137a77, ca97c0f, 52c950e
+- next: live approve + deny + cancel once credentials are in .env.local; then decidePayment table tests
+- asks/blockers: ASK WORLD_CLIENT_ID / WORLD_CLIENT_SECRET (auth.world.org/portal or sandbox portal) + booth answer on prod vs sandbox issuer + HTTPS redirect URI (ngrok domain). Note: vitest 5 needs Node ≥22 (repo engines say so); Node 20 crashes its failure reporter
 
 ### 2026-11-06 IST · B · S1 / S5 vault (mock registry) + V1 review
 - did: Foundry in `contracts/` (pinned deps via `install-deps.sh`, lib/ gitignored); `BrainVault.sol` written test-first against a mock ENSv2 registry; V1 adversarial review; fixed L-2 (remove+re-add reset), L-3 (two-step ownership), L-4 (`cancelIntent`), I-4/I-6; documented 2x-at-UTC-midnight worst case (L-1)

@@ -6,6 +6,7 @@ import { mountMcp } from "./mcp/routes";
 import { mountPairing } from "./api/pair";
 import { mountBrainApi } from "./api/brains";
 import { mountRulesApi } from "./api/brain-rules";
+import { mountLabApi } from "./api/lab";
 import type { BrainsDeployment, RulesWriter } from "@supabrain/ens";
 import type { HeadPublisher } from "./ens-heads";
 import { createUndo } from "./memory/undo";
@@ -66,6 +67,7 @@ export function createApp({ config, payments, ens, runtime, tokenSecret, publicB
     mountApi(app, { config, ens, runtime, admin, payments, undo });
     mountBrainApi(app, { config, ens, runtime, undo, owner: admin.require });
     mountRulesApi(app, { config, ens, runtime, owner: admin.require, rules, heads, registry, brainMode: !!brainMode });
+    mountLabApi(app, { config, runtime, owner: admin.require });
     mountPairing(app, { config, tokenSecret, publicBaseUrl, webBaseUrl: webBaseUrl ?? config.app.web.baseUrl, owner: admin.require });
   } else {
     app.all(["/mcp", "/mcp/t/:token", "/api/{*rest}"], (_req, res) => {

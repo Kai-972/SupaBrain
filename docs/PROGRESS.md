@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅ → S1 Arkiv spike | 🔨 in progress | – (wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World · S5 `createPayments` ✅ · fork test ✅ live Sepolia · deploy scripts ready. Next: Sepolia deploy (ASK: RPC, owner key, gas, USDC) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8). Next: set-agents → fund → 1-USDC pay → step-kill (each ASK go) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -41,7 +41,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S2: Memory core
 - [ ] A: whoami/recall/remember/explain · lineage + trust tests · Arkiv batch writes · startup rebuild · ENS check per call · SSE · `/api/team` `/api/graph` `/api/memory/:key`
-- [ ] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ☐ · 1-USDC pay tx ☐ · `step-kill` revert tx ☐ · `decidePayment` table tests ✓ 202d16e
+- [ ] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ✓ [0x2da7…0ec8](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8) · 1-USDC pay tx ☐ · `step-kill` revert tx ☐ · `decidePayment` table tests ✓ 202d16e
 - [ ] C: drawer · agents rail · feed · **switched to real graph + SSE**
 - [ ] **Gate:** Claude Code + Antigravity write to one graph, live in the UI
 
@@ -59,7 +59,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S5: Money
 - [ ] A: acme vendor ENS (own resolver) · `EnsAuthority` vendor fns · `GraphView`/`ArkivWriter` · `pay`/`pay_status` mounted
-- [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · attestation ✓ f59b6b9 · vault client ✓ 1973e38 · engine + pending-human ✓ 26d47f0 · createPayments ✓ 30a54e6 · Sepolia deploy ☐)
+- [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · attestation ✓ f59b6b9 · vault client ✓ 1973e38 · engine + pending-human ✓ 26d47f0 · createPayments ✓ 30a54e6 · Sepolia deploy ✓ 7c1429e)
 - [ ] C: payments page
 - [ ] **Gate:** P1 BLOCKED (ENS mismatch) from a real client · paid tx on Etherscan
 
@@ -109,6 +109,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ## Asks received (names only, never values)
 - 2026-11-06 · B · ASK WORLD_APP_ID / WORLD_RP_ID: received, validated (live approvals verified by World)
 - 2026-11-06 · B · WORLD_SIGNING_KEY: generated locally; only its signer address was registered with World (0x03c3…b479)
+- 2026-11-06 · B · ASK SEPOLIA_RPC_URL / OWNER_PRIVATE_KEY / AGENT_LEAD_CLAUDE_PRIVATE_KEY / AGENT_GEM_RESEARCH_PRIVATE_KEY: received, validated (chain 11155111; owner 0xFcf0…E198, lead-claude 0xEd4a…1bfC, gem-research 0x6c57…590c all = ens.sepolia.json)
 - 2026-11-06 · B · POLICY_SIGNER_PRIVATE_KEY / GUARDIAN_PRIVATE_KEY: generated locally (policy 0x4F24…26d0, guardian 0x2782…4D51)
 <!-- - <time> · <lane> · ASK <NAME>: received, validated (<public detail>) -->
 
@@ -152,6 +153,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 08:43 IST · B · S2 / BrainVault deployed on Sepolia
+- did: `pnpm vault:deploy --yes` after the ASK go. Dry run first caught a gas limit above the EIP-7825 per-tx cap (Sepolia estimates ~15.5M gas for 11 KB init code; +25% would be rejected) → fixed to +5% capped (9091655)
+- proof: tx https://sepolia.etherscan.io/tx/0x782509e09202ec6d2b59a0457e5083abf7717483b51e3ab85ffdb1432a04f25e · vault https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8 · token/owner/guardian/policySigner/MAX_ROOTS read back from chain = plan
+- result: PASS
+- commit: 7c1429e (`config/deployments/vault.sepolia.json`)
+- next: `vault:set-agents --yes` (3 txs, dry run simulated ok) → fund → 1-USDC pay-proof → step-kill
+- asks/blockers: guardian 0x2782…4D51 has 0 ETH; owner has 0 USDC (faucet.circle.com)
 
 ### 2026-11-06 IST · B · S2 / fork test + vault scripts
 - did: `contracts/test/BrainVaultFork.t.sol` (real `supabrain.eth` UserRegistry + Circle USDC from config, skips without RPC); `scripts/vault/{deploy,set-agents,fund,status,pay-proof}.ts` (dry run by default, `--yes` broadcasts, deploy reads every immutable back before writing `vault.sepolia.json`); `pnpm vault:*` scripts; cited root memories now add their own root (uses A's `GraphView.get`)

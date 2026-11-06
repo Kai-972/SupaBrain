@@ -94,4 +94,4 @@ Owner: Lane B (Srijit), with Srijit as the human in the loop. This plan says wha
   - forge 47 tests, plus the fork test 4/4 on live Sepolia;
   - `lint:hardcode` and `check:secrets` clean;
   - live read-only smoke on the restarted local server: rebuild, 7 edges, 4 payment decisions reloaded.
-- **Not re-run live after the M2 fix:** a new `pay` (it writes to Arkiv). Covered by the seed → P1 regression test through the real payments engine.
+- **Live re-check after the M2 fix (go):** `demo:step blocked` against the fixed server. The graph kept all 7 edges (M1 ← E1, M2 ← H1, M1) through the payment. The decision path is now `M2 → M1 → E1` (the fixture), with hard reasons `ENS_MISMATCH` + `QUARANTINED_LINEAGE`. [Arkiv record](https://rabdi.explorer.arkiv.network/tx/0x39ba19e484b0ed7cf2a0ee502f5e38d91deae998bfc0a5bd136efed9c16fdd62).

@@ -214,6 +214,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
 
+### 2026-11-06 IST · B · QA M2 live re-check (P1 after the graph.walk fix)
+- did: `pnpm demo:step blocked` (go) against the restarted server on the fixed code (namespace supabrain-mumbai26-b, seed file found by namespace)
+- proof: `/api/graph` before and after the payment: 7 edges, M1 ← E1, M2 ← H1/M1 (the first run lost 3 edges here). Decision BLOCKED [ENS_MISMATCH, QUARANTINED_LINEAGE, OUTSIDE_CONTENT_PAYEE, NEW_PAYEE, OVER_CAP], path M2 → M1 → E1 (= fixture; it was E1 → M1). Arkiv https://rabdi.explorer.arkiv.network/tx/0x39ba19e484b0ed7cf2a0ee502f5e38d91deae998bfc0a5bd136efed9c16fdd62 · `/api/payments` lists it plus the 4 reloaded decisions
+- result: PASS
+- commit: (this entry)
+- next: Kai pulls and reviews; seed the judging namespace within 2 days of judging
+- asks/blockers: none
+
 ### 2026-11-06 IST · B · QA cycle: plan, research, fixes for A's open items (Srijit's instruction)
 - did: wrote `docs/QA_PLAN.md` (scope, entry/exit, P0 matrix, risks, rehearsal runbook). Researched open B → A requests, `it.fails`, and in-place mutations across the server. Fixed, tests first: (1) `MemoryGraph.walk` drained a node's parents (+ the graph now hands out and stores its own array copies); (2) payment history after a restart: `MemoryStore.loadPayments()` (Arkiv `sb.payment` by the team wallet, one per intent, final beats pending), merged in `payments/mount.ts` under the live engine; a stale pending approval shows as expired; (3) demo seed per namespace, `demo-seed.<namespace>.json`; `demo:step` reads the file for the server's `/healthz` namespace (Kai's -dev file moved unchanged, B's -b rehearsal file added). D2 token binding: accepted with a mitigation (matches A's DECISIONS entry)
 - proof: 383 vitest (0 expected-fail) · typecheck 7/7 · forge 47 + fork 4/4 live · guards clean · each fix mutation-checked · live smoke after restart: "loaded 4 payment decisions", `/api/payments` = cancelled, denied, paid (0x7b98…7528), blocked; `/api/graph` 10 nodes / 7 edges, statuses correct

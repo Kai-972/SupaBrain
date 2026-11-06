@@ -57,7 +57,7 @@ async function main() {
   const payments = mountPayments({ config, ens, runtime, log });
   const app = createApp({
     config, payments, ens, runtime,
-    tokenSecret: requireEnv("TOKEN_SIGNING_SECRET"), publicBaseUrl, adminPassphrase: env.DASHBOARD_ADMIN_PASSPHRASE, log,
+    tokenSecret: requireEnv("TOKEN_SIGNING_SECRET"), publicBaseUrl, webBaseUrl: env.PUBLIC_WEB_URL, adminPassphrase: env.DASHBOARD_ADMIN_PASSPHRASE, log,
   });
   const server = app.listen(port, () => {
     log(`supabrain server on :${port} (app=${config.app.appNamespace}, team=${config.app.team.id})`);

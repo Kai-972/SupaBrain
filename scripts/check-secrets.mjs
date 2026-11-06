@@ -30,7 +30,7 @@ export function isForbiddenPath(path) {
 }
 
 // Env values that are public by design (every client and doc shows them).
-const PUBLIC_ENV = new Set(["PORT", "PUBLIC_BASE_URL", "SUPABRAIN_APP_NAMESPACE"]);
+const PUBLIC_ENV = new Set(["PORT", "PUBLIC_BASE_URL", "PUBLIC_WEB_URL", "SUPABRAIN_APP_NAMESPACE"]);
 
 /** Secret values from .env.local (never NEXT_PUBLIC_* or PUBLIC_ENV), used to catch a pasted secret anywhere. */
 export function secretValues(envText) {

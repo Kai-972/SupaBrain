@@ -67,7 +67,11 @@ export const AppFileSchema = z
       revocation: z.literal("max"),
     }),
     refs: z.object({ allowedKinds: z.array(z.enum(["github", "notion", "url"])).min(1) }),
-    mcp: z.object({ tokenTtlDays: z.number().int().positive() }), // agent bearer token lifetime
+    mcp: z.object({
+      tokenTtlDays: z.number().int().positive(), // agent bearer token lifetime
+      pairCodeTtlSec: z.number().int().positive(), // the /connect?code=… QR code lives this long
+    }),
+    web: z.object({ baseUrl: z.url() }), // the dashboard (Lane C); PUBLIC_WEB_URL overrides it (e.g. a local UI)
   })
   .refine((c) => c.keep.defaultDays <= c.keep.maxDays, { message: "keep.defaultDays must be <= keep.maxDays", path: ["keep"] })
   .refine((c) => c.keep.maxDays < ARKIV_MAX_LIFETIME_DAYS, { message: "keep.maxDays must be below the Arkiv max lifetime so revocations outlive kept memories", path: ["keep", "maxDays"] })
@@ -189,6 +193,7 @@ export const EnvSchema = z.looseObject({
   DASHBOARD_ADMIN_PASSPHRASE: opt(z.string().min(8)),
   NEXT_PUBLIC_SERVER_URL: opt(z.url()),
   PORT: opt(z.coerce.number().int().positive()),
+  PUBLIC_WEB_URL: opt(z.url()), // overrides app.json web.baseUrl (public, not secret)
   SUPABRAIN_APP_NAMESPACE: opt(z.string().regex(/^[a-z0-9-]+$/)), // overrides app.json appNamespace (e.g. a -dev namespace for testing)
 });
 export type Env = z.infer<typeof EnvSchema>;

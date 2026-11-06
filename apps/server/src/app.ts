@@ -3,6 +3,7 @@ import type { AppConfig, EnsAuthority, Payments } from "@supabrain/shared";
 import { mountApi } from "./api/routes";
 import { adminAuth } from "./auth/admin";
 import { mountMcp } from "./mcp/routes";
+import { mountPairing } from "./api/pair";
 import { createUndo } from "./memory/undo";
 import type { Runtime } from "./runtime";
 
@@ -17,12 +18,14 @@ export interface AppDeps {
   tokenSecret?: string;
   /** PUBLIC_BASE_URL */
   publicBaseUrl?: string;
+  /** the dashboard's base URL for /connect QR links (PUBLIC_WEB_URL, else config web.baseUrl) */
+  webBaseUrl?: string;
   /** DASHBOARD_ADMIN_PASSPHRASE; admin login is off (503) without it */
   adminPassphrase?: string;
   log?: (line: string) => void;
 }
 
-export function createApp({ config, payments, ens, runtime, tokenSecret, publicBaseUrl, adminPassphrase, log }: AppDeps): Express {
+export function createApp({ config, payments, ens, runtime, tokenSecret, publicBaseUrl, webBaseUrl, adminPassphrase, log }: AppDeps): Express {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1); // behind ngrok / Render: req.ip and req.secure come from the proxy
@@ -41,6 +44,7 @@ export function createApp({ config, payments, ens, runtime, tokenSecret, publicB
     mountMcp(app, { config, service: runtime.service, clients: runtime.clients, payments, tokenSecret, publicBaseUrl, log });
     const admin = adminAuth({ secret: tokenSecret, passphrase: adminPassphrase, sessionHours: config.app.server.adminSessionHours, secureCookie: !!publicBaseUrl?.startsWith("https://") }); // hardcode-ok: protocol prefix check, not an endpoint
     mountApi(app, { config, ens, runtime, admin, payments, undo: createUndo({ config, runtime, payments, log }) });
+    mountPairing(app, { config, tokenSecret, publicBaseUrl, webBaseUrl: webBaseUrl ?? config.app.web.baseUrl, owner: admin.require });
   } else {
     app.all(["/mcp", "/mcp/t/:token", "/api/{*rest}"], (_req, res) => {
       res.status(503).json({ jsonrpc: "2.0", error: { code: -32000, message: "Not configured on this server (needs TOKEN_SIGNING_SECRET, ENS and the memory runtime)" }, id: null });

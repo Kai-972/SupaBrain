@@ -82,6 +82,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → C: **read `docs/PROJECT_REFERENCE.md` first**: one file with the whole current picture for the UI build (story beats → API/SSE → what to render, the `dispute` field, payments reasons and approval card, every live endpoint, namespaces, proof links, rules). Pitch story page (plain English, 8 pictures): https://claude.ai/artifact/Y97gb3sEWrZegkKAgfEYU5 (2026-11-06)
 - [ ] B → C: **new `dispute` field** on nodes in `GET /api/graph` and on `GET /api/memory/:key`: `{state:"disputed", subject, ensAddress, claimed[]}` or `{state:"unverified", subject, reason}`. Please show an amber "Disputed by ENS" chip (text label, not only colour) on those memories; QUARANTINED styling wins when both apply. Narrative for DEMO_SCRIPT: *"Gemini saves the email and is told at once it disagrees with Acme's ENS (machines flag in milliseconds); the AIs build on it anyway; pay is BLOCKED; one revoke cleans it (humans decide in minutes)."* README: add `pnpm verify:memory <key>` as the "verify without trusting us" command next to `pnpm arkiv:query` (2026-11-06)
 - [x] B → A (fixed by B at Srijit's request, b7e449b + 606f216): **/api/payments forgets decisions across a server restart.** Live: P1 (blocked) disappeared from \`GET /api/payments\` after I restarted the server; it is on Arkiv as \`sb.payment\`. The engine keeps intents in memory and \`ArkivWriter\` is write-only. Ask: add \`loadPayments(): Promise<Payment[]>\` to the adapter (read this namespace's \`sb.payment\` rows by the team wallet, newest per intentId); B will seed \`list()\` and the "paid before" set from it at startup (shared interface change, so A's call) (2026-11-06)
 - [x] B → A (fixed by B at Srijit's request, cc60d66 + 0a80472: \`demo-seed.<namespace>.json\`) (FYI): \`demo:seed\` rewrites \`config/deployments/demo-seed.json\` for whichever namespace it seeds; B did NOT commit B's \`supabrain-mumbai26-b\` copy so A's committed one stays. Consider a per-namespace file name (2026-11-06)
@@ -213,6 +214,13 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - asks/blockers: team ENS label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY (testnet burner), OK to generate keys. Tooling: installed the Arkiv plugin 0.5.4 (Mumbai MCP connected) and the Context7 MCP
 
 ## Log: Lane B (Money & Security)
+
+### 2026-11-06 21:30 IST · B · Docs / project reference + pitch story
+- did: `docs/PROJECT_REFERENCE.md`, the full current reference for the UI build (product, demo beats mapped to API/SSE/UI, concepts incl. `dispute`, MCP tools, payment reasons + approval card, every dashboard route with shapes, SSE handling, local run + namespaces, deployments + proof links, repo map, rules, open requests, honest limits). Plain-English pitch story with 8 illustrated chapters, sponsor cards, rival table, proof links and judge Q&A published as https://claude.ai/artifact/Y97gb3sEWrZegkKAgfEYU5
+- proof: shapes checked against `apps/server/src/api/routes.ts`, `pair.ts`, `memory/undo.ts`, `mcp/server.ts`, `packages/shared/src/types.ts`
+- result: PASS
+- next: UI session reads the reference first; seed the judging namespace within 2 days of judging
+- asks/blockers: none
 <!-- newest first -->
 
 ### 2026-11-06 IST · B · Supermemory review → upgrades (research + decision + review + critique agents)

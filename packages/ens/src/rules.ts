@@ -7,13 +7,18 @@ import { createPublicClient, createWalletClient, encodeFunctionData, http, zeroA
 import { permissionedResolverAbi } from "./abis";
 import type { RuleKeys } from "./brains";
 import { dnsEncode } from "./names";
+import { GUARD_CHECKS } from "@supabrain/shared";
 
-export type RuleName = "status" | "scope" | "writeDaily" | "role";
+export type RuleName = "status" | "scope" | "writeDaily" | "role" | "guard" | "deny";
 export interface RulesPatch {
   status?: "active" | "paused";
   scope?: string;
   writeDaily?: string | number;
   role?: "lead" | "worker" | "observer";
+  /** sb.guard: the attacks this AI may not pass on ("*" = every check, [] / "none" = no checks) */
+  guard?: string | string[];
+  /** sb.deny: paths it may never write, even inside its scope ([] / "none" = none) */
+  deny?: string | string[];
 }
 export type Rules = Record<RuleName, string | null>;
 export interface SetRulesResult {
@@ -54,7 +59,14 @@ export interface RulesWriterOptions {
   io?: RulesChainIO;
 }
 
-const RULES: readonly RuleName[] = ["status", "scope", "writeDaily", "role"];
+const RULES: readonly RuleName[] = ["status", "scope", "writeDaily", "role", "guard", "deny"];
+const CHECKS: readonly string[] = GUARD_CHECKS;
+const listOf = (v: string | string[]) => [...new Set((Array.isArray(v) ? v : v.split(",")).map((x) => String(x).trim()).filter(Boolean))];
+function pathOk(p: string): boolean {
+  if (!p || p.length > 200 || p.startsWith("/") || /[*?]/.test(p)) return false;
+  const parts = p.endsWith("/") ? p.slice(0, -1).split("/") : p.split("/");
+  return parts.every((x) => SEGMENT.test(x) && x !== "." && x !== "..");
+}
 const SEGMENT = /^[A-Za-z0-9._-]+$/;
 const MAX_WRITES_PER_DAY = 100_000;
 
@@ -89,7 +101,22 @@ export function validateRules(patch: RulesPatch): Partial<Record<RuleName, strin
     if (!["lead", "worker", "observer"].includes(patch.role)) bad(`role must be "lead", "worker" or "observer"`);
     out.role = patch.role;
   }
-  if (!Object.keys(out).length) bad("nothing to change: give at least one of status, scope, writeDaily, role");
+  if (patch.guard !== undefined) {
+    if (patch.guard === "*") out.guard = "*";
+    else {
+      const list = patch.guard === "none" ? [] : listOf(patch.guard);
+      const unknown = list.filter((x) => !CHECKS.includes(x));
+      if (unknown.length) bad(`guard: unknown check ${unknown.join(", ")} (known: ${CHECKS.join(", ")}, or "*" for all)`);
+      out.guard = list.length ? list.join(",") : "none";
+    }
+  }
+  if (patch.deny !== undefined) {
+    const list = patch.deny === "none" ? [] : listOf(patch.deny);
+    const badPath = list.find((x) => !pathOk(x));
+    if (badPath) bad(`deny: "${badPath}" must be a relative path or prefix like ".github/" or ".env" (no "..", no leading "/", no wildcards)`);
+    out.deny = list.length ? list.join(",") : "none";
+  }
+  if (!Object.keys(out).length) bad("nothing to change: give at least one of status, scope, writeDaily, role, guard, deny");
   return out;
 }
 
@@ -136,14 +163,18 @@ export function createRulesWriter(o: RulesWriterOptions) {
   let queue: Promise<unknown> = Promise.resolve();
   let seenBlock: bigint | undefined; // the newest block one of our writes landed in
 
+  const configured = (r: RuleName) => !!o.keys[r];
   async function current(name: string, which: readonly RuleName[]): Promise<Partial<Rules>> {
-    const values = await Promise.all(which.map((r) => io!.getText(name, o.keys[r], seenBlock)));
+    which = which.filter(configured);
+    const values = await Promise.all(which.map((r) => io!.getText(name, o.keys[r]!, seenBlock)));
     return Object.fromEntries(which.map((r, i) => [r, values[i] ? values[i] : null]));
   }
 
   async function write(name: string, want: Partial<Record<RuleName, string>>): Promise<SetRulesResult> {
     const rules = Object.keys(want) as RuleName[];
-    return writeRecords(name, rules.map((r) => ({ id: r, key: o.keys[r], value: want[r]! })));
+    const missing = rules.filter((r) => !configured(r));
+    if (missing.length) throw new RulesError("INVALID", `no ENS text key is configured for ${missing.join(", ")}`);
+    return writeRecords(name, rules.map((r) => ({ id: r, key: o.keys[r]!, value: want[r]! })));
   }
 
   /** Set some text records on `name`'s live resolver: only the ones that differ, in one multicall. */

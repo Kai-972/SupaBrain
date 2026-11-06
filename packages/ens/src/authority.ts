@@ -2,7 +2,7 @@
 // Fails closed: if any ENS read fails the call throws EnsUnavailableError, so writes and payments pause and the UI
 // says "authority unknown". A cached answer is reused only within a short TTL and never after a failed refresh.
 import { zeroAddress } from "viem";
-import type { AgentView, AppConfig, EnsAuthority, EnsDeployment, Role, Vendor } from "@supabrain/shared";
+import { GUARD_CHECKS, type AgentView, type AppConfig, type EnsAuthority, type EnsDeployment, type Role, type Vendor } from "@supabrain/shared";
 import { agentName, labelhashId } from "./names";
 
 type Hex = `0x${string}`;
@@ -37,6 +37,16 @@ export interface EnsAuthorityDeps {
 const ROLES: readonly Role[] = ["owner", "lead", "worker", "observer"];
 const VENDORS: readonly Vendor[] = ["claude", "gemini", "openai", "human"];
 const USDC = /^\d+(\.\d{1,6})?$/;
+const ALL_CHECKS = [...GUARD_CHECKS] as string[];
+function parseList(raw: string | null | undefined): string[] {
+  if (!raw || raw.trim() === "none") return [];
+  return [...new Set(raw.split(",").map((x) => x.trim()).filter(Boolean))];
+}
+function parseGuard(raw: string | null | undefined): string[] {
+  if (!raw || raw.trim() === "*") return ALL_CHECKS;
+  const list = parseList(raw);
+  return list.every((x) => ALL_CHECKS.includes(x)) ? list : ALL_CHECKS;
+}
 /** sb.status values a valid record may hold ("paused" is the website's Pause, v2). */
 const STATUSES: readonly string[] = ["active", "paused", "quarantined"];
 
@@ -79,8 +89,9 @@ export function createEnsAuthority(deps: EnsAuthorityDeps): EnsAuthority {
         const [owner, expiry] = await Promise.all([chain.getOwner(registry, id), chain.getExpiry(registry, id)]);
         const wallet = dep.wallet as Hex;
         const registered = owner !== ZERO && owner.toLowerCase() === wallet.toLowerCase();
-        const [role, scope, payCap, payDaily, status, vendor, writeDaily] = await Promise.all(
-          [keys.role, keys.scope, keys.payCap, keys.payDaily, keys.status, keys.vendor, ...(keys.writeDaily ? [keys.writeDaily] : [])].map((k) => chain.getEnsText(name, k)),
+        const optional = [keys.writeDaily, keys.guard, keys.deny];
+        const [role, scope, payCap, payDaily, status, vendor, writeDaily, guardRaw, denyRaw] = await Promise.all(
+          [keys.role, keys.scope, keys.payCap, keys.payDaily, keys.status, keys.vendor, ...optional].map((k) => (k ? chain.getEnsText(name, k) : Promise.resolve(null))),
         );
         const recordsOk =
           registered && ROLES.includes(role as Role) && !!scope && USDC.test(payCap ?? "") && USDC.test(payDaily ?? "") &&
@@ -97,6 +108,9 @@ export function createEnsAuthority(deps: EnsAuthorityDeps): EnsAuthority {
           scope: scope ?? "", payCap: USDC.test(payCap ?? "") ? payCap! : "0", payDaily: USDC.test(payDaily ?? "") ? payDaily! : "0",
           // v2 writes per day: unset → no limit; unreadable or malformed → 0 (fail closed)
           ...(writeDaily === undefined || writeDaily === null ? {} : { writeDaily: /^\d{1,9}$/.test(writeDaily) ? String(Number(writeDaily)) : "0" }),
+          // v2 rulebook: sb.guard (absent / * / unknown names → every check: fail closed; none → no checks), sb.deny
+          ...(keys.guard ? { guard: parseGuard(guardRaw) } : {}),
+          ...(keys.deny ? { deny: parseList(denyRaw) } : {}),
         };
       });
     },

@@ -41,7 +41,7 @@ export interface DryRun {
 
 export interface AgentView { label: string; ens: string; vendor: Vendor; role: Role; scope: string; wallet: `0x${string}`;
   registered: boolean; leaseExpiresAt: number; status: "active" | "paused" | "quarantined" | "unregistered" | "expired";
-  payCap: string; payDaily: string; writeDaily?: string; lastWriteAt?: number; connectedClient?: string }
+  payCap: string; payDaily: string; writeDaily?: string; guard?: string[]; deny?: string[]; lastWriteAt?: number; connectedClient?: string }
 
 export type PayReason =
   | { code: "QUARANTINED_LINEAGE"; revoked: string[] }
@@ -81,7 +81,8 @@ export type StreamEvent =
 export interface BlockedEntry {
   at: number; agent: string; ens?: string; tool: "continue" | "checkpoint" | "checkout" | "pay";
   code: string;                 // NOT_AUTHORIZED | SCOPE | RATE_LIMIT | STOPPED | KEY_MISMATCH | AUTHORITY_UNKNOWN | ...
-  rule?: string;                // the ENS record or guard rule that decided it: sb.status, sb.scope, sb.write.daily, instruction-override, ...
+  rule?: string;                // the ENS record or guard rule that decided it: sb.status, sb.scope, sb.write.daily, sb.deny, instruction-override, ...
+  ensRule?: string;             // STOPPED: the ENS record that made this check mandatory for the AI (sb.guard)
   message: string;
   key?: string;                 // STOPPED: the saved (quarantined) checkpoint key, for review
   excerpt?: string;             // STOPPED: the matched text
@@ -102,3 +103,7 @@ export interface CheckpointView { key: string; agent: string; vendor: Vendor; su
 
 // Dashboard API client ids (CLAUDE.md §6.4).
 export type Client = "claude-code" | "claude-ai" | "antigravity" | "gemini-cli" | "chatgpt";
+
+/** v2 rulebook: the content checks an AI's ENS record `sb.guard` can require (apps/server/src/engine/guard.ts). */
+export const GUARD_CHECKS = ["instruction-override", "remote-code", "payment-redirect", "secret-exfiltration", "rule-tampering", "agent-to-agent-command"] as const;
+export type GuardCheck = (typeof GUARD_CHECKS)[number];

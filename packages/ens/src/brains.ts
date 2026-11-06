@@ -34,6 +34,8 @@ export const BrainsConfigSchema = z
       payCap: z.string().regex(/^\d+(\.\d+)?$/),
       payDaily: z.string().regex(/^\d+(\.\d+)?$/),
       agentContext: z.string().min(1),
+      guard: z.string().optional(), // sb.guard default: "*" = every content check
+      deny: z.string().optional(), // sb.deny default: protected paths, e.g. ".github/,scripts/"
     }),
     brains: z.array(z.object({ label: Label, index: z.number().int().min(1).max(2 ** 31 - 1) })).min(1),
     /** B2: tGLM per AI wallet on Arkiv Rabdi, sized from measured write costs. */
@@ -146,17 +148,21 @@ export interface AppTextKeys {
   vendor: string;
   agentContext: string;
   memoryHead: string;
+  guard?: string;
+  deny?: string;
 }
 export interface RuleKeys {
   status: string;
   scope: string;
   writeDaily: string;
   role: string;
+  guard?: string;
+  deny?: string;
 }
 
 /** The four rule keys the website can change, from config (app.json textKeys + brains.json writeDailyKey). */
-export function ruleKeys(app: Pick<AppTextKeys, "status" | "scope" | "role">, brains: Pick<BrainsConfig, "writeDailyKey">): RuleKeys {
-  return { status: app.status, scope: app.scope, writeDaily: brains.writeDailyKey, role: app.role };
+export function ruleKeys(app: Pick<AppTextKeys, "status" | "scope" | "role" | "guard" | "deny">, brains: Pick<BrainsConfig, "writeDailyKey">): RuleKeys {
+  return { status: app.status, scope: app.scope, writeDaily: brains.writeDailyKey, role: app.role, ...(app.guard ? { guard: app.guard } : {}), ...(app.deny ? { deny: app.deny } : {}) };
 }
 
 /** The records a fresh AI name starts with. `vendor` is the family. */
@@ -173,6 +179,8 @@ export function brainAgentRecords(cfg: BrainsConfig, keys: AppTextKeys, brain: s
     [keys.payCap]: r.payCap,
     [keys.payDaily]: r.payDaily,
     [keys.agentContext]: context,
+    ...(keys.guard && r.guard ? { [keys.guard]: r.guard } : {}),
+    ...(keys.deny && r.deny ? { [keys.deny]: r.deny } : {}),
   };
 }
 

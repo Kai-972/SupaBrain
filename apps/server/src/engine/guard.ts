@@ -29,14 +29,21 @@ export interface InjectionHit {
 }
 
 export function scanInjection(text: string): InjectionHit | undefined {
-  if (!text) return undefined;
+  return scanInjectionAll(text)[0];
+}
+
+/** Every check that matches (at most one hit per check), in the order the checks are listed. */
+export function scanInjectionAll(text: string): InjectionHit[] {
+  const hits: InjectionHit[] = [];
+  if (!text) return hits;
   for (const [rule, re] of RULES) {
+    if (hits.some((h) => h.rule === rule)) continue;
     const m = re.exec(text);
     if (!m) continue;
     const start = Math.max(0, m.index - 40);
     const end = Math.min(text.length, m.index + m[0].length + 40);
     const excerpt = `${start > 0 ? "…" : ""}${text.slice(start, end).replace(/\s+/g, " ").trim()}${end < text.length ? "…" : ""}`;
-    return { rule, excerpt: excerpt.length > 160 ? `${excerpt.slice(0, 159)}…` : excerpt };
+    hits.push({ rule, excerpt: excerpt.length > 160 ? `${excerpt.slice(0, 159)}…` : excerpt });
   }
-  return undefined;
+  return hits;
 }

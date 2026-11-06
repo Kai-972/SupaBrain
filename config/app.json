@@ -27,7 +27,9 @@
       "vendor": "sb.vendor",
       "agentContext": "agent-context",
       "agentEndpointMcp": "agent-endpoint[mcp]",
-      "writeDaily": "sb.write.daily"
+      "writeDaily": "sb.write.daily",
+      "guard": "sb.guard",
+      "deny": "sb.deny"
     }
   },
   "agents": [

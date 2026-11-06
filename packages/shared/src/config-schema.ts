@@ -32,6 +32,8 @@ export const AppFileSchema = z
         role: z.string(), scope: z.string(), payCap: z.string(), payDaily: z.string(), status: z.string(),
         memoryHead: z.string(), vendor: z.string(), agentContext: z.string(), agentEndpointMcp: z.string(),
         writeDaily: z.string().optional(), // v2: writes per day (sb.write.daily); absent → no limit
+        guard: z.string().optional(), // v2: which injection checks the AI must pass (sb.guard); absent record → all
+        deny: z.string().optional(), // v2: paths the AI may never write (sb.deny)
       }),
     }),
     agents: z

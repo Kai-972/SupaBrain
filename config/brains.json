@@ -19,7 +19,9 @@
     "status": "active",
     "payCap": "0",
     "payDaily": "0",
-    "agentContext": "Supabrain AI {ens}: the {family} AI of the brain {brain} ({role}). Its checkpoints are signed by its own wallet on Arkiv; its rules are these ENS records, set by the Supabrain server for the brain's owner."
+    "agentContext": "Supabrain AI {ens}: the {family} AI of the brain {brain} ({role}). Its checkpoints are signed by its own wallet on Arkiv; its rules are these ENS records, set by the Supabrain server for the brain's owner.",
+    "guard": "*",
+    "deny": ".github/,scripts/"
   },
   "brains": [
     {

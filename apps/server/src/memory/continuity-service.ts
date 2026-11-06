@@ -4,7 +4,8 @@
 import { createHash } from "node:crypto";
 import type { MemoryKind, MemoryNode, SourceRef } from "@supabrain/shared";
 import { currentFiles, frontier, heads, LIMITS, NOTE_KINDS, renderPack, resolveTaskRef, resumePack, scanSecrets, taskRef, taskViews, validatePath, type ResumePack } from "../engine/continuity";
-import { scanInjection, type InjectionHit } from "../engine/guard";
+import { GUARD_CHECKS } from "@supabrain/shared";
+import { scanInjectionAll, type InjectionHit } from "../engine/guard";
 import { computeLineage, scopeAllows, validateSource } from "../engine/lineage";
 import { searchMemories } from "../engine/search";
 import type { Notice } from "../engine/session";
@@ -29,7 +30,9 @@ const bad = (m: string): never => { throw new ToolError("INVALID", m); };
 export type ContinuityService = ReturnType<typeof createContinuityService>;
 
 /** Refusals worth showing on the website's live "blocked" feed (an ENS rule or the guard decided them). */
-const BLOCK_CODES = new Set(["NOT_AUTHORIZED", "SCOPE", "RATE_LIMIT", "STOPPED", "KEY_MISMATCH", "AUTHORITY_UNKNOWN"]);
+const BLOCK_CODES = new Set(["NOT_AUTHORIZED", "SCOPE", "DENIED", "RATE_LIMIT", "STOPPED", "KEY_MISMATCH", "AUTHORITY_UNKNOWN"]);
+/** sb.deny entry → does it protect `path`? "dir/" protects everything under it; "file" protects that file (and a dir of that name). */
+const denies = (entry: string, path: string) => (entry.endsWith("/") ? path.startsWith(entry) : path === entry || path.startsWith(`${entry}/`));
 const DAY_MS = 86_400_000;
 
 /** The last 200 refusals and stops, newest first; each one is also streamed as `blocked`. */
@@ -149,6 +152,8 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     for (const f of files) {
       try { validatePath(f.path); } catch (e) { bad((e as Error).message); }
       if (!scopeAllows(a.scope, f.path)) throw new ToolError("SCOPE", `${a.ens} may only write files under "${a.scope.replace(/\/+$/, "")}/" (its ENS sb.scope record), not "${f.path}"`, d.config.app.ens.textKeys.scope);
+      const protectedBy = (a.deny ?? []).find((x) => denies(x, f.path));
+      if (protectedBy) throw new ToolError("DENIED", `${a.ens} may never write "${f.path}": its ENS sb.deny record protects "${protectedBy}". Stop and tell the user.`, d.config.app.ens.textKeys.deny ?? "sb.deny");
       if (f.delete) { if (current.has(f.path)) fileDrafts.push({ path: f.path, content: "", deleted: true }); continue; }
       if (typeof f.content !== "string") bad(`file "${f.path}" needs its full content (or delete: true)`);
       if (f.content!.includes("\u0000")) bad(`"${f.path}" is binary; only text files are stored`);
@@ -163,11 +168,13 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     if (total > LIMITS.checkpointBytes) bad(`files total ${total} bytes; the limit is ${LIMITS.checkpointBytes} per checkpoint`);
 
     // ---- Stop: injected instructions travelling between AIs are saved for review but stopped for every other AI
-    let hit: InjectionHit | undefined;
-    for (const t of [summary, i.next ?? "", ...addTasks, ...notes.map((n) => n.text), ...fileDrafts.filter((f) => !f.deleted).map((f) => f.content)]) {
-      hit = scanInjection(t);
-      if (hit) break;
-    }
+    // Which checks apply is the AI's ENS record sb.guard (absent → every check). A hit on a check the owner turned
+    // off is saved but flagged, so the website can say "ENS allowed it".
+    const enforced = new Set<string>(a.guard ?? GUARD_CHECKS);
+    const hits = [summary, i.next ?? "", ...addTasks, ...notes.map((n) => n.text), ...fileDrafts.filter((f) => !f.deleted).map((f) => f.content)].flatMap((t) => scanInjectionAll(t));
+    const hit: InjectionHit | undefined = hits.find((h) => enforced.has(h.rule));
+    const flagged: InjectionHit | undefined = hit ? undefined : hits[0];
+    const guardKey = d.config.app.ens.textKeys.guard ?? "sb.guard";
 
     // ---- lineage: my previous checkpoint + what I read since (other AIs' commits, notes, evidence) + the tasks I ticked
     const own = heads(graph).get(agent);
@@ -244,10 +251,11 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
       catch (e) { log(`stop of ${cp.key} could not be written to Arkiv: ${(e as Error).message}`); }
       if (!graph.isRevoked({ type: "memory", id: cp.key })) graph.applyRevocation({ type: "memory", id: cp.key }); // in memory at least
       stopped = { rule: hit.rule, excerpt: hit.excerpt, ...(arkivUrl ? { arkivUrl } : {}) };
-      d.blocked.record({ at: now(), agent, ens: a.ens, tool: "checkpoint", code: "STOPPED", rule: hit.rule, key: cp.key, excerpt: hit.excerpt, message: `${a.ens} saved content that looks like ${hit.rule.replace(/-/g, " ")}; it is stopped and waits for the owner's review`, ...(arkivUrl ? { arkivUrl } : {}) });
+      d.blocked.record({ at: now(), agent, ens: a.ens, tool: "checkpoint", code: "STOPPED", rule: hit.rule, ensRule: guardKey, key: cp.key, excerpt: hit.excerpt, message: `${a.ens} passed on content that looks like ${hit.rule.replace(/-/g, " ")}, which its ENS ${guardKey} record forbids; it is stopped and waits for the owner's review`, ...(arkivUrl ? { arkivUrl } : {}) });
     }
     return {
-      ...(stopped ? { stopped } : {}),
+      ...(stopped ? { stopped: { ...stopped, ensRule: guardKey } } : {}),
+      ...(flagged ? { flagged: { rule: flagged.rule, excerpt: flagged.excerpt, allowedBy: guardKey } } : {}),
       key: cp.key, trust: cp.trust, parents: cp.parents, done, pending: true as const,
       tasksAdded: nodes.filter((n) => n.kind === "task").map((n) => ({ key: n.key, id: taskRef(n.key), title: n.text })),
       files: { saved: fileDrafts.filter((f) => !f.deleted).map((f) => f.path), deleted: fileDrafts.filter((f) => f.deleted).map((f) => f.path), unchanged },

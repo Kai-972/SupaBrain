@@ -12,7 +12,7 @@ import type { MemoryDraft, MemoryStore } from "./store";
 
 export type ToolErrorCode =
   | "AUTHORITY_UNKNOWN" | "NOT_AUTHORIZED" | "KEY_MISMATCH" | "SCOPE" | "INVALID" | "CITE_NOT_READ" | "CITE_QUARANTINED"
-  | "TOO_MANY_PARENTS" | "WRITE_FAILED" | "NOT_FOUND" | "ALREADY_REVOKED" | "KEEP_REFUSED" | "RATE_LIMIT" | "STOPPED";
+  | "TOO_MANY_PARENTS" | "WRITE_FAILED" | "NOT_FOUND" | "ALREADY_REVOKED" | "KEEP_REFUSED" | "RATE_LIMIT" | "STOPPED" | "DENIED";
 
 /** An error the agent should see and act on (returned as an MCP tool error, never a crash). */
 export class ToolError extends Error {

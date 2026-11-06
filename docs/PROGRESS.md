@@ -619,6 +619,18 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - asks/blockers: none for this step. Deploy needs SEPOLIA_RPC_URL, POLICY_SIGNER/GUARDIAN keys, A's `ens.sepolia.json`
 
 ## Log: Lane C (Face)
+
+### 2026-11-07 00:13 IST · C · v4 redesign (docs/UI_REDESIGN_PROMPT.md) + real-time pipeline
+- did:
+  - **Pipeline:** `/api/stream` sends a named `ping` every 10 s and the store runs a watchdog that reconnects with `?since` when pings stop. The refusal log is persisted (`.data/`), so the counts survive restarts. A recent-change map means the graph animates only what just changed.
+  - **IA:** Story / Live / Try it, a More menu for the utilities, Present mode, 18px body and nothing under 13px.
+  - **Live:** a headline with three live numbers; a full-width graph (lanes as sticky headers with an ENS-rules popover, one line per commit, red captions for stops and blocks, a thick "continue" curve, the HEAD ring, keyboard); a 560px side panel; the log as a bottom drawer; Insights below.
+  - **Try it:** a three-step flow with an editable preset or your own words and four gates that settle on the server's answer; a rules side sheet (writing → Sepolia tx → read-back); a ticker of real MCP traffic.
+  - The landing is four screens after the hero; Why ENS / Why Arkiv moved to `/verify`. The tour is a bottom presenter bar. `docs/DEMO_SCRIPT.md` is updated.
+- proof: 524 tests; `pnpm --filter @supabrain/web build` OK; `lint:hardcode` + `check:secrets` (including `.next`) OK. Checked in the browser on a live `maple` server at 1280×800 and 375px (no horizontal scroll, no text under 13px). Commits 9c99d12, 3a29071, 59fdfcd
+- result: PASS. **Not verified in the browser:** an owner-only send in the lab, which needs the passphrase typed by a human. Its API path was proven live earlier (`pnpm demo:injection` 10/10)
+- next: Srijit signs in on the demo laptop and runs the tour once end to end on `otter`
+- asks/blockers: none
 <!-- newest first -->
 
 ### 2026-11-06 22:05 IST · C · v2 website on the live backend

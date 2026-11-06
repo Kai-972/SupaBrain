@@ -1,14 +1,14 @@
 // MemoryStore on Arkiv (A-BRAIN S2): one batch per memory, signed by the agent's own wallet, every entity handed to the
 // team wallet in the same transaction (proven in the S1 spike), readonly, expiring. Startup rebuild + live watcher.
-import { ExpirationTime, type ExecuteBatchParameters } from "@arkiv-network/sdk";
+import { ExpirationTime, MAX_LIFETIME, type ExecuteBatchParameters } from "@arkiv-network/sdk";
 import { addr, i32, key as keyValue, u64 } from "@arkiv-network/sdk/schema";
 import { and, eq } from "@arkiv-network/sdk/query";
 import type { Hex } from "viem";
 import type { PrivateKeyAccount } from "viem/accounts";
-import { createArkivWriter, decodeBody, Edge, encodeBody, Memory, Revocation, SignerQueue, Taint, type ArkivConnection } from "@supabrain/arkiv";
+import { createArkivWriter, decodeBody, Edge, encodeBody, Memory, Notice, Revocation, SignerQueue, Taint, type ArkivConnection } from "@supabrain/arkiv";
 import { explorerLink, redactUrls, type MemoryKind, type MemoryNode, type PrivateRef, type RevocationTarget, type SourceRef, type Trust, type Vendor } from "@supabrain/shared";
 import { SELF_ROOT } from "../engine/lineage";
-import type { MemoryDraft, MemoryStore, StoreWatchHandlers, WriteReceipt } from "../memory/store";
+import type { MemoryDraft, MemoryStore, NoticeRecord, RevocationRecord, StoreWatchHandlers, WriteReceipt } from "../memory/store";
 
 /** 17 creates + 17 ownership transfers = 34 ops → gas floor 1M + 33×400k = 14.2M, within half of Rabdi's 30M block. */
 const MAX_CREATES_PER_BATCH = 17;
@@ -26,7 +26,7 @@ export interface ArkivStoreDeps {
   /** agent label → vendor, for memories loaded from Arkiv */
   vendors: Record<string, Vendor>;
   explorer: { tx: string; entity: string };
-  lifetimeSec: { memory: number; evidence: number };
+  lifetimeSec: { memory: number; evidence: number; notice: number };
   log?: (line: string) => void;
 }
 
@@ -100,8 +100,74 @@ export function createArkivMemoryStore(d: ArkivStoreDeps): MemoryStore {
     return row ? { type: String(val(row.targetType)) as RevocationTarget["type"], id: String(val(row.target)) } : undefined;
   }
 
+  const teamWriter = writers.team!;
+  const txUrl = (hash: string) => explorerLink(d.explorer.tx, { hash });
+
+  type Row = { $key: unknown; $expiresAt: unknown };
+  /** A memory's edge rows (as child) and taint rows, owned by the team (everything we write ends up there). */
+  async function lineageRows(key: string): Promise<Row[]> {
+    const k = keyValue(key as Hex);
+    const [edges, taints] = await Promise.all([
+      d.conn.arkiv.select({ $key: true, $expiresAt: true }).from(Edge).where(and(eq("app", d.app), eq("team", d.team), eq("child", k))).ownedBy(team.address).limit(PAGE).fetch(),
+      d.conn.arkiv.select({ $key: true, $expiresAt: true }).from(Taint).where(and(eq("app", d.app), eq("team", d.team), eq("memory", k))).ownedBy(team.address).limit(PAGE).fetch(),
+    ]);
+    return [...(edges.entities as unknown as Row[]), ...(taints.entities as unknown as Row[])];
+  }
+
   return {
     walletOf: (signer) => d.signers[signer]?.address as Hex | undefined,
+
+    writeRevocation: (r: RevocationRecord) =>
+      planQueue.run("team", async () => {
+        const res = await teamWriter.executeBatch({
+          creates: [{
+            schema: Revocation,
+            values: { app: d.app, team: d.team, targetType: r.target.type, target: r.target.id, revokedBy: r.revokedBy, seq: u64(r.seq), body: encodeBody({ reason: r.reason, dryRun: r.dryRun, at: r.at }) },
+            expiration: ExpirationTime.max(), flags: { readonly: true },
+          }],
+        } as unknown as ExecuteBatchParameters);
+        log(`arkiv: team wrote revocation ${r.target.type}:${r.target.id} (gas ${res.gasUsed}) tx ${res.txHash}`);
+        return { key: res.createdEntities[0]! as Hex, txHash: res.txHash, proofUrl: txUrl(res.txHash), expiresAt: r.at + Number(MAX_LIFETIME) * (await secondsPerBlock()) * 1000 };
+      }),
+
+    writeNotices: (notices: NoticeRecord[]) =>
+      planQueue.run("team", async () => {
+        const expiration = ExpirationTime.fromSeconds(d.lifetimeSec.notice);
+        let last;
+        for (const part of chunk(notices, MAX_CREATES_PER_BATCH)) {
+          last = await teamWriter.executeBatch({
+            creates: part.map((n) => ({
+              schema: Notice,
+              values: { app: d.app, team: d.team, toAgent: n.toAgent, revocation: keyValue(n.revocation as Hex), body: encodeBody({ text: n.text, affected: n.affected, at: n.at }) },
+              expiration, flags: { readonly: true },
+            })),
+          } as unknown as ExecuteBatchParameters);
+        }
+        return { txHash: last!.txHash, proofUrl: txUrl(last!.txHash), expiresAt: Date.now() + d.lifetimeSec.notice * 1000 };
+      }),
+
+    extendMemory: (key: string, seconds: number) =>
+      planQueue.run("team", async () => {
+        const spb = await secondsPerBlock();
+        const mem = await d.conn.arkiv.select({ $key: true, $expiresAt: true, $owner: true }).from(Memory)
+          .where(and(eq("$key", keyValue(key as Hex)), eq("app", d.app), eq("team", d.team))).limit(1).fetch();
+        const m = mem.entities[0] as Record<string, unknown> | undefined;
+        if (!m) throw new Error(`memory ${key} is not on Arkiv (expired?)`);
+        if (lower(String(val(m.$owner))) !== lower(team.address)) throw new Error("the team wallet does not own this memory, so it cannot extend it");
+        const target = mem.blockNumber + BigInt(Math.ceil(seconds / spb));
+        const rows = await lineageRows(key);
+        // Only rows that would actually live longer: the chain rejects an extension that shortens (ExpiryNotExtended).
+        const keys = [{ $key: m.$key, $expiresAt: m.$expiresAt }, ...rows]
+          .filter((r) => BigInt(val(r.$expiresAt) as bigint) < target).map((r) => String(val(r.$key)) as Hex);
+        const expiresAt = Date.now() + seconds * 1000;
+        if (keys.length === 0) return { txHash: "0x" as Hex, proofUrl: "", expiresAt: Date.now() + Number(BigInt(val(m.$expiresAt) as bigint) - mem.blockNumber) * spb * 1000, extended: 0 };
+        let last;
+        for (const part of chunk(keys, 34)) {
+          last = await teamWriter.executeBatch({ extensions: part.map((entityKey) => ({ entityKey, expiration: ExpirationTime.fromSeconds(seconds) })) });
+        }
+        log(`arkiv: team kept ${key} (${keys.length} rows incl. edges/taints) for ${seconds}s tx ${last!.txHash}`);
+        return { txHash: last!.txHash, proofUrl: txUrl(last!.txHash), expiresAt, extended: keys.length };
+      }),
     entityUrl: (key) => explorerLink(d.explorer.entity, { key }),
 
     async writeMemory(signer: string, draft: MemoryDraft) {
@@ -187,7 +253,21 @@ export function createArkivMemoryStore(d: ArkivStoreDeps): MemoryStore {
         if (covered < PAGE) break;
         offset += covered;
       }
-      return { memories, revocations };
+      const notices: NoticeRecord[] = [];
+      for (let offset = 0; ; ) {
+        const page = await d.conn.arkiv.select({ $key: true, toAgent: true, revocation: true, body: true }).from(Notice)
+          .where(and(eq("app", d.app), eq("team", d.team))).createdBy(team.address).limit(PAGE).offset(offset).fetch();
+        for (const row of page.entities as unknown as Record<string, unknown>[]) {
+          try {
+            const b = decodeBody<{ text: string; affected: string[]; at: number }>(val(row.body) as Uint8Array);
+            notices.push({ toAgent: String(val(row.toAgent)), revocation: String(val(row.revocation)), text: b.text, affected: b.affected ?? [], at: b.at });
+          } catch { /* not ours */ }
+        }
+        const covered = page.entities.length + page.skipped;
+        if (covered < PAGE) break;
+        offset += covered;
+      }
+      return { memories, revocations, notices };
     },
 
     watch(h: StoreWatchHandlers) {

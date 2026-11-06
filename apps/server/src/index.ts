@@ -44,11 +44,11 @@ async function main() {
     app: config.app.appNamespace, team: config.app.team.id, signers,
     vendors: Object.fromEntries(config.app.agents.map((a) => [a.label, a.vendor])),
     explorer: { tx: rabdi.explorer.tx, entity: rabdi.explorer.entity },
-    lifetimeSec: { memory: config.app.arkivExpirySec.memory, evidence: config.app.arkivExpirySec.evidence },
+    lifetimeSec: { memory: config.app.arkivExpirySec.memory, evidence: config.app.arkivExpirySec.evidence, notice: config.app.arkivExpirySec.notice },
     log,
   });
   const runtime = createRuntime({ config, ens, store, log });
-  const sync = startSync({ store, graph: runtime.graph, bus: runtime.bus, tickMs: 30_000, log });
+  const sync = startSync({ store, graph: runtime.graph, bus: runtime.bus, notices: runtime.notices, tickMs: 30_000, log });
   const t0 = Date.now();
   const rebuilt = await sync.ready;
   log(`rebuilt from Arkiv (${config.app.appNamespace}/${config.app.team.id}): ${rebuilt.memories} memories, ${rebuilt.revocations} revocations in ${Date.now() - t0} ms`);

@@ -2,6 +2,7 @@
 // restart the watcher when it falls behind (it never recovers on its own, arkiv/friction.md); expiry ticker.
 import type { MemoryNode } from "@supabrain/shared";
 import type { MemoryGraph } from "../engine/graph";
+import type { NoticeBox } from "../engine/session";
 import type { EventBus } from "../events";
 import type { MemoryStore, StoreWatchHandlers } from "./store";
 
@@ -9,6 +10,8 @@ export interface SyncDeps {
   store: MemoryStore;
   graph: MemoryGraph;
   bus: EventBus;
+  /** unread retraction notices are restored from Arkiv on load (their read state is not stored) */
+  notices?: NoticeBox;
   now?: () => number;
   /** expiry ticker period; 0 disables the timer (tests call tick()) */
   tickMs?: number;
@@ -53,8 +56,9 @@ export function startSync(d: SyncDeps) {
   };
 
   const load = async () => {
-    const { memories, revocations } = await d.store.loadAll();
+    const { memories, revocations, notices } = await d.store.loadAll();
     for (const r of revocations) d.graph.applyRevocation(r);
+    for (const n of notices ?? []) if (d.notices && !d.notices.has(n.toAgent, n.revocation)) d.notices.add(n.toAgent, n);
     for (const m of memories.sort((a, b) => a.seq - b.seq)) merge(m, false);
     return { memories: memories.length, revocations: revocations.length };
   };

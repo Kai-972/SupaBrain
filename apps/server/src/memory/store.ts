@@ -1,6 +1,6 @@
 // The boundary between the memory service and Arkiv. Real implementation: ../arkiv/store.ts. Test fake: ./fake-store.ts.
 import type { Hex } from "viem";
-import type { MemoryKind, MemoryNode, PrivateRef, RevocationTarget, SourceRef, Trust, Vendor } from "@supabrain/shared";
+import type { DryRun, MemoryKind, MemoryNode, PrivateRef, RevocationTarget, SourceRef, Trust, Vendor } from "@supabrain/shared";
 
 /** A memory about to be written. `roots` may contain SELF_ROOT (human memories), replaced by the store with the key. */
 export interface MemoryDraft {
@@ -23,6 +23,11 @@ export interface MemoryDraft {
 
 export interface WriteReceipt { txHash: Hex; proofUrl: string; expiresAt: number }
 
+/** A retraction notice for one agent (stored on Arkiv as sb.notice, owned by the team). */
+export interface NoticeRecord { toAgent: string; revocation: string; text: string; affected: string[]; at: number }
+
+export interface RevocationRecord { target: RevocationTarget; revokedBy: string; seq: number; reason: string; dryRun: DryRun; at: number }
+
 export interface StoreWatchHandlers {
   onMemory(node: MemoryNode): void;
   onRevocation(t: RevocationTarget): void;
@@ -38,8 +43,14 @@ export interface MemoryStore {
    * Resolves as soon as the key is known (optimistic); `committed` settles when the receipt lands.
    */
   writeMemory(signer: string, draft: MemoryDraft): Promise<{ key: Hex; roots: string[]; committed: Promise<WriteReceipt> }>;
+  /** Team wallet writes a revocation (max lifetime: it must outlive whatever it revokes). Resolves after the receipt. */
+  writeRevocation(r: RevocationRecord): Promise<{ key: Hex } & WriteReceipt>;
+  /** Team wallet writes retraction notices in one batch. */
+  writeNotices(notices: NoticeRecord[]): Promise<WriteReceipt>;
+  /** Keep: the team (owner) extends a memory AND its edges and taint rows to `seconds` from now, in one batch. */
+  extendMemory(key: string, seconds: number): Promise<WriteReceipt & { extended: number }>;
   /** Everything for this app + team from known creators: the startup rebuild. */
-  loadAll(): Promise<{ memories: MemoryNode[]; revocations: RevocationTarget[] }>;
+  loadAll(): Promise<{ memories: MemoryNode[]; revocations: RevocationTarget[]; notices: NoticeRecord[] }>;
   /** Live tail. Start it BEFORE loadAll (the chain serves no history). Returns a stop function. */
   watch(h: StoreWatchHandlers): () => void;
   /** Explorer link for an entity (proof for memories loaded at startup, whose create tx is unknown). */

@@ -16,7 +16,8 @@ function fakeStore(initial: MemoryNode[], revs: { type: "source"; id: string }[]
   let handlers: StoreWatchHandlers | undefined;
   const store = {
     walletOf: () => undefined, entityUrl: (k: string) => k, writeMemory: async () => { throw new Error("n/a"); },
-    async loadAll() { calls.push("load"); return { memories: initial, revocations: revs }; },
+    async loadAll() { calls.push("load"); return { memories: initial, revocations: revs, notices: [] }; },
+    writeRevocation: async () => { throw new Error("n/a"); }, writeNotices: async () => { throw new Error("n/a"); }, extendMemory: async () => { throw new Error("n/a"); },
     watch(h: StoreWatchHandlers) { calls.push("watch"); handlers = h; return () => { calls.push("unwatch"); }; },
   } satisfies MemoryStore;
   return { store, calls, fire: () => handlers! };

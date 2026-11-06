@@ -1,9 +1,11 @@
 // Dashboard API part 1 (CLAUDE.md §6.4, A-BRAIN S2 step 6). Read endpoints are public demo data; owner actions (S3)
 // go behind admin.require.
 import type { Express, NextFunction, Request, Response } from "express";
-import type { AppConfig, EnsAuthority } from "@supabrain/shared";
+import type { AppConfig, EnsAuthority, RevocationTarget } from "@supabrain/shared";
 import type { Runtime } from "../runtime";
 import type { adminAuth } from "../auth/admin";
+import { ToolError } from "../memory/service";
+import type { Undo } from "../memory/undo";
 
 export function cors(allowed: readonly string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -25,7 +27,29 @@ export function cors(allowed: readonly string[]) {
   };
 }
 
-export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority; runtime: Runtime; admin: ReturnType<typeof adminAuth> }) {
+const STATUS: Record<string, number> = { INVALID: 400, NOT_FOUND: 404, ALREADY_REVOKED: 409, KEEP_REFUSED: 409, WRITE_FAILED: 502 };
+
+/** Run an owner action; ToolErrors become clear HTTP errors, anything else a generic 500 (no internals). */
+function action(fn: (req: Request) => Promise<unknown> | unknown) {
+  return async (req: Request, res: Response) => {
+    try {
+      res.json(await fn(req));
+    } catch (e) {
+      if (e instanceof ToolError) return void res.status(STATUS[e.code] ?? 400).json({ error: e.code, message: e.message });
+      res.status(500).json({ error: "INTERNAL", message: "internal error" });
+    }
+  };
+}
+
+function targetOf(body: unknown): RevocationTarget {
+  const t = (body as { target?: { type?: unknown; id?: unknown } } | undefined)?.target;
+  if (!t || !["source", "agent", "memory"].includes(String(t.type)) || typeof t.id !== "string") {
+    throw new ToolError("INVALID", 'target must be { type: "source" | "agent" | "memory", id: string }');
+  }
+  return { type: t.type as RevocationTarget["type"], id: t.id };
+}
+
+export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority; runtime: Runtime; admin: ReturnType<typeof adminAuth>; undo: Undo }) {
   const { config, ens, runtime } = p;
   const { graph, bus, service } = runtime;
   const teamEns = `${config.app.ens.teamLabel}.eth`;
@@ -77,6 +101,18 @@ export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority
     const ping = setInterval(() => res.write(": ping\n\n"), 15_000);
     req.on("close", () => { off(); clearInterval(ping); });
   });
+
+  // Owner actions (A-BRAIN S3). Every one requires the admin session.
+  const owner = p.admin.require;
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  app.post("/api/dryrun", owner, action((req) => p.undo.dryRun(targetOf(req.body))));
+  app.post("/api/revoke", owner, action((req) => p.undo.revoke(targetOf(req.body), str(req.body?.reason))));
+  app.post("/api/memory/human", owner, action((req) => {
+    const b = req.body ?? {};
+    return p.undo.addContext({ text: str(b.text), kind: b.kind, folder: str(b.folder), ...(b.subject ? { subject: str(b.subject) } : {}), ...(b.ref ? { ref: b.ref } : {}) });
+  }));
+  app.post("/api/memory/:key/keep", owner, action((req) => p.undo.keep(String(req.params.key), typeof req.body?.days === "number" ? req.body.days : undefined)));
+  app.post("/api/memory/:key/correct", owner, action((req) => p.undo.correct(String(req.params.key), str(req.body?.text))));
 
   app.post("/api/admin/login", p.admin.login);
   app.post("/api/admin/logout", p.admin.logout);

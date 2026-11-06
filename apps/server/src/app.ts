@@ -3,6 +3,7 @@ import type { AppConfig, EnsAuthority, Payments } from "@supabrain/shared";
 import { mountApi } from "./api/routes";
 import { adminAuth } from "./auth/admin";
 import { mountMcp } from "./mcp/routes";
+import { createUndo } from "./memory/undo";
 import type { Runtime } from "./runtime";
 
 export interface AppDeps {
@@ -39,7 +40,7 @@ export function createApp({ config, payments, ens, runtime, tokenSecret, publicB
   if (ens && runtime && tokenSecret) {
     mountMcp(app, { config, service: runtime.service, clients: runtime.clients, tokenSecret, publicBaseUrl, log });
     const admin = adminAuth({ secret: tokenSecret, passphrase: adminPassphrase, sessionHours: config.app.server.adminSessionHours, secureCookie: !!publicBaseUrl?.startsWith("https://") }); // hardcode-ok: protocol prefix check, not an endpoint
-    mountApi(app, { config, ens, runtime, admin });
+    mountApi(app, { config, ens, runtime, admin, undo: createUndo({ config, runtime, payments, log }) });
   } else {
     app.all(["/mcp", "/mcp/t/:token", "/api/{*rest}"], (_req, res) => {
       res.status(503).json({ jsonrpc: "2.0", error: { code: -32000, message: "Not configured on this server (needs TOKEN_SIGNING_SECRET, ENS and the memory runtime)" }, id: null });

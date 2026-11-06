@@ -124,4 +124,53 @@ describe("dashboard API", () => {
     const evil = await fetch(`${base}/api/team`, { headers: { origin: "https://evil.example" } });
     expect(evil.headers.get("access-control-allow-origin")).toBeNull();
   });
+
+  it("owner actions refuse without the admin session (401), every one of them", async () => {
+    const { base } = start();
+    const post = (path: string, body: unknown) => fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    for (const [path, body] of [
+      ["/api/dryrun", { target: { type: "source", id: "email:x" } }],
+      ["/api/revoke", { target: { type: "source", id: "email:x" } }],
+      ["/api/memory/human", { text: "x", kind: "fact", folder: "finance" }],
+      ["/api/memory/0xabc/keep", {}],
+      ["/api/memory/0xabc/correct", { text: "x" }],
+    ] as const) expect((await post(path, body)).status, path).toBe(401);
+  });
+
+  it("owner flow over HTTP: add context → agent builds on email → dry run → revoke → keep refused → correct", async () => {
+    const { base, runtime } = start();
+    const login = await fetch(`${base}/api/admin/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ passphrase: PASS }) });
+    const cookie = login.headers.get("set-cookie")!.split(";")[0]!;
+    const post = async (path: string, body: unknown) => {
+      const r = await fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json", cookie }, body: JSON.stringify(body) });
+      return { status: r.status, body: (await r.json()) as any };
+    };
+    const h = await post("/api/memory/human", { text: "Pay Acme 5 USDC for the logo", kind: "plan", folder: "finance", subject: "acme.supabrain.eth" });
+    expect(h.status).toBe(200);
+    expect(runtime.graph.get(h.body.key)).toMatchObject({ trust: 3, agent: "owner" });
+    const ev = await runtime.service.remember("gem-research", { text: "Acme says the wallet changed", kind: "evidence", folder: "research", source: { type: "email", id: "email:acme-0611" } });
+    await runtime.service.recall("lead-claude", { query: "acme wallet logo" });
+    const plan = await runtime.service.remember("lead-claude", { text: "Pay the new Acme wallet", kind: "plan", folder: "finance" });
+    await new Promise((r) => setTimeout(r, 0));
+
+    const dry = await post("/api/dryrun", { target: { type: "source", id: "email:acme-0611" } });
+    expect(dry.status).toBe(200);
+    expect([...dry.body.memories].sort()).toEqual([ev.key, plan.key].sort());
+    expect(dry.body.readers).toEqual(["lead-claude"]);
+
+    const rev = await post("/api/revoke", { target: { type: "source", id: "email:acme-0611" }, reason: "phishing" });
+    expect(rev.status).toBe(200);
+    expect(rev.body).toMatchObject({ affected: expect.arrayContaining([ev.key, plan.key]), arkivUrl: expect.any(String) });
+    expect((await post("/api/revoke", { target: { type: "source", id: "email:acme-0611" } })).status).toBe(409);
+    expect((await post(`/api/memory/${plan.key}/keep`, { days: 3 })).status).toBe(409);
+    const kept = await post(`/api/memory/${h.body.key}/keep`, { days: 3 });
+    expect(kept.status).toBe(200);
+    expect(kept.body.days).toBe(3);
+
+    const corr = await post(`/api/memory/${h.body.key}/correct`, { text: "Pay Acme 5 USDC to the address on acme.supabrain.eth" });
+    expect(corr.status).toBe(200);
+    expect(runtime.graph.get(corr.body.newKey)).toMatchObject({ supersedes: h.body.key, trust: 3 });
+    expect(runtime.graph.status(h.body.key)).toBe("quarantined");
+    expect((await post("/api/dryrun", { target: { type: "teleport", id: "x" } })).status).toBe(400);
+  });
 });

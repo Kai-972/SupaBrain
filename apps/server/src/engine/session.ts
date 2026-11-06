@@ -80,6 +80,10 @@ export class NoticeBox {
     this.box.get(agent)!.push({ notice, read: false });
   }
 
+  has(agent: string, revocation: string): boolean {
+    return (this.box.get(agent) ?? []).some((x) => x.notice.revocation === revocation);
+  }
+
   unread(agent: string): Notice[] {
     return (this.box.get(agent) ?? []).filter((x) => !x.read).map((x) => x.notice);
   }

@@ -11,7 +11,7 @@ import type { MemoryDraft, MemoryStore } from "./store";
 
 export type ToolErrorCode =
   | "AUTHORITY_UNKNOWN" | "NOT_AUTHORIZED" | "KEY_MISMATCH" | "SCOPE" | "INVALID" | "CITE_NOT_READ" | "CITE_QUARANTINED"
-  | "TOO_MANY_PARENTS" | "WRITE_FAILED" | "NOT_FOUND";
+  | "TOO_MANY_PARENTS" | "WRITE_FAILED" | "NOT_FOUND" | "ALREADY_REVOKED" | "KEEP_REFUSED";
 
 /** An error the agent should see and act on (returned as an MCP tool error, never a crash). */
 export class ToolError extends Error {
@@ -77,6 +77,9 @@ export function createMemoryService(d: ServiceDeps) {
     const a = await authority(agent);
     if (!a.registered || a.status !== "active" || !a.recordsOk) {
       throw new ToolError("NOT_AUTHORIZED", `${a.ens} is not allowed to act: ENS status is "${a.status}"${a.registered ? "" : " (name not registered to the agent wallet)"}${a.recordsOk ? "" : " (records incomplete)"}. Stop and tell the user.`);
+    }
+    if (d.graph.isRevoked({ type: "agent", id: agent })) {
+      throw new ToolError("NOT_AUTHORIZED", `${a.ens} was revoked by the team owner; everything it wrote is quarantined. Stop and tell the user.`);
     }
     const wallet = d.store.walletOf(agent);
     if (!wallet || wallet.toLowerCase() !== a.wallet.toLowerCase()) {

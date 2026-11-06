@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS: steps 1–2 ✅ → step 3 register team | 🔨 in progress | – (all wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · World spike ✅ live: approve ×3, deny, cancel (IDKit 4). Next: `decidePayment` | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World live · S5 `decidePayment` ✅ (39 table tests). Next: intents + attestation + pending-human (`createPayments`) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -59,7 +59,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S5: Money
 - [ ] A: acme vendor ENS (own resolver) · `EnsAuthority` vendor fns · `GraphView`/`ArkivWriter` · `pay`/`pay_status` mounted
-- [ ] B: `createPayments` end to end
+- [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · intents · attestation · vault client · pending-human)
 - [ ] C: payments page
 - [ ] **Gate:** P1 BLOCKED (ENS mismatch) from a real client · paid tx on Etherscan
 
@@ -83,6 +83,8 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
 - [x] B → A (done by A, 2026-11-06): World moved to IDKit 4. Please add to `.env.example`: `WORLD_APP_ID=` (public), `WORLD_RP_ID=` (public), `WORLD_SIGNING_KEY=` (secret, B). `WORLD_CLIENT_ID/SECRET` stay as the OIDC fallback. Also make `check-secrets.mjs` flag a non-empty `WORLD_SIGNING_KEY=` value (2026-11-06)
+- [ ] B → A: `GraphView` has no `get(key)`. `decidePayment` takes attestation roots from a cited memory's ancestors, so a cite that is itself a root (evidence/human memory) adds nothing. Please add `get(key): MemoryNode | undefined` (or `roots(key)`) to the interface (2026-11-06)
+- [ ] B → C: blocked/pending decisions list **all** reasons, hard first (P1 = ENS_MISMATCH, OUTSIDE_CONTENT_PAYEE, NEW_PAYEE, OVER_CAP). `path` is the offending lineage (cite → payee memory → evidence), e.g. P1 `["0xM2","0xM1","0xE1"]` (2026-11-06)
 - [ ] B → C: the approval card shows `ApprovalView.verificationUri` (the IDKit `connectorURI`) as a QR plus a "open in World App" link, with `userCode` as a short reference. The URI carries the bridge key, so render it **only** on the owner-authenticated dashboard and never log it. Deny/expire/cancel come back as `PayDecision` statuses (2026-11-06)
 - [ ] B → A: vault pay() calls `getOwner(labelhash)` on the team UserRegistry; `ens.sepolia.json` needs per-agent `labelhash` (uint256 of keccak(label)) + `registry` + `wallet` for `set-agents` (2026-11-06)
 - [x] B → A: `config/app.json` needs `payments.eip712 {name, version}` for the vault domain (vault takes them as constructor args) (2026-11-06) → done: `{ "name": "BrainVault", "version": "1" }` (matches your tests), zod-validated as `config.app.payments.eip712`
@@ -130,6 +132,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S5 / decidePayment policy
+- did: `packages/payments/src/policy.ts`: agent authority from live ENS (fail closed), payee resolution, ENS-mismatch hard block (also for ENS-named payees, stricter than spec), quarantined lineage, outside-content/new/unknown payee, cap + daily from ENS records, attestation roots (sorted, deduped, quarantined excluded, only memories supporting this exact address), root overflow → error, offending `path`
+- proof: 39 table tests (P1/P2/P3 + V3 red team), 147 workspace tests green; 11 of 11 rule mutants caught (2 survived the first pass and got new tests)
+- result: PASS
+- commit: 202d16e (tests), 30f99b8 (feat)
+- next: intents + EIP-712 attestation signer + vault client, then `createPayments` with the pending-human flow
+- asks/blockers: GraphView.get (Request to A)
 
 ### 2026-11-06 08:01 IST · B · S1 / S4 World spike LIVE
 - did: registered the relying party (RP ID in env; signer key generated locally, only its address given to the portal). Live runs against production World App: `any(proof_of_human, selfie)` → `feature_unavailable`; Orb only + legacy → APPROVED ×3 (111 s, 85 s, 99 s), reject → DENIED `verification_rejected` (46 s), `--cancel-after 45` → CANCELLED

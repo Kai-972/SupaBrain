@@ -348,3 +348,9 @@ a.link:hover, .lede4 a:hover, .p-proof a:hover, .bk-proof a:hover, .res4 a:hover
 
 .book4 > ul > li.ok, .book4 > ul > li.bad { color: var(--fg); }
 .ensline { font-size: 14px; color: var(--muted); margin-top: -8px; }
+
+/* overlap fixes found by the audit */
+.codewrap { display: flex; align-items: flex-start; gap: 10px; }
+.codewrap pre { flex: 1; min-width: 0; overflow-x: auto; margin: 0; }
+.codewrap .btn { position: static; flex: none; margin-top: 8px; }
+.linkstack { display: inline-flex; flex-direction: column; gap: 4px; }

@@ -3,6 +3,7 @@ import { Suspense, useEffect, useRef } from "react";
 import Link from "next/link";
 import story from "@/fixtures/story-v2.json";
 import evidence from "@/content/evidence.json";
+import roadmap from "@/content/roadmap.json";
 import { mountLanding } from "@/components/landing/engine";
 import { HandoffHero } from "@/components/landing/HandoffHero";
 import { Intro } from "@/components/Intro";
@@ -143,6 +144,12 @@ function Landing() {
           <span className="eyebrow"><i />Try it</span>
           <h2 style={{ fontFamily: "var(--serif)", fontWeight: 400, fontSize: "clamp(2.2rem, 4.5vw, 3.8rem)", lineHeight: 1.05, letterSpacing: "-.025em", margin: "14px 0 0" }}>Your agents already hand work to each other. Make every handoff accountable.</h2>
           <div className="cta"><Link className="btn p" href={brainHref}>Open the live brain</Link><Link className="btn g" href={labHref}>Try to break it</Link><Link className="btn g" href={href("/connect")}>Connect your AI</Link></div>
+          <div className="bounty4" data-reveal>
+            <span className="eyebrow"><i />{roadmap.bounty.eyebrow}</span>
+            <h3>{roadmap.bounty.title}</h3>
+            <p>{roadmap.bounty.text}</p>
+            <a className="link" href={roadmap.bounty.proofUrl} target="_blank" rel="noreferrer noopener">{roadmap.bounty.proofLabel} ↗</a>
+          </div>
         </div></section>
       </main>
       <footer><div className="wrap"><span>Supabrain · built at ETHGlobal Mumbai 2026 · testnets only (Ethereum Sepolia, Arkiv Rabdi)</span><span>The scroll story and hero card are illustrations; every number and page after them is live.</span></div></footer>

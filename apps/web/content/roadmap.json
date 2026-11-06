@@ -1,0 +1,9 @@
+{
+  "bounty": {
+    "eyebrow": "Coming next",
+    "title": "A break-it bounty, paid in USDC",
+    "text": "A team funds a bounty pool in BrainVault. Anyone whose injection gets past the checks, and is later revoked by the owner, is paid from the pool after a human approves with World ID. Every miss becomes a new check.",
+    "proofLabel": "Payouts already work: a real 5 USDC payment, approved by a human",
+    "proofUrl": "https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528"
+  }
+}

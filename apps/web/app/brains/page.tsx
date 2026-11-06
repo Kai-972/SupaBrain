@@ -42,7 +42,7 @@ function Registry() {
                         <td className="mono small">{a.ens}</td>
                         <td className="mono tiny">{a.records["sb.status"]} · scope {a.records["sb.scope"]} · {a.records["sb.write.daily"]}/day</td>
                         <td className="mono tiny">wallet {short(a.wallet)} <Copy text={a.wallet} /></td>
-                        <td className="tiny">{explorer && <Ext href={`${explorer}/address/${a.resolver}`}>resolver</Ext>} {a.fundingUrl && <Ext href={a.fundingUrl}>Arkiv funding{a.fundedGlm ? ` (${a.fundedGlm} tGLM)` : ""}</Ext>}</td>
+                        <td className="tiny"><span className="linkstack">{explorer && <Ext href={`${explorer}/address/${a.resolver}`}>resolver</Ext>}{a.fundingUrl && <Ext href={a.fundingUrl}>Arkiv funding{a.fundedGlm ? ` (${a.fundedGlm} tGLM)` : ""}</Ext>}</span></td>
                       </tr>
                     ))}
                   </tbody></table></div>

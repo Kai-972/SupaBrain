@@ -52,8 +52,8 @@
 .landing .livestrip .wrap { display: grid; grid-template-columns: 1.3fr repeat(5, minmax(0, 1fr)); }
 .landing .livestrip .c { padding: 26px 20px; border-left: 1px solid var(--line); min-width: 0; }
 .landing .livestrip .c:first-child { border-left: 0; padding-left: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.landing .livestrip b { display: block; font-family: var(--serif); font-weight: 400; font-size: 2.6rem; line-height: 1; letter-spacing: -.02em; }
-.landing .livestrip span { display: block; margin-top: 8px; font-size: .86rem; color: var(--muted); }
+.landing .livestrip .c > b { display: block; font-family: var(--serif); font-weight: 400; font-size: 2.6rem; line-height: 1; letter-spacing: -.02em; }
+.landing .livestrip .c > span { display: block; margin-top: 8px; font-size: .86rem; color: var(--muted); }
 
 /* sections */
 .landing section.blk { padding: clamp(72px, 10vw, 130px) 0; }
@@ -210,3 +210,17 @@
   .landing .log .hd { display: none; }
 }
 @media (max-width: 900px) { .landing .links .live { display: none; } .landing nav.top .wrap { gap: 10px; } .landing .links { gap: 10px; } }
+
+/* v4 fixes: the brain name in the live strip is a label, not a number; the sticky nav hides what scrolls under it */
+.landing .livestrip .c:first-child b.mono { font: 600 .95rem var(--mono); letter-spacing: 0; display: inline; word-break: break-all; }
+.landing nav.top { background: color-mix(in srgb, var(--bg) 96%, transparent); }
+.landing .livestrip .c > b { transition: transform .3s; }
+.landing .livestrip .c:hover > b { transform: translateY(-3px); }
+
+.landing .bounty4 { margin-top: 40px; max-width: 620px; padding: 24px 26px; border-radius: 22px; border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); display: grid; gap: 10px; }
+.landing .bounty4 h3 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 1.7rem; }
+.landing .bounty4 p { margin: 0; color: var(--muted); }
+.landing .livestrip .c > b { animation: numpop .8s cubic-bezier(.2, .9, .3, 1.3) both; }
+.landing .livestrip .c:nth-child(3) > b { animation-delay: .08s } .landing .livestrip .c:nth-child(4) > b { animation-delay: .16s }
+.landing .livestrip .c:nth-child(5) > b { animation-delay: .24s } .landing .livestrip .c:nth-child(6) > b { animation-delay: .32s }
+@media (prefers-reduced-motion: reduce) { .landing .livestrip .c > b { animation: none; } }

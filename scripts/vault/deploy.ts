@@ -3,9 +3,18 @@
 //               maxRoots = app.payments.maxRootsPerAttestation, name/version = app.payments.eip712)
 // Dry run prints the plan, the deployer balance and a gas estimate. With --yes it deploys, reads every immutable back,
 // and writes config/deployments/vault.sepolia.json (committed: proof).
-import { createWalletClient, encodeDeployData, formatEther, http, type Hex } from "viem";
+import { createWalletClient, encodeDeployData, formatEther, formatGwei, http, type Hex } from "viem";
 import { addressUrl, txUrl } from "../lib/chain";
 import { artifact, brainVaultAbi, hasFlag, readVaultDeployment, vaultContext, writeVaultDeployment } from "./common";
+
+// EIP-7825 per-transaction gas cap (protocol constant). Deploying ~11 KB of init code on Sepolia estimates ~15.5M gas
+// today, so a +25% buffer would exceed the cap and be rejected: use +5%, never above the cap.
+const TX_GAS_CAP = 16_777_216n;
+const gasLimit = (estimate: bigint) => {
+  if (estimate > TX_GAS_CAP) throw new Error(`deploy needs ${estimate} gas, above the per-tx cap ${TX_GAS_CAP}`);
+  const padded = (estimate * 105n) / 100n;
+  return padded > TX_GAS_CAP ? TX_GAS_CAP : padded;
+};
 
 async function main() {
   const ctx = await vaultContext();
@@ -40,12 +49,13 @@ async function main() {
   console.log(`    guardian  ${guardian}`);
   console.log(`    policy    ${policySigner}`);
   console.log(`    maxRoots  ${pay.maxRootsPerAttestation} · EIP-712 ${pay.eip712.name} v${pay.eip712.version}`);
-  console.log(`    gas       ~${estimate} @ ${formatEther(gasPrice * 1_000_000_000n / 1_000_000_000n)} wei/gas x2 → max ${formatEther(((estimate * 125n) / 100n) * gasPrice)} ETH`);
+  console.log(`    gas       estimate ${estimate} → limit ${gasLimit(estimate)} (cap ${TX_GAS_CAP}) @ ${formatGwei(gasPrice)} gwei (node price x2)`);
+  console.log(`    max cost  ${formatEther(gasLimit(estimate) * gasPrice)} ETH`);
   if (!ctx.broadcast) return;
 
   const wallet = createWalletClient({ account: owner, chain: runner.chain, transport: http(runner.rpcUrl) });
   const nonce = await pub.getTransactionCount({ address: owner.address, blockTag: "latest" });
-  const hash = await wallet.sendTransaction({ data, gas: (estimate * 125n) / 100n, gasPrice, nonce, chain: runner.chain });
+  const hash = await wallet.sendTransaction({ data, gas: gasLimit(estimate), gasPrice, nonce, chain: runner.chain });
   console.log(`    sent      ${txUrl(config, hash)}`);
   const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 180_000 });
   if (receipt.status !== "success" || !receipt.contractAddress) throw new Error(`deploy reverted: ${txUrl(config, hash)}`);

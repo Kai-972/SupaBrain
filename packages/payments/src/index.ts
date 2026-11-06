@@ -1,12 +1,37 @@
-// Lane B owns this package. Fill in createPayments (CLAUDE.md §6.3, docs/lanes/B-MONEY.md).
-// Until it is implemented the server mounts createPaymentsDisabled() instead.
-import type { CreatePayments } from "@supabrain/shared";
+// Lane B: Payments (CLAUDE.md §6.3, docs/lanes/B-MONEY.md).
+// createPayments builds the real runtime from config + env and verifies the chain before the first payment.
+// It throws while the vault isn't deployed, so the server keeps mounting createPaymentsDisabled() until then.
+import type { CreatePayments, PayDecision, Payments } from "@supabrain/shared";
+import { createPaymentsEngine } from "./engine";
+import { buildRuntime } from "./runtime";
 
 export type { Payments, PaymentsDeps, GraphView, ArkivWriter } from "@supabrain/shared";
 
-export const createPayments: CreatePayments = () => {
-  throw new Error("createPayments is not implemented yet (Lane B)");
+export const createPayments: CreatePayments = (deps) => {
+  const { runtime, ready } = buildRuntime(deps);
+  const engine = createPaymentsEngine(deps, runtime);
+  const gated = async <T>(fn: () => Promise<T>, onFail: (error: string) => T): Promise<T> => {
+    try {
+      await ready;
+    } catch (e) {
+      return onFail((e as Error).message);
+    }
+    return fn();
+  };
+  const p: Payments = {
+    pay: (agent, input) => gated(() => engine.pay(agent, input), (error): PayDecision => ({ status: "failed", error, intentId: "" })),
+    status: (id) => engine.status(id),
+    onRevoke: (dry, target) => gated(() => engine.onRevoke(dry, target), (error) => ({ cancelled: [], error })),
+    pauseAgent: (label) => gated(() => engine.pauseAgent(label), (error) => ({ error })),
+    list: () => engine.list(),
+    approvals: () => engine.approvals(),
+    cancel: (id) => engine.cancel(id),
+  };
+  return p;
 };
+
+export { createPaymentsEngine, type ApprovalHandle, type ApprovalProvider, type PaymentsRuntime, type Signer } from "./engine";
+export { buildRuntime, VaultDeploymentSchema, type VaultDeployment } from "./runtime";
 
 // World ID OIDC device flow (fallback)
 export { discover, DiscoveryError, DEVICE_GRANT, type Discovery } from "./world/discovery";

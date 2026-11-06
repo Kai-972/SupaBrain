@@ -7,15 +7,20 @@ import { fileURLToPath } from "node:url";
 import { createPublicClient, createWalletClient, http, keccak256, parseUnits, stringToHex, type Abi, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { intentHash, newIntentId, rootHash, signAttestation, type VaultDomain, type VaultPayment } from "./attestation";
 import { createVaultClient, VaultRevert, type VaultClient } from "./client";
+import { FakeArkivWriter, FakeEns, FakeGraph } from "@supabrain/shared/testing";
+import { createPaymentsEngine, type PaymentsRuntime } from "../engine";
+import { brainVaultAbi } from "./abi";
+import { parseEventLogs } from "viem";
 
 const CONTRACTS = join(dirname(fileURLToPath(import.meta.url)), "../../../../contracts");
 const has = (bin: string) => spawnSync("which", [bin]).status === 0;
 const FOUNDRY = has("anvil") && has("forge");
 const PORT = 18545 + Math.floor(Math.random() * 1000);
 const RPC = `http://127.0.0.1:${PORT}`;
+vi.setConfig({ testTimeout: 30_000 }); // anvil mines slower while the whole workspace tests in parallel
 const U = (x: string) => parseUnits(x, 6);
 
 function artifact(file: string, name: string): { abi: Abi; bytecode: Hex } {
@@ -118,6 +123,38 @@ describe.skipIf(!FOUNDRY)("BrainVault on anvil (TS signer → real contract)", (
   it("the intent hash is stable for the World binding", () => {
     const i = { agent: acct.agent.address, payee: acct.payee.address, amount: U("5"), roots: [rootHash("0xH1")], intentId: `0x${"ab".repeat(32)}` as Hex, intentExpiry: 1n };
     expect(intentHash(i)).toBe(intentHash({ ...i }));
+  });
+
+  it("engine end to end: policy allow → real vault pay; over cap → World approve → paid with humanApproved", async () => {
+    const ens = new FakeEns({
+      agents: { "lead-claude": { label: "lead-claude", ens: "lead-claude.demo.eth", vendor: "claude", role: "lead", scope: "*", wallet: acct.agent.address, registered: true, leaseExpiresAt: 0, status: "active", payCap: "4", payDaily: "30" } },
+      names: { "acme.demo.eth": acct.payee.address },
+      vendors: ["acme.demo.eth"],
+    });
+    const graph = new FakeGraph([{ key: "0xH1", text: "pay acme", kind: "plan", folder: "finance", trust: 3, agent: "owner", vendor: "human", seq: 0, createdAt: 0, expiresAt: 0, parents: [], roots: ["0xH1"], subject: "acme.demo.eth", status: "active" }]);
+    const rt: PaymentsRuntime = {
+      vault: client, domain, decimals: 6, tokenSymbol: "USDC", maxRoots: 8, intentTtlSec: 900, attestationTtlSec: 300,
+      agentSigner: (l) => (l === "lead-claude" ? (wallet("agent") as never) : undefined),
+      policySigner: acct.policy, guardian: wallet("guardian") as never,
+      approvals: { start: async () => ({ id: "a1", userCode: "TEST-0001", verificationUri: "test://approve", expiresAtMs: Date.now() + 300_000, wait: async () => ({ status: "approved", credential: "proof_of_human", nullifier: "1" }) }) },
+      now: () => Date.now(),
+    };
+    const engine = createPaymentsEngine({ ens, graph, arkiv: new FakeArkivWriter(), emit: () => undefined, config: {} as never }, rt);
+    const before = await balance(acct.payee.address);
+
+    const small = await engine.pay("lead-claude", { payee: "acme.demo.eth", amount: "2", memo: "deposit", cites: ["0xH1"] });
+    expect(small.status).toBe("paid");
+
+    const big = await engine.pay("lead-claude", { payee: "acme.demo.eth", amount: "5", memo: "invoice #12", cites: ["0xH1"] });
+    expect(big.status).toBe("pending_human");
+    const final = await engine.settled(big.intentId);
+    expect(final.status).toBe("paid");
+    if (final.status !== "paid") throw new Error();
+
+    expect(await balance(acct.payee.address)).toBe(before + U("7"));
+    const receipt = await pub.getTransactionReceipt({ hash: final.txHash });
+    const [paid] = parseEventLogs({ abi: brainVaultAbi, logs: receipt.logs, eventName: "Paid" });
+    expect(paid!.args).toMatchObject({ agent: acct.agent.address, payee: acct.payee.address, amount: U("5"), humanApproved: true, roots: [rootHash("0xH1")] });
   });
 
   it("unregistering the agent in the registry kills payments on chain (AgentNotRegistered)", async () => {

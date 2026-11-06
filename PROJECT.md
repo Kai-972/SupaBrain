@@ -88,7 +88,7 @@ This is the reason the design is built the way it is. We don't claim Supabrain w
 | Policy lived in a workflow the attacker skipped | **The policy sits at the money.** Agents never hold funds. The only way to move USDC is `BrainVault.pay`, which checks the agent's live ENS ownership, a policy attestation, revoked roots and owner-set ceilings *on chain*. Skipping our server doesn't help an attacker. |
 | An AI tool was used as an attacker's hands | **Every AI is its own revocable principal.** One ENSv2 subname per agent, with its own scope, cap and resolver. The owner's key (the kill switch) never sits on the server. |
 | On-chain authority outlived the pause; revocation was improvised | **Revocation is one click, rehearsed, and cascades.** Revoking a source quarantines every derived memory, cancels pending intents, and writes `revokeRoot` into the vault. |
-| New destination + large amount = danger | **A new payee or an over-cap payment needs a fresh human**, via World Agent Pass, tied to that exact payment. Denied or expired means nothing moves. |
+| New destination + large amount = danger | **A new payee or an over-cap payment needs a fresh human**, via World ID, tied to that exact payment. Denied or expired means nothing moves. |
 | "What you see isn't what you sign" (Bybit, Feb 2025) | The approval screen and the dashboard show the payee's **ENS name, its resolved address and the lineage path**. Our server ties the approval to a hash of the exact intent. |
 
 ---
@@ -167,7 +167,7 @@ flowchart LR
     MCP[MCP tools: whoami recall remember explain check_notices pay]
     LIN[Lineage + trust + quarantine engine]
     POL[Payment policy: ENS resolve, lineage walk, caps]
-    WID[World Agent Pass client - device flow]
+    WID[World ID 4 client - IDKit, Human-in-the-loop]
     ARK[Arkiv adapter - per-signer write queue]
     ENSR[ENS reader + event watcher]
     PAY[Payment executor - EIP-712 attest + vault call]
@@ -177,7 +177,7 @@ flowchart LR
   ENSR <--> ENS[(ENSv2 Sepolia: team UserRegistry, agent subnames, per-agent PermissionedResolver, vendor names)]
   PAY --> V[(BrainVault Sepolia + Circle test USDC)]
   V -. getOwner(labelhash) .-> ENS
-  WID <--> W[(World ID Agent Pass)]
+  WID <--> W[(World ID 4: World App + verify API)]
   API <--> WEB[Dashboard - Next.js]
   OWN[Owner browser wallet] -- unregister / restore / ceilings --> ENS
   OWN -- owner-only --> V
@@ -291,10 +291,11 @@ The `why-arkiv.md` answer: *"With Postgres you'd lose provable per-agent authors
 The policy engine decides when a human is needed. The agent can't skip it or trigger it itself.
 
 **How we use it:**
-- OIDC device authorization flow (RFC 8628): the server starts it, the dashboard shows the code and QR, the human approves in World App, and the server polls.
-- The server validates the `id_token` (JWKS, `iss`, `aud`, `exp`, a fresh `auth_time`, expected `sub`, one-time `jti`).
-- Agent Pass has no native action binding, so the **server ties the device code to `hash(intent)`**. That hash goes into the EIP-712 attestation the vault checks.
-- `access_denied` or `expired_token` → the intent is cancelled and written to Arkiv as `status=denied|expired`.
+- **World ID 4 via IDKit core** (`@worldcoin/idkit-core`), following World's Human-in-the-loop pattern for agents. The OIDC device flow at auth.world.org was also built, but we couldn't register a client for it: its portal needs an enterprise Google Workspace account (see `WORLD_DEBRIEF.md`).
+- **Action = the payment.** Each pending payment gets its own World action, `supabrain-pay:<intentHash>`, and the signal is the same hash. The server signs the RP context for that action, so a proof can only approve that exact payment.
+- The server opens the request from Node and the dashboard shows the World App link as a QR. On the backend the server checks the action, its own nonce, the pinned environment, the signal hash and the credential, calls World's `/api/v4/verify`, and accepts each proof once.
+- Only then does it re-check every hard policy rule live and sign the EIP-712 attestation with `humanApproved=true`, which BrainVault checks on chain.
+- A deny, expiry or cancel means the intent is recorded as `denied|expired|cancelled` (Arkiv + dashboard) and nothing is signed, so nothing can move. These ran live on 2026-11-06: approve ×3, deny, cancel.
 
 **What breaks without World:** "a human approved this" becomes a button anyone with dashboard access, or a compromised agent, could click.
 
@@ -319,7 +320,7 @@ ETHGlobal finalists are judged on technicality, originality, practicality and th
 
 | Criterion | Our answer |
 |---|---|
-| **Technicality** | A lineage engine with low-water-mark trust and lazy cascade. A cross-vendor remote MCP. An on-chain vault that composes with the ENSv2 registry (`getOwner`) and EIP-712 attestations. Per-agent Permissioned Resolvers. World device flow tied to the intent hash |
+| **Technicality** | A lineage engine with low-water-mark trust and lazy cascade. A cross-vendor remote MCP. An on-chain vault that composes with the ENSv2 registry (`getOwner`) and EIP-712 attestations. Per-agent Permissioned Resolvers. World ID 4 proofs bound to the intent hash (action = the payment) |
 | **Originality** | No project checks *where a payee came from*, or revokes a fact across every vendor and the vault (§9). Research prior art (MemLineage, MEMOREPAIR) is single-agent and has no money; we cite it |
 | **Practicality** | Works today with Claude Code, Claude.ai and Antigravity. Real Sepolia USDC. A judge can connect their own AI in 60 seconds via QR |
 | **Wow** | The red cascade, the vault reverting on chain after an ENS unregister, and a live World denial on the judge's phone |
@@ -407,8 +408,8 @@ The stage-by-stage build plan lives in `CLAUDE.md` §8. Summary:
 - **Lineage is server-recorded.** A malicious server could lie about parents. Signed lineage (MemLineage-style) is on the roadmap.
 - **Over-tainting.** Conservative read-sets can quarantine too much. Cite-to-narrow is the fix today; human restore is on the roadmap (stretch this weekend).
 - **Vendor names live under our team name** for the demo, so the team owner could technically re-point them. In production, vendors bring their own `.eth`.
-- **The World approver is "any fresh, validated World ID approval"** for now. Binding it to the owner's own World ID is a stretch goal. World proofs are mocked at this event.
-- **Testnet only.** Synthetic data, mocked World proofs (per World's note), and test USDC.
+- **Who may approve.** Any verified human who sees the approval QR can approve: World ID 4 nullifiers are per action, and every payment is its own action. The QR is shown only on the owner-authenticated dashboard. Binding approvals to the owner's own World ID (session proofs) is a stretch goal.
+- **Testnet only.** Synthetic data and test USDC. World proofs are real (production World App), not mocked.
 - **Out of scope:** this does not stop malware on an engineer's laptop, as in Binance. It removes the agent as the weak link for payments.
 
 ---
@@ -429,7 +430,7 @@ The stage-by-stage build plan lives in `CLAUDE.md` §8. Summary:
 | Lane | Owner | Builds |
 |---|---|---|
 | **A: Brain** | Kai / Claude #1 | MCP server, lineage engine, Arkiv adapter, revoke cascade, notices, Keep/expiry, pointers, **ENS setup and reads**, dashboard API/SSE, Notion (stretch) |
-| **B: Money & Security** | Srijit / Claude #3 | Payment policy, `BrainVault` (Foundry), payment executor, World Agent Pass, `SECURITY.md`, `WORLD_DEBRIEF.md` |
+| **B: Money & Security** | Srijit / Claude #3 | Payment policy, `BrainVault` (Foundry), payment executor, World ID (IDKit 4), `SECURITY.md`, `WORLD_DEBRIEF.md` |
 | **C: Face** | Kai / Claude #2 | Dashboard (fixtures first), `/connect`, payments and approval UI, demo script, README, video |
 
 The full build brief is `CLAUDE.md`, with lane files in `docs/lanes/` and the shared tracker in `docs/PROGRESS.md`.
@@ -471,7 +472,7 @@ The full build brief is `CLAUDE.md`, with lane files in `docs/lanes/` and the sh
 - Arkiv:
   - Docs and SDK: https://docs.arkiv.network · https://github.com/Arkiv-Network/arkiv-sdk-js (SDK 1.0.1)
   - Workshop and AI tools: https://github.com/SantiagoDevRel/mumbai-ethglobal · https://github.com/Arkiv-Network/ai-plugin · https://github.com/Arkiv-Network/skills
-- World Agent Pass: https://auth.world.org/docs · community patterns:
+- World ID: https://docs.world.org/world-id/idkit/integrate · https://docs.world.org/agents/human-in-the-loop/integrate · https://docs.world.org/api-reference/developer-portal/verify · (OIDC fallback) https://auth.world.org/docs · community patterns:
   - https://github.com/George-WM/handshake
   - https://github.com/Gautambnsl/GuardPay---EthTokyo
   - https://github.com/Ayush-e4/eth/pull/45

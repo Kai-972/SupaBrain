@@ -82,6 +82,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → C: **new `dispute` field** on nodes in `GET /api/graph` and on `GET /api/memory/:key`: `{state:"disputed", subject, ensAddress, claimed[]}` or `{state:"unverified", subject, reason}`. Please show an amber "Disputed by ENS" chip (text label, not only colour) on those memories; QUARANTINED styling wins when both apply. Narrative for DEMO_SCRIPT: *"Gemini saves the email and is told at once it disagrees with Acme's ENS (machines flag in milliseconds); the AIs build on it anyway; pay is BLOCKED; one revoke cleans it (humans decide in minutes)."* README: add `pnpm verify:memory <key>` as the "verify without trusting us" command next to `pnpm arkiv:query` (2026-11-06)
 - [x] B → A (fixed by B at Srijit's request, b7e449b + 606f216): **/api/payments forgets decisions across a server restart.** Live: P1 (blocked) disappeared from \`GET /api/payments\` after I restarted the server; it is on Arkiv as \`sb.payment\`. The engine keeps intents in memory and \`ArkivWriter\` is write-only. Ask: add \`loadPayments(): Promise<Payment[]>\` to the adapter (read this namespace's \`sb.payment\` rows by the team wallet, newest per intentId); B will seed \`list()\` and the "paid before" set from it at startup (shared interface change, so A's call) (2026-11-06)
 - [x] B → A (fixed by B at Srijit's request, cc60d66 + 0a80472: \`demo-seed.<namespace>.json\`) (FYI): \`demo:seed\` rewrites \`config/deployments/demo-seed.json\` for whichever namespace it seeds; B did NOT commit B's \`supabrain-mumbai26-b\` copy so A's committed one stays. Consider a per-namespace file name (2026-11-06)
 - [x] B → A (fixed by B at Srijit's request, 63b8e43 + d5299ce): **URGENT (demo): `MemoryGraph.walk` destroys lineage.** `apps/server/src/engine/graph.ts` `walk()`: `const queue = next(start)` is the start node's live `parents` array; `queue.shift()` drains it, so every `ancestors(key)` (called by `pay` through GraphView) leaves that node with `parents: []` in memory. Live repro: `demo:seed` → `demo:step blocked` → `/api/graph` edges 6 → 3 (Arkiv unaffected; restart heals). Fix: `const queue = [...next(start)]`. Tests: `src/engine/graph-walk.repro.test.ts` + `src/payments/lineage-repro.test.ts` (`it.fails`; flip to `it` after the fix). Until then the dashboard loses edges after each payment and memory-target revokes cascade short; source revokes and money decisions are unaffected (roots) (2026-11-06)
@@ -213,6 +214,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · Supermemory review → upgrades (research + decision + review + critique agents)
+- did: Kartik Talwar (ETHGlobal) suggested looking at Supermemory. A research agent wrote `docs/research/supermemory.md`, and decision, review and critique agents produced `docs/research/supermemory-plan.md`. Built, tests first: (1) policy matches payee addresses stated in vendor-tagged memory text (ENS block + honest lineage fix); (2) **Disputed by ENS** flag, computed on read, in recall/remember text and `/api/graph`/`/api/memory/:key`; (3) `arkiv/why-arkiv.md` + `arkiv/reach.md` with live counts (`pnpm arkiv:reach`); (4) public `pnpm verify:memory <key>` (Arkiv + ENS only); (5) comparison in PROJECT.md §9, SPONSORS rows, QA rows C1–C3
+- proof: 416 workspace tests; every new rule mutation-checked. Live on `-b`: `/api/graph` after a rebuild shows E1, M1 disputed (ENS 0xf15f… vs claimed 0xf892…); `verify:memory` M3 → 5/5 hops verified against ENS getOwner, 4 revoked; `arkiv:reach` 67 (-dev) + 38 (-b) live entities across 4 signers
+- result: PASS
+- commit: bd216d9, 83cacbb, a468301, 9f3b609, 2465911, 7ddd36b, 499db76, 512683a, 820cd48, this commit
+- next: C renders the dispute chip + updates DEMO_SCRIPT; seed the judging namespace within 2 days
+- asks/blockers: Request to C above
 
 ### 2026-11-06 IST · B · QA M2 live re-check (P1 after the graph.walk fix)
 - did: `pnpm demo:step blocked` (go) against the restarted server on the fixed code (namespace supabrain-mumbai26-b, seed file found by namespace)

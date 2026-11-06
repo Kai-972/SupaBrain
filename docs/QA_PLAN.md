@@ -53,6 +53,9 @@ Owner: Lane B (Srijit), with Srijit as the human in the loop. This plan says wha
 | S2 | P1 | Secrets never in commits/logs/bundle | `check:secrets` pre-commit, grep of `apps/web/.next` | PASS (each commit) |
 | D1 | P1 | Demo fallbacks don't depend on a model | `demo:step blocked|approve`, `demo:step-kill` | PASS live |
 | D2 | P1 | Seed output doesn't clobber another namespace's | `scripts/demo/seed-file.test.ts` | PASS: fixed 0a80472 (`demo-seed.<namespace>.json`, steps read the server's namespace) |
+| C1 | P1 | Payee named only in a vendor-tagged memory's text still trips the ENS block; never counts as the honest payee's lineage | `policy.test.ts` (text-address suite) | PASS (9f3b609, mutation-checked) |
+| C2 | P1 | Disputed by ENS: flagged on read (survives restart), team vendors only, never blocks a write, ENS down → unverified | `engine/conflict.test.ts`, `memory/dispute.test.ts`; live `/api/graph` | PASS (7ddd36b; live: E1, M1 disputed after a rebuild) |
+| C3 | P1 | Anyone can verify a memory's authorship from Arkiv + ENS only | `scripts/arkiv/verify-lib.test.ts`; `pnpm verify:memory <key>` | PASS (820cd48; live 5/5 verified, 4 revoked) |
 | U1 | P0 | Dashboard renders graph, cascade, approval QR (owner-only), payments | Lane C manual run against the local server | Lane C (UI session) |
 
 ## 4. Known risks and accepted gaps

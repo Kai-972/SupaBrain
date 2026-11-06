@@ -35,6 +35,7 @@ The vault, not our server, decides whether an agent may still spend: every `pay`
 | Fork test against the real `supabrain.eth` registry | [`contracts/test/BrainVaultFork.t.sol`](contracts/test/BrainVaultFork.t.sol) | 4/4 on live Sepolia state: owners match, registered agent pays, unregistered `test-agent` and an impostor revert |
 | Revoke reaches the vault: `onRevoke` → guardian `revokeRoot`, and a payment carrying that lineage is refused **on chain** | [`engine.ts:279–296`](packages/payments/src/engine.ts#L279), [`BrainVault.sol:156`](contracts/src/BrainVault.sol#L156) | Revoke `email:acme-0611` → [revokeRoot tx](https://sepolia.etherscan.io/tx/0x7083d77c6266ac8afb64021d1899eb1ac7f6dd94298fafcff8153659fd983137). A valid policy-signed pay carrying that root → [`RootRevoked` mined revert](https://sepolia.etherscan.io/tx/0x7e589a3ce39efbf3bb0f964c6f13a1cfc3d852a29e7b0a337c9521e77a70ddd4) |
 | World-approved payment, live | [`engine.ts:189–209`](packages/payments/src/engine.ts#L189) | [P3 PAID: 5 USDC to `acme.supabrain.eth`](https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528), `humanApproved=true` |
+| **Disputed by ENS** (answers Supermemory's latest-wins): a memory that claims an address for a team vendor that differs from the vendor's own ENS record is flagged on read | [`apps/server/src/engine/conflict.ts`](apps/server/src/engine/conflict.ts), surfaced in `recall`/`remember` text and `/api/graph` + `/api/memory/:key` (`dispute`) | Gemini saves the email's address and is told at once: "DISPUTED by ENS: acme.supabrain.eth's own ENS record says 0xf15f…". Live on the `-b` namespace: E1 and M1 disputed after a rebuild from Arkiv |
 | Deployed vault | [`config/deployments/vault.sepolia.json`](config/deployments/vault.sepolia.json) | [`0x2da7…0ec8`](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8), first real 1-USDC payment [0x9ab2…06ae](https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae) |
 
 ## Arkiv: Build on Arkiv from scratch
@@ -55,7 +56,8 @@ Supabrain's whole point is that a team's AIs share one memory they can all read 
 - [x] Built on Arkiv from scratch, SDK `@arkiv-network/sdk` 1.0.1, Rabdi chain 7794095 (new `packages/arkiv`)
 - [x] `arkiv/friction.md` written as things happened (8 entries so far: reserved attribute names, hidden SDK types, empty registry code, receipt-polling latency, chain-wide watcher, a Node warning, an unhelpful catch-all error, plus what was confirmed as documented)
 - [x] `arkiv/schema.md`, `arkiv/how-you-use-arkiv.md` (with a runnable query: `pnpm arkiv:query`)
-- [ ] `arkiv/why-arkiv.md`, `arkiv/reach.md` (S8, from real data)
+- [x] `arkiv/why-arkiv.md`, `arkiv/reach.md` (live counts via `pnpm arkiv:reach`: 4 signing wallets across 3 AI vendors, 67 + 38 live entities on 2026-11-06)
+- [x] Verify without us: `pnpm verify:memory <key>` checks a memory's whole lineage against Arkiv `$creator` + ENSv2 `getOwner` only (live: 5/5 hops verified, 4 revoked)
 - [ ] README wallet-address table (S8, generated from `config/deployments/arkiv.rabdi.json`)
 - [x] Server reads the UI's data from Arkiv: the graph is rebuilt from Arkiv at startup and kept current by `watchEntityEvents` (`apps/server/src/memory/sync.ts`, `arkiv/store.ts`); a restart rebuilt everything from the chain alone
 - [ ] Video timestamp

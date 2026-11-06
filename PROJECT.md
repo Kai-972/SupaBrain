@@ -389,6 +389,7 @@ The stage-by-stage build plan lives in `CLAUDE.md` §8. Summary:
 |---|---|---|
 | **Notion "one shared brain"** (Nov 4, 2026) | ChatGPT, Claude and Notion agents save to one memory over MCP, with per-memory Type / Source / Last-updated-by | Memories are private per person (team members share skills, not memories). No derivation lineage, no dry run, no cascade; forget works one item at a time and can't recall what other agents absorbed. "Notion gave every AI one brain; we built the undo" |
 | OpenMemory MCP (Mem0) | Shared cross-app memory | No lineage, revoke or payments |
+| **Supermemory** (memory API, 100k+ orgs self-reported; suggested to us by ETHGlobal's Kartik Talwar) | Extracts facts into a vector-graph; resolves conflicting facts **latest-wins** (`updates`); MCP for ChatGPT/Claude/Cursor | Latest-wins is right for preferences and wrong for payout addresses: a "bank details changed" email becomes the current fact. Their memories carry no signed author. We flag an address that disagrees with the vendor's ENS (**Disputed by ENS**), block it at pay time, and let anyone verify authorship on Arkiv + ENS (`pnpm verify:memory`). We're complementary: *they help AI remember better; we make what it remembers accountable.* See `docs/research/supermemory.md` |
 | Cortex, Exo, holomem, MemoryForge (Arkiv ecosystem) | Agent memory on Arkiv: citations, snapshots, hand-made edges | No cascade by source; no payee checks |
 | Arkiv Gate | Firewall on incoming prompts, x402 and wallet threats | Stops bad *input*; can't undo knowledge that already spread |
 | ENSign, allowance.eth, AgentPass, Sentinel MCP Wallet, ENSFirewall | ENS-based agent caps, allowlists, kill switches | Check *what* is paid, not *why the agent believes the payee* |
@@ -396,6 +397,8 @@ The stage-by-stage build plan lives in `CLAUDE.md` §8. Summary:
 | MemLineage, MEMOREPAIR (research) | Lineage-gated actions, cascade repair | Single agent, no product, no money, no cross-vendor setup |
 
 **Our one-liner against all of them:** *"They check what is paid. We check why the agent believes the payee, and we can make it un-believe."*
+
+**On contradictions:** *Machines flag in milliseconds, humans decide in minutes. Supabrain makes the minutes in between safe (pay blocks) and reversible (one revoke).*
 
 ---
 

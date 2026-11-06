@@ -86,6 +86,7 @@ export class Runner {
     console.log(`    call  ${step.functionName}(${step.args.map(fmtArg).join(", ")})${step.value ? `  value ${formatEther(step.value)} ETH` : ""}`);
 
     let simulated: StepResult["simulated"] = "skipped";
+    let simReason: string | undefined;
     let estimate: bigint | undefined;
     // When broadcasting, earlier steps are already mined, so even "depends on earlier steps" steps can be simulated.
     if (step.simulate !== false || this.broadcast) {
@@ -108,6 +109,7 @@ export class Runner {
       } catch (e) {
         simulated = "revert";
         const why = describeError(step.abi, e);
+        simReason = why;
         console.log(`    sim   REVERT ${why}${step.expectRevert ? "  (expected for this proof)" : ""}`);
         if (!step.expectRevert) return { step, ok: false, revert: why, simulated };
       }
@@ -140,6 +142,8 @@ export class Runner {
       } catch (e) {
         revert = describeError(step.abi, e);
       }
+      // Receipts carry no reason and a re-run can be generic; the pre-flight simulation usually decoded it.
+      if ((!revert || /unknown reason/.test(revert)) && simReason) revert = simReason;
     }
     const ok = step.expectRevert ? !success : success;
     console.log(`    ${ok ? "✓" : "✗"} ${success ? "mined" : "mined, REVERTED"}${revert ? ` (${revert})` : ""}  gas ${receipt.gasUsed}  ${url}`);

@@ -73,6 +73,21 @@
           "hash": "0xa5dff4507edbaba49e6723e82ed28450dd3aee00ba32380a592ce11a80ed38e9",
           "url": "https://sepolia.etherscan.io/tx/0xa5dff4507edbaba49e6723e82ed28450dd3aee00ba32380a592ce11a80ed38e9",
           "at": "2026-11-06T02:41:26.299Z"
+        },
+        "proofSetMemoryHead": {
+          "hash": "0xb5099e2a35ea59028b453c4a1d9c11ff409bf3da52a1a3f81d6f279dcad5604a",
+          "url": "https://sepolia.etherscan.io/tx/0xb5099e2a35ea59028b453c4a1d9c11ff409bf3da52a1a3f81d6f279dcad5604a",
+          "at": "2026-11-06T02:46:11.009Z"
+        },
+        "proofSetPayCapReverted": {
+          "hash": "0x022aeeca40dc4dd9b97933c1785103e50806463ce2ff1143fb320d17367f3bde",
+          "url": "https://sepolia.etherscan.io/tx/0x022aeeca40dc4dd9b97933c1785103e50806463ce2ff1143fb320d17367f3bde",
+          "at": "2026-11-06T02:46:11.009Z"
+        },
+        "proofTransferReverted": {
+          "hash": "0xa4d3b7fc76072e44d8cc3314dbb8b37ec1e9649bf1f3bb12682ffcc16145dd57",
+          "url": "https://sepolia.etherscan.io/tx/0xa4d3b7fc76072e44d8cc3314dbb8b37ec1e9649bf1f3bb12682ffcc16145dd57",
+          "at": "2026-11-06T02:46:11.009Z"
         }
       },
       "records": {

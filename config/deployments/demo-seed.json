@@ -1,0 +1,21 @@
+{
+  "namespace": "supabrain-mumbai26-dev",
+  "team": "team1",
+  "server": "https://swear-commend-everybody.ngrok-free.dev",
+  "seededAt": "2026-11-06T07:23:43.697Z",
+  "vendorEns": "acme.supabrain.eth",
+  "source": "email:acme-0611",
+  "attackerAddress": "0xeb0519ECf936c67996C10511d90953DB28733188",
+  "attackerPartnerAddress": "0xCc611450b063f3BFf62B69b9d667AC8C20a77c88",
+  "keys": {
+    "H1": "0x94e28cbc09ef6d4715ec51f38d4d31adabbde2a033b3ba3c4a397e788709f13a",
+    "H2": "0x7c853f9476a96a30daf0bbb5068d28eba237f074191ab690ea12f48a6adcd651",
+    "E1": "0xc7ade9d164d515967897b0579e9ca2646b44343d1adc630176b67619f92ff961",
+    "M1": "0x6b3d6762e9adb5714f3d4f6ceb85b8bcc70ea875e8985bb85923d4502bbd96b8",
+    "M2": "0x9cce116414c48cff2c82eec5a5471d2bfe1e75e22453997818a9decb7816b342",
+    "M3": "0xd2aea6171d211a6bc76ceac0bca25ad0e57ca0c4029b86a2a33359efcb1f1796",
+    "M4": "0x4547a5dd3f61a0f9dbbccd0d5a83a8f74a6c5bd95329e7320d4c9db179b6d33a",
+    "E2": "0x81c146c3814ad73a52de23c39970fc9e83e138f541a8d7e7792e85d8eb10b6b1",
+    "M5": "0xffc4f66a18e4f5e52fa0a0d1bb5231a708ddc5a3c3e81b851bc7d811eb972ccd"
+  }
+}

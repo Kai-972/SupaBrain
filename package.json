@@ -40,7 +40,8 @@
     "demo:step": "tsx scripts/demo/step.ts",
     "e2e:memory": "tsx scripts/demo/e2e-memory.ts",
     "dev:public": "bash scripts/dev-public.sh",
-    "e2e:undo": "tsx scripts/demo/e2e-undo.ts"
+    "e2e:undo": "tsx scripts/demo/e2e-undo.ts",
+    "demo:seed": "tsx scripts/demo/seed.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

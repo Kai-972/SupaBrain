@@ -118,6 +118,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → A: **brains are going live on ENS** (2026-11-06 19:44 IST): `otter` is verified on chain (`pnpm ens:brains-status`); the other 9 are provisioning now. The team wallet holds 0.005 ETH on Sepolia for rule changes. Two notes for the server: (1) read rules through the same `createRulesWriter` instance you write with. A fresh read right after a change hit a lagging RPC node and showed the old `sb.status` next to the new `sb.scope`; the writer pins reads to its last receipt block. (2) Brain AI wallets on Rabdi are unfunded until Srijit's faucet claim lands (`pnpm brains:fund`). Until then, checkpoints in brains other than the demo brain will fail the balance check. `BRAIN_AGENT_MNEMONIC` comes from Srijit privately
 - [ ] B → A: **v2 brains contract** (2026-11-06 19:27 IST): read brains with `readBrainsDeployment(root)` from `@supabrain/ens` (`config/deployments/brains.sepolia.json`: per brain `{label, ens, index, registry, tokenOwner, expiry, agents: {claude|gemini|openai: {ens, labelhash, wallet, resolver, accountIndex, addressIndex, expiry, records, funding?}}}`). AI wallet = `brainAgentAccount(BRAIN_AGENT_MNEMONIC, brain.index, family)` (indexes start at 1). Rules: `createRulesWriter({ keys: ruleKeys(config.app.ens.textKeys, readBrainsConfig(root)), parentName: "supabrain.eth", txUrl, account: TEAM, chain: sepoliaChain(config, rpcUrl) })` then `setRules(aiEns, {status?, scope?, writeDaily?, role?})` → `{txHash, txUrl, changed}` (errors `RulesError` INVALID / NOT_OURS / NO_RESOLVER / REVERTED). The writes-per-day key is `sb.write.daily`. `BRAIN_AGENT_MNEMONIC` comes from Srijit privately. The team wallet needs Sepolia ETH to change rules (B will send some from the owner on "go"). Brains go on chain after Srijit's go
 - [ ] A → B: **v2 tasks B1–B6** (docs/PLAN.md §4, DECISIONS 2026-11-06 19:30): brains on ENS + `config/deployments/brains.sepolia.json` + `ens:brains-status`; tGLM funding from a separate FUNDER key (cost per write measured first); `packages/ens/src/rules.ts` rules writer; demo-brain payments re-check after step 1; Codex/ChatGPT tests; SECURITY.md MVP update. Wallet derivation: `mnemonicToAccount(BRAIN_AGENT_MNEMONIC, { accountIndex: brainIndex, addressIndex: familyIndex })`, families [claude, gemini, openai] (2026-11-06 19:30 IST)
 - [ ] A → C: **v2 website contract is `docs/API_V2.md`** (sign-in, brains, connect, summary, checkpoints, tasks, files, notes, rules, Stop, review). Build on fixtures with the MOCK DATA banner until each step lands; simple pages first (2026-11-06 19:30 IST)
@@ -270,6 +271,37 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - asks/blockers: team ENS label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY (testnet burner), OK to generate keys. Tooling: installed the Arkiv plugin 0.5.4 (Mumbai MCP connected) and the Context7 MCP
 
 ## Log: Lane B (Money & Security)
+
+### 2026-11-06 19:44 IST · B · v2 B2 (funder burner created; faucet needs a human)
+- did: generated the burner `FUNDER_PRIVATE_KEY` straight into `.env.local` (not printed): funder **`0x49bE9ddD1e2eacE2662a0B5ffEA86a605287c910`**. It is not the team wallet or any server wallet (`pnpm brains:fund` refuses those). Opened https://hub.arkiv.network/faucet: a claim needs a **connected browser wallet** (one claim per wallet per cooldown), which the built-in browser doesn't have, and Claude doesn't import private keys into wallets. Fixed `pnpm brains:fund` to estimate each transfer's gas (see the Sepolia note in the next entry)
+- result: BLOCKED on a human faucet claim
+- next: once the funder holds ≥ 3.2 tGLM, `pnpm brains:fund --only otter,maple,comet` (dry run), then `--yes`
+- asks/blockers: Srijit claims tGLM at the faucet (own wallet, then send to the funder; or import the burner)
+
+### 2026-11-06 19:42 IST · B · v2 B3 live: rules writer on `openai.otter.supabrain.eth`
+- did: `pnpm ens:brain-rules openai.otter.supabrain.eth --status paused --scope docs/ --write-daily 50 --yes` (one multicall from the team wallet), then back to `active`, `*`, `200`. Each run read the rules back pinned to its receipt block
+- proof: pause https://sepolia.etherscan.io/tx/0x5f46ebed967c245c01388ec60059a7d060f5e17f10ac425d00128c6be06a58c6 · restore https://sepolia.etherscan.io/tx/0x4bdc5a011a67788b266973929327e6f5ac1b0ddf6a7a31056ed55a1f57183fc6
+- result: PASS. **Finding:** a fresh process reading right after the restore saw `status=paused` but the new `scope=*` (one multicall set both). That's a lagging load-balanced RPC node answering one call; three later reads all showed `active`. Within one writer instance, reads wait for the writer's own last receipt block, so the server should read rules through the same `createRulesWriter` instance it writes with (or pin to that block)
+- next: Lane A wires `setRules` into the website's Rules form
+- asks/blockers: none
+
+### 2026-11-06 19:40 IST · B · v2 B1: `otter.supabrain.eth` on ENSv2 Sepolia (1 of 10)
+- did: `pnpm ens:provision-brains --only otter --yes`: 11 owner txs, all mined, post-check green. `pnpm ens:brains-status`: ✓ otter #1. Its registry `0x8158BC6a0005950b942B33303930823Cb25d1866` is held by the team wallet (renew only) until 2026-11-20. Names, wallets and resolvers:
+  - `claude.otter.supabrain.eth` → `0xBBCc4a88A2603Cc6F9848D6411ad7B88FE38DA34` (resolver `0xd9cFb3A77AE50BC090Cd8986d7b90137e3d714e9`)
+  - `gemini.otter.supabrain.eth` → `0xA109Da4214220d9253Ef7d9A8cf902EE2952D085` (resolver `0x45dcbD9755d51747416aB52287aA7Eb6520e69Ca`)
+  - `openai.otter.supabrain.eth` → `0xdA6A769494c0DB9a86F13ff9c911c8312bBc6Cd6` (resolver `0x917ecFFE3426B4bB143a899debb18548c4CCfc71`)
+  - rules read through the Universal Resolver: status active, role lead/worker/worker, scope `*`, 200 writes a day
+- proof: registry https://sepolia.etherscan.io/tx/0x885287f91ba748ecee1c37eac9987598ea25afc829bf9804d9d8aa09789a3eee · brain name https://sepolia.etherscan.io/tx/0x5eb44da8f63ab4bc1cfaa7398ba1862c19402fbc4d99712a7c6486feea4f5a03 · claude resolver / grant / name https://sepolia.etherscan.io/tx/0x0eb637156f311b2b125042d655e65286df0c1547e78be9ca8b7fbf7a96aec91f https://sepolia.etherscan.io/tx/0xb578844c2a1766ba4734bd07cf7c2a5c3a8fb646ff75a74bb5c990c5d97829d4 https://sepolia.etherscan.io/tx/0xa4bb48ad2c34edfcfb4e555704f2d3bd2a78100db35c389573002ef268055cbd · all 11 hashes are in `config/deployments/brains.sepolia.json`
+- result: PASS · commit 8a7e721
+- next: the other 9 brains
+- asks/blockers: none
+
+### 2026-11-06 19:36 IST · B · v2: team wallet funded on Sepolia (for rule changes)
+- did: 0.005 ETH from owner to team `0x4eA717986244B28B8af633f698FdDf8308D35A56`. The first try **reverted**: 21,000 gas isn't enough on Sepolia now for a value transfer that creates an account (the team wallet had nonce 0 and balance 0). The estimate was 207,391 and the retry used 204,600. Cost of the failed try ≈ 0 ETH
+- proof: failed https://sepolia.etherscan.io/tx/0xa6e58e81db5663f15ddebe71e73b80d0b5fd898888a722350694467c2c9f0cd9 · ok https://sepolia.etherscan.io/tx/0x04bd3df98aa8e2ca836e005adde99394558b01c1be943709247c69090584b7e0
+- result: PASS (second try). The team wallet holds 0.005 ETH
+- next: B1
+- asks/blockers: none
 
 ### 2026-11-06 19:27 IST · B · v2 B6
 - did: `SECURITY.md` §0 "v2 MVP: brains": sponsored gas, server-held derived AI wallets (one mnemonic, single point of failure, said plainly), the server key's exact ENS rights per brain, owner key offline as recovery, rules enforced per call (fail closed), private brains (encrypted against public readers, not against the operator; metadata public), Stop and review notices (heuristic), separate Rabdi funder

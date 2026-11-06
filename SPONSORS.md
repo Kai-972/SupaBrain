@@ -23,6 +23,18 @@ Without ENS the server cannot tell who an agent is or what it may spend (caps ar
 - [ ] Live demo link (needs hosting)
 - [ ] Video timestamp
 
+### ENS × money: BrainVault checks ENS on chain (Lane B)
+The vault, not our server, decides whether an agent may still spend: every `pay` asks the team's ENSv2 registry who owns the agent's name.
+
+| Feature | Code (file:line) | What the user sees · proof |
+|---|---|---|
+| Live ENS ownership on every payment: `getOwner(labelhash) == msg.sender` | [`contracts/src/BrainVault.sol:146`](contracts/src/BrainVault.sol#L146) | Unregister an agent and its very next payment reverts. Sepolia: unregister [0xe89f…6fc7](https://sepolia.etherscan.io/tx/0xe89f464acea50e816ca326308f0d3c5206eb9cb43ea6c92daa343adb9e126fc7) → **`AgentNotRegistered` mined revert** [0x516b…4579](https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579) (`scripts/demo/step-kill.ts`) |
+| Each vault agent = `(team UserRegistry, labelhash)` from the ENS deployment file | [`scripts/vault/set-agents.ts:28–41`](scripts/vault/set-agents.ts#L28) | 3 `setAgent` txs on Sepolia, e.g. lead-claude [0x3990…0134](https://sepolia.etherscan.io/tx/0x399031897064938351af533681476bf3d561f09f490d2e75f5cc6c604bf40134); `pnpm vault:status` shows "ENS getOwner = wallet ✓" |
+| Per-payment caps read live from ENS records (`sb.pay.cap`, `sb.pay.daily`), not config | [`packages/payments/src/policy.ts:105`](packages/payments/src/policy.ts#L105), [`:183`](packages/payments/src/policy.ts#L183) | Over-cap → "PENDING HUMAN · OVER_CAP cap 4 (from ENS)"; change the record, behaviour changes with no redeploy |
+| Vendor payout address from ENS beats any address in memory | [`policy.ts:138–146`](packages/payments/src/policy.ts#L138) | `pay(0xBAD…)` → **BLOCKED · ENS_MISMATCH** with the email → memory → plan path highlighted |
+| Fork test against the real `supabrain.eth` registry | [`contracts/test/BrainVaultFork.t.sol`](contracts/test/BrainVaultFork.t.sol) | 4/4 on live Sepolia state: owners match, registered agent pays, unregistered `test-agent` and an impostor revert |
+| Deployed vault | [`config/deployments/vault.sepolia.json`](config/deployments/vault.sepolia.json) | [`0x2da7…0ec8`](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8), first real 1-USDC payment [0x9ab2…06ae](https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae) |
+
 ## Arkiv: Build on Arkiv from scratch
 ### What breaks without it
 Supabrain's whole point is that a team's AIs share one memory they can all read and nobody can quietly edit. Arkiv is that store: entities signed by each agent's own wallet (`$creator`), owned by the team wallet (`$owner`), readonly so nobody can rewrite a memory, and expiring on their own so an unconfirmed lie fades. Without Arkiv we would need a database we run and everyone has to trust, and "who wrote this" would be a column we could change.
@@ -46,7 +58,30 @@ Supabrain's whole point is that a team's AIs share one memory they can all read 
 - [ ] Server reads the UI's data from Arkiv (S2)
 - [ ] Video timestamp
 
-## World: World ID Agent Pass
+## World: World ID (human approval for agent payments)
 ### What breaks without it
+"A human approved this payment" would be a button: anyone with dashboard access, or a compromised agent driving the dashboard, could click it. With World, money that needs a human moves only after a **real, unique human** proves it in World App for **that exact payment**. The proof is checked on our backend and by World's verify API, and bound to the payment's intent hash. Our policy decides when a human is needed: a payee from outside content, a new payee, or an amount over the agent's ENS cap. The agent can't skip it or trigger it itself.
+
+**How we integrate:** World ID 4 through IDKit core (`@worldcoin/idkit-core@4.6.0`), following World's Human-in-the-loop pattern for agents. The OIDC device flow at auth.world.org is also built and tested as a fallback, but its portal needs an enterprise Google Workspace account (see `WORLD_DEBRIEF.md`).
+
 ### Feature → file:line → what the user sees
-### Requirement checklist
+| Feature | Code (file:line) | What the user sees · proof |
+|---|---|---|
+| **Action = the payment.** Each intent gets its own action `supabrain-pay:<intentHash>`; the server signs the RP context for it | [`world/humanApproval.ts:106`](packages/payments/src/world/humanApproval.ts#L106), [`:120`](packages/payments/src/world/humanApproval.ts#L120), [`world/idkitAdapter.ts:10`](packages/payments/src/world/idkitAdapter.ts#L10) | One approval can never be reused for another payment (fresh nullifier per intent) |
+| Intent hash binds agent, payee, amount, lineage roots, intent id, expiry | [`vault/attestation.ts:51`](packages/payments/src/vault/attestation.ts#L51), [`engine.ts:215`](packages/payments/src/engine.ts#L215) | The approval card shows payee ENS name + resolved address + amount |
+| World App link/QR from a Node backend, polled server-side | [`idkitAdapter.ts:16`](packages/payments/src/world/idkitAdapter.ts#L16), [`humanApproval.ts:247`](packages/payments/src/world/humanApproval.ts#L247) | "PENDING HUMAN" card with QR; MCP `pay` returns `pending_human` at once |
+| **Backend validation, fail closed:** action, our nonce, pinned environment, `signal_hash == hash(intent)`, allowed credential, then `POST /api/v4/verify/{rp_id}`, then the nullifier consumed once | [`humanApproval.ts:165–235`](packages/payments/src/world/humanApproval.ts#L165) | A proof for another payment, a staging proof or a replay is rejected (46 tests; mutants on action/signal/replay all caught) |
+| After approval, every hard check runs again live, then a fresh EIP-712 attestation with `humanApproved=true` | [`engine.ts:172–190`](packages/payments/src/engine.ts#L172), [`:135`](packages/payments/src/engine.ts#L135) | Re-pointed vendor ENS or a killed agent still blocks after approval; `Paid` event carries `humanApproved=true` (anvil e2e) |
+| **Deny / expire / cancel → nothing moves** | [`humanApproval.ts:282–284`](packages/payments/src/world/humanApproval.ts#L282), [`engine.ts:160–166`](packages/payments/src/engine.ts#L160) | Live: reject in World App → `DENIED` (`verification_rejected`); app-side cancel → `CANCELLED` |
+
+**Live runs** (production World App, `pnpm --filter @supabrain/payments world:spike`, 2026-11-06): approve ×3 (111 s, 85 s, 99 s; `proof_of_human`, verified by World), deny (`verification_rejected`, 46 s), cancel (45 s). Logged in `WORLD_DEBRIEF.md` and `docs/PROGRESS.md`.
+
+### Requirement checklist (PROJECT.md §6.3)
+- [x] Integrate World's official human-verification product. World ID 4 / IDKit, Human-in-the-loop pattern. The name "Agent Pass" is not in World's public docs, so we asked the booth which product the prize means.
+- [x] Full journey **request → user completes → validated result**: live, 3 approvals verified by World.
+- [ ] Full journey **→ protected action on Sepolia**: approve → paid is proven end to end on anvil against the real compiled vault (`packages/payments/src/vault/vault.anvil.test.ts`). The live Sepolia run waits for the server mount (Lane A S5).
+- [x] **Denied** path where the action does not happen: live `verification_rejected` → `DENIED`. **Cancelled**: live. **Expired**: unit tests (bridge timeout and our clock).
+- [x] Validate on the backend: `verifyApprovalResult` plus World's `/api/v4/verify`, fail closed.
+- [x] A meaningful action, not a login: the protected action is **moving money** that the policy flagged by provenance (outside content), not just amount.
+- [x] Debrief: [`WORLD_DEBRIEF.md`](WORLD_DEBRIEF.md)
+- [ ] Video timestamp

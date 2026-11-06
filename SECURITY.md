@@ -1,0 +1,103 @@
+# Security
+
+Supabrain lets several AIs share one memory and spend from one team budget. This file covers the money and identity side: what we defend against, who holds which key, which code enforces each control, and what we do **not** protect. Everything here runs on testnets (Ethereum Sepolia, Arkiv Rabdi) with test USDC.
+
+Line numbers refer to the commit that last updated this file.
+
+## 1. What we protect
+
+| Asset | Where it lives | Worst outcome |
+|---|---|---|
+| Team budget (test USDC) | `BrainVault` on Sepolia, [`0x2da7…0ec8`](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8) | Money sent to an attacker's address |
+| Who an agent is and what it may do | ENSv2 names under `supabrain.eth` (role, scope, caps as records) | An agent acting with rights it shouldn't have, or after it was killed |
+| Shared memory | Arkiv entities signed by each agent's wallet | A false fact steering other agents, especially a payout address |
+| Human approval | World ID 4 proof tied to one payment intent | "A human approved this" when no human approved this payment |
+
+## 2. Threat model
+
+| # | Threat | Control | Where |
+|---|---|---|---|
+| T1 | **The payee came from outside content.** A "bank details changed" email, a web page or a poisoned memory supplies the address. | The policy walks the payee's lineage over the **whole team graph**, never the agent's read-set. A trust-1 (outside content) root behind an unverified payee means a human must approve. | `packages/payments/src/policy.ts:131` (graph lookup), `:175` (`OUTSIDE_CONTENT_PAYEE`) |
+| T2 | **A memory's address disagrees with the vendor's ENS record.** | Hard block, no override. This also applies when the payee is given as an ENS name: if memories tie the address to a name whose ENS record differs, the payment is blocked. | `policy.ts:138–145` (`ENS_MISMATCH`) |
+| T3 | **The payee derives from a revoked source.** | Hard block (`QUARANTINED_LINEAGE`). Pending intents whose supporting lineage is hit are cancelled. The vault gets `revokeRoot` so the root is dead on chain too. | `policy.ts:164`, `engine.ts:258–275`, `BrainVault.sol:156`, `:182` |
+| T4 | **New payee, over the per-payment cap, or over the daily limit.** | A fresh World ID approval, bound to this exact intent. Caps are read live from ENS records, never from config. | `policy.ts:179–186`, `engine.ts:215` (`intentHash`), `world/humanApproval.ts:106` (action = intent) |
+| T5 | **A compromised server or a skipped workflow** (the Binance lesson: the policy lived in a workflow the attacker skipped). | Agents never hold the budget. The only way to move it is `BrainVault.pay`, which checks on chain: the caller owns its live ENS name, a fresh policy-signer attestation covers this exact payment, no root is revoked, the intent is unused, and the owner-set daily ceiling holds. | `BrainVault.sol:140–175` |
+| T6 | **A killed agent keeps spending.** | `pay` calls `getOwner(labelhash)` on the team's ENSv2 registry on every call. Unregister the name and the next payment reverts. Proven on Sepolia: [`AgentNotRegistered` revert](https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579). The server re-checks ENS authority on every payment and again after a human approves. | `BrainVault.sol:146`, `policy.ts:110`, `engine.ts:172–190` |
+| T7 | **Replay or a stale approval.** | The vault burns `intentId` and enforces `deadline`. The EIP-712 domain includes `chainId` and `verifyingContract`. High-s signatures are rejected. World proofs are one-time per `(action, nullifier)`, pinned to the configured environment and our signed nonce. An approval that arrives after the intent expired counts as expired. | `BrainVault.sol:150–161`, `humanApproval.ts:179–193`, `:233`, `engine.ts:168` |
+| T8 | **The vendor's ENS changes while a human is approving.** | After approval every hard check runs again, live. If the payee now resolves to a different address than the one the human approved, the payment is blocked. | `engine.ts:183` |
+| T9 | **A cancel races an in-flight payment.** | Once the attestation is signed and the vault call is in flight, the intent can't be cancelled, so the record always matches the chain. | `engine.ts:127` |
+| T10 | **The agent's key isn't the wallet ENS says it is.** | Blocked (`AGENT_NOT_AUTHORIZED`), and the vault would revert anyway. | `engine.ts:120`, `BrainVault.sol:146` |
+| T11 | **ENS, the vault RPC or World is unreachable.** | Fail closed. Unknown authority blocks. A failed vault read fails the payment. A World failure is never an approval. At startup the server checks chain ID, contract code, USDC decimals, and that the vault's policy signer is our key, before the first payment. | `policy.ts:91`, `engine.ts:112`, `humanApproval.ts:208–231`, `runtime.ts:88–99` |
+| T12 | **Prompt injection through memory.** An email tells an agent to pay someone. | Outside content can't authorize money: it can only make a human look (T1). Retrieved memory is framed to agents as information, not instructions (Lane A's MCP prompt). | `policy.ts:175` |
+| T13 | **Secrets leak** (keys, RPC keys, the World signing key). | Secrets only in `.env.local` (gitignored, mode 600). The pre-commit hook runs `pnpm lint:hardcode` and `pnpm check:secrets`. Scripts print names and public addresses only, and RPC URLs are redacted in errors. | `.githooks/pre-commit`, `scripts/check-secrets.mjs`, `runtime.ts` (`redactUrls`) |
+
+## 3. Key custody
+
+| Key | Address | Held by | Can do | Can't do |
+|---|---|---|---|---|
+| **Owner** | `0xFcf0…E198` | Dev machines only (Kai, Srijit). **Never on the server.** | Register and unregister agent names (the kill switch). Set ENS records and caps. Vault: set agents, unpause, unrevoke, change signer or guardian, withdraw. | Nothing is above it. It is the root of trust. |
+| **Policy signer** | `0x4F24…26d0` | Server | Sign payment attestations | Move money on its own (needs an agent caller with a live ENS name). Exceed the owner's daily ceilings. |
+| **Guardian** | `0x2782…4D51` | Server | `revokeRoot`, `pauseAgent`, `cancelIntent`: **tighten only** | Unpause, unrevoke, withdraw or change roles |
+| **Agent wallets** | lead-claude `0xEd4a…1bfC`, gem-research `0x6c57…590c`, gpt-writer `0x4B35…14fA` | Server (custodial, disclosed) | Call `pay` with a valid attestation, and write memories | Hold the budget. Pay without an attestation. Pay after unregister. Raise their own caps (the setter role covers one key, `sb.memory.head`; a cap write reverts on chain). |
+| **World RP signing key** | signer `0x03c3…b479` | Server | Sign World ID 4 requests for our relying party | Produce a proof; only World App can |
+| **Team wallet (Arkiv)** | `0x4eA7…5A56` (`config/deployments/arkiv.rabdi.json`) | Server | Own Arkiv entities, write revocations | Rewrite an agent-signed memory (entities are readonly) |
+
+**Worst case: every server key stolen** (agents + policy signer + guardian). Loss is bounded by the owner-set vault ceilings: at most `sum(dailyCeiling)` per UTC day, currently 30 + 4 + 0 = 34 test USDC. Up to twice that can move across a UTC midnight, because the ceiling resets at midnight rather than over a rolling 24 h window (`BrainVault.sol:20`). The owner stops it from a dev machine with `pauseAgent`, `removeAgent` or `setPolicySigner`, or by unregistering the names.
+
+**A stolen guardian key alone** can only deny service (pause agents, revoke roots, burn intents). Recovery: the owner calls `setGuardian(0)`, then `unpauseAgent` / `unrevokeRoot` (`BrainVault.sol:226`, `:244`; regression test `test_recoverFromStolenGuardian`).
+
+## 4. The vault, in one paragraph
+
+`BrainVault.pay` (`BrainVault.sol:140`) checks, in this order:
+1. the caller is the agent named in the payment;
+2. the agent is known;
+3. **`getOwner(labelhash) == msg.sender`** on the live ENSv2 registry;
+4. the agent isn't paused;
+5. amount and payee are non-zero;
+6. the deadline hasn't passed;
+7. the intent is unused;
+8. at most `MAX_ROOTS` roots, none revoked;
+9. the EIP-712 attestation recovers to the policy signer;
+10. the daily ceiling holds, in a form that can't overflow.
+
+Then the effects, then `safeTransfer`, under `nonReentrant`. The contract was reviewed adversarially before deploy (V1: no critical, high or medium findings; the low and info findings became regression tests in `contracts/test/BrainVaultReview.t.sol`). Tests: 47 unit tests, plus 4 fork tests against the real `supabrain.eth` registry. The TypeScript signer reproduces a cast-signed EIP-712 vector byte for byte (`packages/payments/src/vault/attestation.test.ts`).
+
+## 5. Lessons from the Binance hot-wallet drain (Oct 29, 2026)
+
+We do **not** claim Supabrain would have stopped that attack. It was an access-control breach (malware, a stolen deploy token, a signer that checked who was asking but not what it was signing), not an agent choosing a bad payee. We applied its lessons to agent payments:
+
+| Lesson | What we did |
+|---|---|
+| The policy lived in a workflow the attacker skipped | The policy sits **at the money**: `BrainVault.pay` re-checks identity, attestation, revocations and ceilings on chain. Skipping our server gains nothing. |
+| An AI tool became the attacker's hands | Every agent is its own revocable principal (one ENSv2 name, one resolver, one wallet, its own caps). The owner key never touches the server. |
+| On-chain authority outlived the pause, and revocation was improvised | Revocation is one call, rehearsed on Sepolia: unregister → `AgentNotRegistered`; `revokeRoot` kills a source's lineage on chain. |
+| New destination plus a large amount means danger | A new payee or an over-cap amount needs a fresh human approval tied to that exact intent. |
+| "What you see isn't what you sign" | The approval binds `keccak256(agent, payee, amount, roots, intentId, expiry)`, and the vault attestation is signed only after the approval, with the same payee and amount. |
+
+## 6. Known gaps (said plainly, also in the README)
+
+- **Custodial agent, policy and guardian keys.** The server holds them, so a server compromise is a real event. It is bounded by owner-set ceilings and the owner-only kill switch (§3), not prevented.
+- **Lineage is server-recorded.** Agents sign their memories, but the parent links are recorded by our server, so a malicious server could lie about where an address came from. Signed lineage is roadmap.
+- **Who may approve.** World ID 4 nullifiers are per action, and every payment is its own action, so we can't yet require "this specific human" across payments. Any verified human who sees the QR can approve. The QR is shown only on the owner-authenticated dashboard. Binding the approver with World session proofs is a stretch goal.
+- **What the human sees.** World App shows our free-text description, not a typed payment. The binding is cryptographic (action = intent hash), but the human trusts the dashboard for amount and payee. See `WORLD_DEBRIEF.md`.
+- **Pending state is in memory.** Pending intents, the World replay store and the "paid before" set live in the server process. A restart drops pending approvals (fails safe: nothing pays) and forgets earlier payees (fails safe: `NEW_PAYEE` fires again). Decisions are also written to Arkiv. Rebuilding from Arkiv on startup is planned.
+- **An Arkiv write failure doesn't block a payment.** The decision is still made and emitted, and the failure is logged. The audit trail can have a gap.
+- **Vendor names live under our team name** for the demo, so the team owner could re-point them. In production, vendors bring their own `.eth`.
+- **Shared testnet burners.** During the hackathon the owner and agent burner keys were shared between the two developers by hand. They are testnet-only and must never hold real value.
+- **Out of scope:** malware on a developer laptop (the Binance way in), and a compromised owner key.
+
+## 7. Token and pairing review (Lane A, S4)
+
+Pending: the pairing endpoint (`/api/pair`) and agent tokens aren't built yet. When they land we will review:
+- HMAC with `TOKEN_SIGNING_SECRET` (at least 32 chars, server-only);
+- token expiry and revocation on unregister;
+- one agent label per token;
+- no token in logs, URLs that get logged, Arkiv or the browser bundle;
+- redaction of path-tokens in access logs;
+- constant-time comparison.
+
+Findings go here and under Requests in `docs/PROGRESS.md`.
+
+## 8. Reporting
+
+This is a hackathon project on testnets. If you find a problem, open a private security advisory on the GitHub repository (Security → Report a vulnerability), or an issue that doesn't include exploit details. Please don't test against other people's funds or names.

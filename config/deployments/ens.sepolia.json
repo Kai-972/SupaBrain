@@ -1,0 +1,30 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "team": {
+    "label": "supabrain",
+    "name": "supabrain.eth",
+    "labelhash": "0x303100f06892f4f0dc7cdd488a8a15b20de2ca9dae59933f2b9f7e992d6e5625",
+    "owner": "0xFcf02A7aaf14e83ff1296A771f89d6A2A520E198",
+    "expiry": 1796351784,
+    "txs": {
+      "approve": {
+        "hash": "0x8945b1e43fc9b6591cea50a391467fa0ab8ebea366f63ea60e87e5b0105974c5",
+        "url": "https://sepolia.etherscan.io/tx/0x8945b1e43fc9b6591cea50a391467fa0ab8ebea366f63ea60e87e5b0105974c5",
+        "at": "2026-11-06T02:35:02.482Z"
+      },
+      "commit": {
+        "hash": "0xde3cf053a527dbd04fbb83973c1e147309e327fcfca95b681ee5a0f34aa571c0",
+        "url": "https://sepolia.etherscan.io/tx/0xde3cf053a527dbd04fbb83973c1e147309e327fcfca95b681ee5a0f34aa571c0",
+        "at": "2026-11-06T02:35:13.219Z"
+      },
+      "register": {
+        "hash": "0x3f363dcb95354fe9aad5fcfaf81ae8c2f29b648bf1f69b70cd9988f75012d780",
+        "url": "https://sepolia.etherscan.io/tx/0x3f363dcb95354fe9aad5fcfaf81ae8c2f29b648bf1f69b70cd9988f75012d780",
+        "at": "2026-11-06T02:36:36.669Z"
+      }
+    }
+  },
+  "agents": {},
+  "vendors": {}
+}

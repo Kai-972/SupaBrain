@@ -18,7 +18,13 @@
     "doctor": "tsx scripts/doctor.ts",
     "ens:verify": "tsx scripts/ens/verify-deployments.ts",
     "keys:new": "tsx scripts/keys-new.ts",
-    "fund": "tsx scripts/fund.ts"
+    "fund": "tsx scripts/fund.ts",
+    "ens:register-team": "tsx scripts/ens/register-team.ts",
+    "ens:deploy-registry": "tsx scripts/ens/deploy-team-registry.ts",
+    "ens:add-agent": "tsx scripts/ens/add-agent.ts",
+    "ens:prove": "tsx scripts/ens/prove-roles.ts",
+    "ens:unregister": "tsx scripts/ens/unregister.ts",
+    "ens:set-records": "tsx scripts/ens/set-records.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

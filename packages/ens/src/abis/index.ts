@@ -20,3 +20,20 @@ export const universalResolverAbi = universalResolver as Abi;
 export const universalHelperAbi = universalHelper as Abi;
 export const mockErc20Abi = mockErc20 as Abi;
 export const rentPriceOracleAbi = rentPriceOracle as Abi;
+
+/** Every custom error from every ENS ABI above, deduplicated by signature, for decoding reverts that bubble up. */
+export const ensErrorsAbi: Abi = (() => {
+  const seen = new Set<string>();
+  const out: Abi[number][] = [];
+  for (const abi of [
+    permissionedRegistryAbi, ethRegistrarAbi, userRegistryAbi, verifiableFactoryAbi,
+    permissionedResolverAbi, universalResolverAbi, universalHelperAbi, mockErc20Abi, rentPriceOracleAbi,
+  ]) {
+    for (const item of abi) {
+      if (item.type !== "error") continue;
+      const sig = `${item.name}(${item.inputs.map((i) => i.type).join(",")})`;
+      if (!seen.has(sig)) { seen.add(sig); out.push(item); }
+    }
+  }
+  return out;
+})();

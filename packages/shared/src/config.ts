@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { z } from "zod";
 import {
-  AppFileSchema, DemoScenarioFileSchema, DeploymentFileSchema, EnsFileSchema, EnvSchema,
+  AppFileSchema, DemoScenarioFileSchema, DeploymentFileSchema, EnsDeploymentSchema, EnsFileSchema, EnvSchema,
   NetworksFileSchema, TokensFileSchema, WorldFileSchema,
   type AppConfig, type Env,
 } from "./config-schema";
@@ -54,7 +54,7 @@ export function loadConfigFrom(rootDir: string): AppConfig {
     world: readJson(c("world.json"), WorldFileSchema, true),
     demo: readJson(c("demo-scenario.json"), DemoScenarioFileSchema),
     deployments: {
-      ens: readJson(c("deployments/ens.sepolia.json"), DeploymentFileSchema, true),
+      ens: readJson(c("deployments/ens.sepolia.json"), EnsDeploymentSchema, true),
       vault: readJson(c("deployments/vault.sepolia.json"), DeploymentFileSchema, true),
     },
   };

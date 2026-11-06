@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅ → S1 Arkiv spike | 🔨 in progress | – (wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World live · S5 `createPayments` ✅ (engine + pending-human, anvil e2e). Next: vault deploy on Sepolia (needs ASK go) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World · S5 `createPayments` ✅ · fork test ✅ live Sepolia · deploy scripts ready. Next: Sepolia deploy (ASK: RPC, owner key, gas, USDC) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -41,7 +41,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S2: Memory core
 - [ ] A: whoami/recall/remember/explain · lineage + trust tests · Arkiv batch writes · startup rebuild · ENS check per call · SSE · `/api/team` `/api/graph` `/api/memory/:key`
-- [ ] B: fork test vs the real team registry · V1 review · deployed · 1-USDC pay tx · `step-kill` revert tx · `decidePayment` table tests
+- [ ] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ☐ · 1-USDC pay tx ☐ · `step-kill` revert tx ☐ · `decidePayment` table tests ✓ 202d16e
 - [ ] C: drawer · agents rail · feed · **switched to real graph + SSE**
 - [ ] **Gate:** Claude Code + Antigravity write to one graph, live in the UI
 
@@ -96,7 +96,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
   - C: `apps/web` is a bare Next 16 shell (no Tailwind/shadcn yet); `transpilePackages` already includes `@supabrain/shared`. Port 3000; the server is on 3001.
   - `pnpm build` = `tsc` typecheck per package + `next build`. The server runs TS directly with `tsx` (`pnpm --filter @supabrain/server dev|start`).
 
-- [ ] A → B: **S1 ENS done: the fork test and `set-agents` can start** (2026-11-06 08:28 IST).
+- [x] A → B: **S1 ENS done: the fork test and `set-agents` can start** (2026-11-06 08:28 IST). B: received; fork test 4/4 green on live Sepolia (e4fcbf5)
   - `config/deployments/ens.sepolia.json`: `teamRegistry.address` is the `registry` for `setAgent`; per agent `labelhash` is a 0x bytes32 (the vault's uint256 id is `BigInt(labelhash)`), plus `wallet`, `resolver`, `expiry` (unix s) and every tx hash. `ens.agentRegistryRef(label)` returns the same.
   - Live negatives/positives for the fork test: `lead-claude`, `gem-research`, `gpt-writer` are registered now; **`test-agent` is a throwaway that is UNREGISTERED** (use it for `AgentNotRegistered`; do not unregister a demo agent for tests). It can be revived with `pnpm ens:add-agent test-agent --throwaway --yes`.
   - Kill demo (`step-kill`): `pnpm ens:unregister gem-research --yes` (owner key; also revokes the agent's resolver grant), revive for the next rehearsal with `pnpm ens:add-agent gem-research --yes`. Both are dry runs without `--yes`.
@@ -107,6 +107,9 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 <!-- ### <time> · <lane> · state / next step / open questions -->
 
 ## Asks received (names only, never values)
+- 2026-11-06 · B · ASK WORLD_APP_ID / WORLD_RP_ID: received, validated (live approvals verified by World)
+- 2026-11-06 · B · WORLD_SIGNING_KEY: generated locally; only its signer address was registered with World (0x03c3…b479)
+- 2026-11-06 · B · POLICY_SIGNER_PRIVATE_KEY / GUARDIAN_PRIVATE_KEY: generated locally (policy 0x4F24…26d0, guardian 0x2782…4D51)
 <!-- - <time> · <lane> · ASK <NAME>: received, validated (<public detail>) -->
 
 ---
@@ -149,6 +152,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S2 / fork test + vault scripts
+- did: `contracts/test/BrainVaultFork.t.sol` (real `supabrain.eth` UserRegistry + Circle USDC from config, skips without RPC); `scripts/vault/{deploy,set-agents,fund,status,pay-proof}.ts` (dry run by default, `--yes` broadcasts, deploy reads every immutable back before writing `vault.sepolia.json`); `pnpm vault:*` scripts; cited root memories now add their own root (uses A's `GraphView.get`)
+- proof: fork 4/4 on live Sepolia (getOwner = wallet for all 3 agents; lead-claude pays; test-agent → AgentNotRegistered; impostor → AgentNotRegistered); forge 47 + 4 fork; 216 workspace tests green
+- result: PASS
+- commit: e4fcbf5, 99106fc
+- next: Sepolia deploy → set-agents → fund → 1-USDC pay-proof → step-kill (gem-research)
+- asks/blockers: ASK SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY (shared burner, from Kai privately), AGENT_LEAD_CLAUDE_PRIVATE_KEY + AGENT_GEM_RESEARCH_PRIVATE_KEY, Sepolia ETH for guardian, test USDC
 
 ### 2026-11-06 IST · B · S5 / createPayments + pending-human
 - did: `engine.ts` (policy → intent snapshot → World approval bound to `intentHash` → live hard re-check → fresh attestation → vault pay → Arkiv + SSE; deny/expire/cancel/fail → nothing moves; `onRevoke` cancels intents whose supporting lineage is hit, guardian `revokeRoot`/`pauseAgent`, vault errors returned as data); `runtime.ts` + real `createPayments` (config + env, fail-closed chain checks: chainId, code, USDC decimals, on-chain policySigner)

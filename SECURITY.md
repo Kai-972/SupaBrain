@@ -4,6 +4,21 @@ Supabrain lets several AIs share one memory and spend from one team budget. This
 
 Line numbers refer to the commit that last updated this file.
 
+## 0. v2 MVP: brains ("GitHub for your AIs' memory"), added 2026-11-06
+
+v2 adds brains: projects where several AIs save checkpoints and pick up each other's work (`docs/PLAN.md`). The money controls below (§1–§7) still guard the demo brain, which is the only brain where `pay` exists. Pre-made brains are provisioned with `pay.cap = 0`. This is MVP-level security, so here is what it does and doesn't do.
+
+| Control | How it works | What it doesn't cover |
+|---|---|---|
+| **Sponsored gas** | Users sign in with a wallet (one gasless signature) and never send a transaction. The server pays for and signs every Arkiv write and every ENS rule change | A compromised server can write as any brain AI and change any brain's rules until the owner steps in |
+| **Server-held, derived AI wallets** | Each brain AI's wallet derives from one server secret, `BRAIN_AGENT_MNEMONIC` (account = brain index, address = family index; `packages/ens/src/brains.ts`). Nothing is stored per wallet. Each wallet holds only ~0.35 tGLM on Rabdi and no money | The mnemonic is a single point of failure: a leak exposes every brain AI identity. The fix is to provision new brains from a new mnemonic. Agent custody stays with the server, as in v1 |
+| **What the server's key may do on ENS** | On each brain registry: register, renew, unregister and set resolver. On each brain name: renew only. On each AI resolver: set text, which is how rule changes happen. It can't transfer names, re-point subregistries, change an AI's address or upgrade anything. Checked live by `pnpm ens:brains-status` | Within those rights, it can pause or unpause an AI and change its scope. That is the feature |
+| **Owner key offline** | The `supabrain.eth` owner key is never on the host. It holds root roles on the team registry (it can unregister a whole brain), the same registry roles on every brain registry, and all roles on every AI resolver, so it can revoke the server's rights | Recovery is manual, from a dev machine |
+| **Rules on ENS, enforced per call** | Status (active/paused), scope (path prefix), writes per day and role are text records the server reads live on every call. If ENS can't be read, the call is refused (fail closed; Lane A) | Enforcement happens in our server. Arkiv itself doesn't know the rules; a stolen AI key could still write entities directly (they're signed, so they're attributable, and `verify:memory` shows who signed them) |
+| **Private brains** | Text and file contents are encrypted with a per-brain key before they go on Arkiv (Lane A) | The server holds the keys, so this protects against public chain readers, not against the operator. Metadata stays public: entity attributes, sizes, timing and the signing wallet |
+| **Stop and review notices** | Content that looks malicious ("send funds to 0x…", `curl … \| sh`, a poisoned README) is stopped: no AI receives it or builds on it, and the owner gets a review notice. A Stop button freezes a whole brain. Supabrain never edits the user's files | Detection is heuristic, so it will miss some attacks and flag some harmless content. The owner can release a false alarm |
+| **Separate funder on Rabdi** | AI wallets are topped up from a separate faucet wallet (`FUNDER_PRIVATE_KEY`), never the team wallet, so two senders don't race the server's nonces (`scripts/brains/fund-brains.ts` refuses a known server wallet) | – |
+
 ## 1. What we protect
 
 | Asset | Where it lives | Worst outcome |

@@ -11,7 +11,13 @@ export interface HeadWriter {
   setHead(agentEns: string, key: `0x${string}`): Promise<{ txHash: string | null; txUrl: string | null }>;
 }
 
-export function createHeadPublisher(p: { writer: HeadWriter; bus: EventBus; graph: MemoryGraph; ensOf: (agent: string) => string | undefined; now?: () => number; log?: (l: string) => void }) {
+export function createHeadPublisher(p: {
+  writer: HeadWriter; bus: EventBus; graph: MemoryGraph; ensOf: (agent: string) => string | undefined;
+  /** true for a checkpoint that is being stopped (its revocation may land after Arkiv confirms it) */
+  skip?: (key: string) => boolean;
+  now?: () => number; log?: (l: string) => void;
+}) {
+  const publishable = (key: string) => p.graph.get(key)?.kind === "checkpoint" && p.graph.status(key) === "active" && !p.skip?.(key);
   const now = p.now ?? Date.now;
   const heads = new Map<string, HeadView>();
   const wanted = new Map<string, string>(); // agent → newest key still to publish
@@ -25,6 +31,7 @@ export function createHeadPublisher(p: { writer: HeadWriter; bus: EventBus; grap
         wanted.delete(agent);
         const ens = p.ensOf(agent);
         if (!ens) return;
+        if (!publishable(key)) continue; // checked again: it may have been stopped since it was queued
         try {
           const r = await p.writer.setHead(ens, key as `0x${string}`);
           const head: HeadView = { agent, ens, key, at: now(), ...(r.txUrl ? { txUrl: r.txUrl } : heads.get(agent)?.txUrl ? { txUrl: heads.get(agent)!.txUrl } : {}) };
@@ -44,7 +51,7 @@ export function createHeadPublisher(p: { writer: HeadWriter; bus: EventBus; grap
   const unsubscribe = p.bus.subscribe(({ event }) => {
     if (event.t !== "confirmed") return;
     const n = p.graph.get(event.key);
-    if (!n || n.kind !== "checkpoint" || n.status !== "active") return;
+    if (!n || !publishable(n.key)) return;
     wanted.set(n.agent, n.key);
     void drain(n.agent);
   });

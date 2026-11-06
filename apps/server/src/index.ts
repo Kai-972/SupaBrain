@@ -77,7 +77,7 @@ async function main() {
     txUrl: (h) => config.networks.sepolia.explorer.tx.replace("{hash}", h),
     account: signers.team, chain: sepoliaChain(config, rpcUrl), transport: http(rpcUrl),
   });
-  const heads = bm ? createHeadPublisher({ writer: rules, bus: runtime.bus, graph: runtime.graph, ensOf: (a) => deployments.agents[a]?.ens, log }) : undefined;
+  const heads = bm ? createHeadPublisher({ writer: rules, bus: runtime.bus, graph: runtime.graph, ensOf: (a) => deployments.agents[a]?.ens, skip: (k) => runtime.continuity.isStopping(k), log }) : undefined;
   const app = createApp({
     config, payments, ens, runtime,
     tokenSecret: requireEnv("TOKEN_SIGNING_SECRET"), publicBaseUrl, webBaseUrl: env.PUBLIC_WEB_URL, adminPassphrase: env.DASHBOARD_ADMIN_PASSPHRASE, log,

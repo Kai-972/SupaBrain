@@ -69,6 +69,8 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
 
   /** `continue`: where things stand. What it shows becomes the agent's read-set, so its next checkpoint descends from it. */
   let stopHandler: StopHandler | undefined;
+  /** checkpoints being stopped: marked before the revocation is written, so nothing treats them as good meanwhile */
+  const stopping = new Set<string>();
   async function guarded<T>(agent: string, tool: BlockedEntry["tool"], fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();
@@ -231,6 +233,7 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     if (hit) {
       // Revoke the checkpoint at once: it and everything under it (its tasks, notes, files) is quarantined for every AI.
       const reason = `stopped: ${hit.rule}`;
+      stopping.add(cp.key);
       let arkivUrl: string | undefined;
       try { arkivUrl = stopHandler ? (await stopHandler(cp.key, reason)).arkivUrl : undefined; }
       catch (e) { log(`stop of ${cp.key} could not be written to Arkiv: ${(e as Error).message}`); }
@@ -273,5 +276,8 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
   /** app.ts wires this to undo.revoke, so a stop is a team-signed revocation on Arkiv. */
   function onStop(fn: StopHandler) { stopHandler = fn; }
 
-  return { resume, checkpoint, checkout, lean, onStop };
+  /** A checkpoint the guard stopped (also true before its Arkiv revocation lands). */
+  function isStopping(key: string) { return stopping.has(key); }
+
+  return { resume, checkpoint, checkout, lean, onStop, isStopping };
 }

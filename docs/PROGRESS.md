@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅, S1 Arkiv ✅ → S1 MCP spike (needs a public host) | 🔨 in progress | host choice for the MCP spike (Render likely; ngrok fallback) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), **S2 ✅ on Sepolia**: deployed, agents set, funded, real pay ✓, on-chain kill ✓. Next: guardian ETH, then S6 live World → paid | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), S2 ✅ Sepolia · S8 docs ✅ (SECURITY, SPONSORS World/Vault, WORLD_DEBRIEF) · V3 red team ✅ (3 holes fixed). Waiting on A S5 mount for live P1/P3 | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -75,13 +75,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S8: Ship
 - [ ] A: `seed.ts` on a fresh team · Arkiv docs · README addresses · V5 + V6
-- [ ] B: SECURITY.md ✓ cbb5549 · WORLD_DEBRIEF.md ✓ 7540d6e · SPONSORS World/Vault ✓ fdf684b · V3 red team
+- [ ] B: SECURITY.md ✓ cbb5549 · WORLD_DEBRIEF.md ✓ 7540d6e · SPONSORS World/Vault ✓ fdf684b · V3 red team ✓ 1c8ae65
 - [ ] C: DEMO_SCRIPT.md · video · README · Vercel · V2 sponsor audit
 - [ ] Rehearsal 1 · Rehearsal 2 · Rehearsal 3 · **Submitted** (link: ___)
 
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → A: optional shared-type tweak: add `{ code: "PROTECTED_PAYEE"; label: string }` to `PayReason`. Today a payee that is a team-controlled wallet (agent/vault/token/server key; V3 red team R1/R2) is blocked as `AGENT_NOT_AUTHORIZED` with a clear detail string; a dedicated code would read better in the UI. No rush (2026-11-06)
 - [ ] B → A, C: `PROJECT.md` §6.3 "How we use it" and §10 are out of date for World: we use **World ID 4 via IDKit** (Human-in-the-loop pattern), not the OIDC device flow (its portal needs an enterprise Google account), and World proofs are **real, not mocked** (live approve/deny/cancel in WORLD_DEBRIEF.md). Action binding is native now (action = intent hash). Please update or point to SPONSORS.md#world (2026-11-06)
 - [x] B → A (done by A, 2026-11-06): World moved to IDKit 4. Please add to `.env.example`: `WORLD_APP_ID=` (public), `WORLD_RP_ID=` (public), `WORLD_SIGNING_KEY=` (secret, B). `WORLD_CLIENT_ID/SECRET` stay as the OIDC fallback. Also make `check-secrets.mjs` flag a non-empty `WORLD_SIGNING_KEY=` value (2026-11-06)
 - [ ] B → A (A replies 2026-11-06 08:28 IST: will mount in S5 together with the GraphView/ArkivWriter adapters, which do not exist yet; the try/catch-to-disabled pattern is accepted): **`createPayments` is ready** (30a54e6). In `apps/server/src/index.ts`, mount it instead of the disabled stub: `try { payments = createPayments(deps) } catch { payments = createPaymentsDisabled() }`. It throws until `config/deployments/vault.sepolia.json` exists (I write it at deploy), and every call fails closed with a clear error if the chain checks fail. Extra method for tests only: `createPaymentsEngine(...).settled(intentId)`. MCP `pay` returns `pending_human` immediately; `pay_status` = `payments.status(intentId)` (2026-11-06)
@@ -163,6 +164,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S8 / V3 policy red team
+- did: hunted for inputs that get a bad payment ALLOWED. Found 3: R1 payee = an agent's own server-held wallet (or its ENS name), R2 payee = vault / token / zero address (both allowed after one approval + a clean memory), R3 concurrent payments jointly beat the ENS daily limit (8 × 4 USDC passed a 30 USDC limit). Wrote 7 failing tests first, then fixed: team-controlled addresses + zero are hard-blocked (built from the ENS deployment, vault, USDC, policy signer, guardian; owner stays payable), evaluate→execute serialised per agent
+- proof: 7 tests failed for the right reason before (outcome `allow`, 8 paid), pass after; each fix mutation-checked (removing it fails its test); 260 workspace tests green; SECURITY.md T14/T15 + §2.1, all doc file:line refs recomputed from anchors
+- result: PASS
+- commit: b228947 (failing tests), 1c8ae65 (fix), 1f48ba2 (docs)
+- next: Lane B docs done; remaining B work waits on A's S5 server mount (live P1/P3 from a real MCP client) and C's approval card
+- asks/blockers: Request to A: a dedicated `PayReason` code for team-controlled payees would read better than `AGENT_NOT_AUTHORIZED` (shared types change)
 
 ### 2026-11-06 IST · B · S8 / WORLD_DEBRIEF.md final
 - did: restructured to the spec (summary, time to first success ≈2 h incl. OIDC dead end / ≈25 min from RP registration, flow, backend validation, denied/expired/cancelled/failed paths with code + proof, timeline, friction by product, missing capability, single most important improvement); removed an overclaim (Sepolia approve → paid is pending the server mount; proven on anvil)

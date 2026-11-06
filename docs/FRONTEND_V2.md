@@ -1,6 +1,6 @@
 # Supabrain v2 frontend brief (for the UI Claude)
 
-**As of 2026-11-06 21:30 IST, `main`.** Written after the backend upgrades so a fresh Claude session can build the website and merge cleanly. Read this file, then `docs/PLAN.md` (the product), `docs/API_V2.md` (the contract) and `packages/shared/src/types.ts` (import the types; never redefine them). The visual reference is `docs/design/supabrain-night.html` (Srijit's "Supabrain · Night"): open it in a browser first.
+**As of 2026-11-06 21:00 IST, `main`.** Written after the backend upgrades so a fresh Claude session can build the website and merge cleanly. Read this file, then `docs/PLAN.md` (the product), `docs/API_V2.md` (the contract) and `packages/shared/src/types.ts` (import the types; never redefine them). The visual reference is `docs/design/supabrain-night.html` (Srijit's "Supabrain · Night"): open it in a browser first.
 
 ---
 

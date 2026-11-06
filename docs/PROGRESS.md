@@ -273,7 +273,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 
-### 2026-11-06 21:35 IST · B · v2 steps 3–4 backend (taking over Lane A while Kai's laptop is down)
+### 2026-11-06 21:00 IST · B · v2 steps 3–4 backend (taking over Lane A while Kai's laptop is down)
 - did:
   - **ENS rules on every call:** `sb.status` paused, `sb.scope`, `sb.write.daily` (new `RATE_LIMIT`). Every refusal is logged with the rule named and streamed as `blocked`.
   - **Prompt-injection Stop:** relayed instructions (override, remote code, payment redirect, secret leak, rule tampering, agent-to-agent command) are saved as evidence and revoked at once on Arkiv by the team wallet.

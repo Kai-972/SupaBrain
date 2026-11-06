@@ -17,7 +17,8 @@
     "check:secrets": "node scripts/check-secrets.mjs",
     "doctor": "tsx scripts/doctor.ts",
     "ens:verify": "tsx scripts/ens/verify-deployments.ts",
-    "keys:new": "tsx scripts/keys-new.ts"
+    "keys:new": "tsx scripts/keys-new.ts",
+    "fund": "tsx scripts/fund.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

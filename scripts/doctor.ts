@@ -155,7 +155,9 @@ async function main() {
       }
     }
   }
-  info(`ARKIV_ACCESS_KEY ${process.env.ARKIV_ACCESS_KEY?.trim() ? "set" : "not set"} (authenticated RPC check lands in S2)`);
+  const arkivKey = process.env.ARKIV_ACCESS_KEY?.trim();
+  if (!arkivKey) warn("ARKIV_ACCESS_KEY not set: the keyless RPC is heavily rate-limited");
+  else await checkChain("Rabdi (access key, path auth)", createPublicClient({ transport: http(`${config.networks.rabdi.rpc}/${arkivKey}`) }), config.networks.rabdi.chainId);
 
   section("World");
   const issuer = config.world?.issuer;

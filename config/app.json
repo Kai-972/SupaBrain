@@ -1,7 +1,12 @@
 {
   "appNamespace": "supabrain-mumbai26",
-  "team": { "id": "team1", "displayName": "Demo Team" },
-  "server": { "port": 3001 },
+  "team": {
+    "id": "team1",
+    "displayName": "Demo Team"
+  },
+  "server": {
+    "port": 3001
+  },
   "ens": {
     "teamLabel": "supabrain",
     "leaseDays": 7,
@@ -20,15 +25,61 @@
     }
   },
   "agents": [
-    { "label": "lead-claude",  "vendor": "claude", "role": "lead",   "scope": "*",        "payCapUsdc": "4", "payDailyUsdc": "30", "vaultDailyCeilingUsdc": "30" },
-    { "label": "gem-research", "vendor": "gemini", "role": "worker", "scope": "research", "payCapUsdc": "2", "payDailyUsdc": "4",  "vaultDailyCeilingUsdc": "4" },
-    { "label": "gpt-writer",   "vendor": "openai", "role": "worker", "scope": "comms",    "payCapUsdc": "0", "payDailyUsdc": "0",  "vaultDailyCeilingUsdc": "0" }
+    {
+      "label": "lead-claude",
+      "vendor": "claude",
+      "role": "lead",
+      "scope": "*",
+      "payCapUsdc": "4",
+      "payDailyUsdc": "30",
+      "vaultDailyCeilingUsdc": "30"
+    },
+    {
+      "label": "gem-research",
+      "vendor": "gemini",
+      "role": "worker",
+      "scope": "research",
+      "payCapUsdc": "2",
+      "payDailyUsdc": "4",
+      "vaultDailyCeilingUsdc": "4"
+    },
+    {
+      "label": "gpt-writer",
+      "vendor": "openai",
+      "role": "worker",
+      "scope": "comms",
+      "payCapUsdc": "0",
+      "payDailyUsdc": "0",
+      "vaultDailyCeilingUsdc": "0"
+    }
   ],
-  "vendors": [{ "label": "acme", "displayName": "Acme Studio" }],
-  "trust": { "human": 3, "agent": 2, "evidence": 1 },
-  "readSet": { "ttlSec": 1800 },
-  "keep": { "defaultDays": 7, "maxDays": 30 },
-  "payments": { "intentTtlSec": 900, "attestationTtlSec": 300, "maxRootsPerAttestation": 8, "eip712": { "name": "BrainVault", "version": "1" } },
+  "vendors": [
+    {
+      "label": "acme",
+      "displayName": "Acme Studio"
+    }
+  ],
+  "trust": {
+    "human": 3,
+    "agent": 2,
+    "evidence": 1
+  },
+  "readSet": {
+    "ttlSec": 1800
+  },
+  "keep": {
+    "defaultDays": 7,
+    "maxDays": 30
+  },
+  "payments": {
+    "intentTtlSec": 900,
+    "attestationTtlSec": 300,
+    "maxRootsPerAttestation": 8,
+    "eip712": {
+      "name": "BrainVault",
+      "version": "1"
+    }
+  },
   "arkivExpirySec": {
     "memory": 172800,
     "evidence": 172800,
@@ -39,5 +90,14 @@
     "paymentDecision": 2592000,
     "revocation": "max"
   },
-  "refs": { "allowedKinds": ["github", "notion", "url"] }
+  "refs": {
+    "allowedKinds": [
+      "github",
+      "notion",
+      "url"
+    ]
+  },
+  "mcp": {
+    "tokenTtlDays": 7
+  }
 }

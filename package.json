@@ -34,7 +34,8 @@
     "vault:abi": "bash scripts/vault/gen-abi.sh",
     "demo:step-kill": "tsx scripts/demo/step-kill.ts",
     "arkiv:spike": "tsx scripts/arkiv/spike.ts",
-    "arkiv:query": "tsx scripts/arkiv/query.ts"
+    "arkiv:query": "tsx scripts/arkiv/query.ts",
+    "mcp:token": "tsx scripts/keys/mcp-token.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

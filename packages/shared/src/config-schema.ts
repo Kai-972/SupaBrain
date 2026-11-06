@@ -63,6 +63,7 @@ export const AppFileSchema = z
       revocation: z.literal("max"),
     }),
     refs: z.object({ allowedKinds: z.array(z.enum(["github", "notion", "url"])).min(1) }),
+    mcp: z.object({ tokenTtlDays: z.number().int().positive() }), // agent bearer token lifetime
   })
   .refine((c) => c.keep.defaultDays <= c.keep.maxDays, { message: "keep.defaultDays must be <= keep.maxDays", path: ["keep"] })
   .refine((c) => c.keep.maxDays < ARKIV_MAX_LIFETIME_DAYS, { message: "keep.maxDays must be below the Arkiv max lifetime so revocations outlive kept memories", path: ["keep", "maxDays"] })

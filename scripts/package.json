@@ -11,6 +11,7 @@
     "@arkiv-network/sdk": "1.0.1",
     "@supabrain/arkiv": "workspace:*",
     "@supabrain/ens": "workspace:*",
+    "@supabrain/server": "workspace:*",
     "@supabrain/shared": "workspace:*",
     "viem": "^2.57.16"
   }

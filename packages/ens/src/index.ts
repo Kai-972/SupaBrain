@@ -4,3 +4,4 @@ export * from "./names";
 export * from "./roles";
 export * from "./authority";
 export * from "./viem-chain";
+export * from "./sepolia";

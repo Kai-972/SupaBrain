@@ -16,7 +16,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
-| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S2 memory core ✅ (live) → S3 undo | 🔨 | – |
+| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S2 ✅ S3 ✅ (live, without money) → S4 pairing, S5 money mount | 🔨 | – |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), S2 ✅ Sepolia · S8 docs ✅ (SECURITY, SPONSORS World/Vault, WORLD_DEBRIEF) · V3 red team ✅ (3 holes fixed). Waiting on A S5 mount for live P1/P3 | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
@@ -46,7 +46,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] **Gate:** Claude Code + Antigravity write to one graph, live in the UI
 
 ### S3: Undo ⭐ (memory-first checkpoint)
-- [ ] A: dry run (+ readers) · revoke · quarantine · notices · Keep · Correct this · Add context · refs · recall log
+- [x] A: dry run (+ readers) ✓ · revoke ✓ · quarantine ✓ · notices ✓ · Keep ✓ · Correct this ✓ · Add context ✓ · refs ✓ · recall log ✓ (live: `pnpm e2e:undo` 14/14; restart keeps revocations, corrections, Keep and notices)
 - [ ] B: `onRevoke` (`revokeRoot`, cancel intents) · `pauseAgent`
 - [ ] C: dry-run modal · cascade · Keep/Correct/Add context · ref card · before/after
 - [ ] **Gate:** one full rehearsal without money (connect → write → dry run → revoke → re-ask)
@@ -82,6 +82,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] A → C: **owner actions are live (S3)**, all need the `sb_admin` cookie (401 otherwise): `POST /api/dryrun {target}` → `DryRun`; `POST /api/revoke {target, reason?}` → `{revocationKey, arkivUrl, affected, notified, dryRun, vaultTxUrl?, cancelled, ensNote?}` (takes ~5 s: the revocation is written to Arkiv first; show "writing to Arkiv…"); `POST /api/memory/human {text, kind, folder, subject?, ref?}` (Add context, trust 3); `POST /api/memory/:key/keep {days?}` → `{expiresAt, days, txUrl, extended}` (409 `KEEP_REFUSED` when quarantined); `POST /api/memory/:key/correct {text}` → `{revocationKey, arkivUrl, newKey, affected}`. Errors are `{error: CODE, message}` with 400/404/409/502. SSE adds `revocation`, `notice {toAgent, count}`, `kept`. A memory's `why` explains its quarantine (2026-11-06 10:59 IST)
 - [ ] A → C: **real API is live (S2)**, switch screen by screen from fixtures: `GET /api/team`, `/api/graph?since=<seq>`, `/api/memory/:key` (with `lineage: string[][]`, `readers`, `why` when quarantined), `/api/recall-log?agent=&q=`, `/api/stream?since=<seq>` (SSE, `id:` = event seq, replay on reconnect via `since` or Last-Event-ID), `POST /api/admin/login {passphrase}` → httpOnly cookie `sb_admin` (SameSite=Lax; use `credentials: "include"`), `GET /api/admin/me`, `POST /api/admin/logout`. Dev server: `https://swear-commend-everybody.ngrok-free.dev` (when Kai's laptop runs `pnpm dev:public`); CORS allows `http://localhost:3000` and `https://supabrain.blackslate.me` (config `server.allowedOrigins`). Small additions to §6: (1) new StreamEvent `{ t: "write_failed", key, error }`: an optimistic (pending) memory did not land, drop it; (2) `/api/team` agents carry `authority: "live" | "unavailable"` and `status: "unknown"` when ENS cannot be read: show "authority unknown", never a guessed status; `connectedClient` is a string like "claude-code 2.1.294"; (3) memories loaded at startup have `proofUrl` = the Arkiv entity page (`…/entity/<key>`), new writes the tx page. Domain: UI on `supabrain.blackslate.me`, API on `api.supabrain.blackslate.me` (same site, so the cookie works) (2026-11-06 10:50 IST)
 - [ ] B → A: **mount the payment tools** in `apps/server/src/mcp/server.ts` (S5): `registerPaymentTools(server, { payments, agentOf })` from `@supabrain/payments` (MCP `pay` + `pay_status`; the agent comes only from the token; text replies tell the model what to relay). `pnpm demo:step blocked|approve` calls exactly these tools, so they work the moment you mount (2026-11-06)
 - [ ] B → A: **seed output for the demo fallbacks**: have `scripts/demo/seed.ts` write `config/deployments/demo-seed.json` = `{ "attackerAddress": "0x…", "attackerPartnerAddress": "0x…", "keys": { "H1": "<memory key>", "M2": "<memory key>", … } }` (keys use the C-UI §5 fixture names). `demo:step blocked` pays `attackerAddress` citing `keys.M2`; `approve` cites `keys.H1`. Until then both take `--payee` / `--cites` (2026-11-06)
@@ -126,6 +127,15 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane A (Brain)
 <!-- newest first; format in CLAUDE.md §3.4 -->
+
+### 2026-11-06 10:59 IST · A · S3 undo (live, without money)
+- did: `apps/server/src/memory/undo.ts` (dry run, revoke, Keep, Correct this, Add context), Arkiv writes for revocations (team wallet, `ExpirationTime.max()`), notices (team batch) and Keep (memory + its edge/taint rows in one owner batch, skipping rows that already live longer), notices restored on load, revoked agents blocked from acting, owner API (`/api/dryrun`, `/api/revoke`, `/api/memory/human`, `/api/memory/:key/keep|correct`) behind the admin cookie; `pnpm e2e:undo`
+- proof (Rabdi, `supabrain-mumbai26-dev`): revocation by the team wallet https://rabdi.explorer.arkiv.network/tx/0xe4cc1f57bc231e6ba23208228c7494645d69f514f37014c45204e3ed25983cd7 · Keep (2 rows) https://rabdi.explorer.arkiv.network/tx/0xd284a81d14cc2af7edfac0636c6efad80bc52ab6e65b58ac887097deda3f41f9
+- result: PASS. Unit/integration: 98 server tests (the C-UI fixture story written through the real service: dry run = exactly E1 M1 M2 M3 E2, agents/vendors/readers as the fixture, vault root hash = keccak256(id) as Lane B's `revokeRoot`; revoke order; notices; payments skipped while disabled; Keep refused when quarantined and capped at 30 days; Correct supersedes). Live `pnpm e2e:undo` 14/14: owner logs in → human context → the lie spreads email → Gemini → Claude → GPT → dry run "3 memories · 3 agents · 3 vendors" → revoke on Arkiv in 5.7 s → cascade (human memory stays active) → the dashboard stream gets `revocation` + a `notice` per agent → Claude's next recall starts with RETRACTION NOTICES and flags QUARANTINED items → a quarantined memory can't be cited → Keep refused for it, allowed for the human memory → Correct this. Restart: 12 memories, 2 revocations, statuses, the correction, the Keep and both notices all came back from Arkiv alone
+- findings: stateless MCP accepts `tools/call` without `initialize` (handy for health checks); after a restart, notices come back unread (read state is not stored on Arkiv; acceptable, they expire in 2 days)
+- commit: S3 code + tests, e2e:undo (see git log)
+- next: S4 pairing (`/api/pair`, QR, snippets, `connected`), S5 mount Lane B's payments + PROTECTED_PAYEE + acme, then the demo seed
+- asks/blockers: Kai: the Antigravity write check (S2 gate) and, when the UI exists, one rehearsal through the dashboard (S3 gate)
 
 ### 2026-11-06 10:50 IST · A · S2 memory core (live) + Lane B review fixes
 - did: `apps/server` engine (`engine/graph.ts` quarantine/lineage/descendants, `lineage.ts` trust rules + ref/source/folder/scope validation, `session.ts` read-sets/read log/notices, `search.ts` recall); `memory/service.ts` (whoami/recall/remember/explain/check_notices, live ENS check on every call incl. recall, folder scope, cites, max parents, optimistic writes → `confirmed` / `write_failed`); `arkiv/store.ts` (one agent-signed batch per memory: memory + edges + taints, all handed to the team wallet, chunked within the gas rule; loader verifies `$creator` = the named agent's wallet; watcher filtered to our wallets); `memory/sync.ts` (watcher first, then load; restart on watcher errors; expiry ticker); dashboard API + SSE + admin cookie + CORS; `index.ts` boots Sepolia + Rabdi (fail closed), checks agent keys vs ENS wallets, rebuilds from Arkiv; `pnpm e2e:memory` (real MCP calls as 3 agents); `pnpm dev:public` (server + ngrok, inspection off). Fixed Lane B's MCP review F1–F3 + D4; D1 and D3 done

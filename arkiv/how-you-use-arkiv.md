@@ -9,9 +9,9 @@ The write path and queries behind every row are proven live in the S1 spike. The
 |---|---|---|
 | ✅ An AI remembers something ([`apps/server/src/arkiv/store.ts`](../apps/server/src/arkiv/store.ts)) | `sb.memory` + `sb.edge` ×parents + `sb.taint` ×roots + `changeOwnership`, one batch signed by the agent's wallet | the node appears at once (pending) and gets its Rabdi proof link ~5 s later |
 | ✅ Lineage ("why does the AI believe this?") (`explain` tool, `/api/memory/:key`) | `sb.edge`, `sb.taint`, parents/roots in the body | every path back to the roots with trust, author and status per hop |
-| ⏳ Keep | `extendEntity` on memory + edges + taints, one owner-signed batch | a node stops fading; its expiry date moves out |
+| ✅ Keep (`undo.ts`, `arkiv/store.ts` `extendMemory`) | `extendEntity` on memory + edges + taints, one owner-signed batch | a node stops fading; its expiry date moves out (refused for quarantined memories) |
 | ✅ Memories fade after 2 days | entity expiry | a lie nobody kept disappears from the shared store by itself (proven: a 60 s memory was gone from queries at exactly its expiry block; no event is emitted, the server emits `expired` itself) |
-| ⏳ Undo ("this source is wrong") | `sb.revocation` (max lifetime), `sb.notice` | cascade of red nodes, retraction notices in every vendor's next answer |
+| ✅ Undo ("this source is wrong") (`undo.ts`) | `sb.revocation` (max lifetime, team wallet), `sb.notice` | cascade of red nodes, retraction notices in every vendor's next answer; survives a restart |
 | ⏳ Public advisories | `sb.revocation` read live | the README query and `/advisories` list real revocations |
 
 ## Writes (who signs what)

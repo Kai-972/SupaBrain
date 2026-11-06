@@ -13,11 +13,11 @@ Source of truth for the plan: [CLAUDE.md](../CLAUDE.md). This page describes how
  │ express                                                                              │
  │  /healthz            liveness (uptime pinger, host health check)                      │
  │  /mcp, /mcp/t/:token stateless MCP: a new McpServer + transport per POST              │
- │  /api/*              dashboard API (CLAUDE.md §6.4); owner actions ⏳ S3              │
+ │  /api/*              dashboard API (CLAUDE.md §6.4) incl. owner actions (cookie)      │
  │  /api/stream         SSE to the dashboard (replay with ?since / Last-Event-ID)        │
  │                                                                                      │
  │  auth/tokens.ts      HMAC agent tokens → req.auth → tool handlers (extra.authInfo)    │
- │  Engine              graph · read-sets · read log · trust · quarantine; revoke ⏳ S3  │
+ │  Engine              graph · read-sets · read log · trust · quarantine · undo        │
  │   ├─ EnsAuthority   packages/ens       live getOwner + sb.* records, 10 s cache,     │
  │   │                                    fail closed                                   │
  │   ├─ Arkiv          packages/arkiv     one guarded writer per wallet, watcher,        │
@@ -56,8 +56,8 @@ Source of truth for the plan: [CLAUDE.md](../CLAUDE.md). This page describes how
 ## Data flow: remember / recall (built, S2)
 Code: `apps/server/src/memory/service.ts`, `engine/*`, `arkiv/store.ts`, `memory/sync.ts`. Every tool first re-checks the agent on ENS (registered to its wallet, status active, records complete; unreadable ENS → "authority unknown"). `recall` ranks by shared words + recency within an optional folder, returns quarantined items flagged with a reason (never as facts), adds only active ones to the agent's read-set and logs every reader. `remember` checks ENS (registered, active, folder within `sb.scope`), takes `cites` or the read-set as parents, computes trust = min(parents) and roots = union, then the agent's own wallet writes one Arkiv batch: memory + edges + taint rows + `changeOwnership` to the team wallet (one transaction, `$creator` agent ≠ `$owner` team). The tool answers as soon as the key is known (`pending`); the dashboard gets `memory` at once and `confirmed` with the proof link when the receipt lands (~5 s), or `write_failed`. On startup the server starts the watcher, then loads every memory for `app + team` from the known wallets (rejecting any whose `$creator` is not the agent it names) and rebuilds the graph; memories written by another process arrive through the watcher.
 
-## Data flow: revoke ⏳
-Dry run (memories, agents, vendors, readers, pending payments) → team wallet writes `sb.revocation` (max lifetime) → `payments.onRevoke` (vault `revokeRoot`, cancel intents) → purge read-sets → `sb.notice` for authors and readers → SSE. Revoke finds every derived memory with one query: `sb.taint where root = X`.
+## Data flow: revoke (built, S3)
+Code: `apps/server/src/memory/undo.ts`. Dry run (live memories whose roots include the target, or by its author, plus all descendants; authors, vendors, readers from the read log, pending payments, the vault root hash `keccak256(id)`) → the team wallet writes `sb.revocation` (max lifetime) and nothing else happens unless that lands → quarantine → `payments.onRevoke` (vault `revokeRoot` / `pauseAgent`, cancel intents; a failure is reported, the revoke stands) → purge read-sets → notices for authors and readers (in memory at once, `sb.notice` on Arkiv) → SSE `revocation` + `notice`. Each agent's next tool result starts with the retraction. Keep = one owner batch extending the memory and its edge + taint rows; refused when quarantined, so lies fade. On Arkiv, every memory derived from a source is one query away: `sb.taint where root = X`.
 
 ## Data flow: pay
 Lane B's `createPayments`: policy over the whole team graph (ENS mismatch hard block, outside-content payee, caps) → intent → World approval when needed → attestation → BrainVault on Sepolia, which itself checks `getOwner(labelhash) == agent wallet` on chain. Mounted in the server in S5 ⏳.

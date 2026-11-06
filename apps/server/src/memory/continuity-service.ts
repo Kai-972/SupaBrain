@@ -33,12 +33,17 @@ const BLOCK_CODES = new Set(["NOT_AUTHORIZED", "SCOPE", "RATE_LIMIT", "STOPPED",
 const DAY_MS = 86_400_000;
 
 /** The last 200 refusals and stops, newest first; each one is also streamed as `blocked`. */
+export interface BlockedStore { load(): BlockedEntry[]; save(entries: BlockedEntry[]): void }
+
 export class BlockedLog {
   private readonly entries: BlockedEntry[] = [];
-  constructor(private readonly emit: (b: BlockedEntry) => void, private readonly capacity = 200) {}
+  constructor(private readonly emit: (b: BlockedEntry) => void, private readonly capacity = 200, private readonly persist?: BlockedStore) {
+    try { this.entries.push(...(persist?.load() ?? []).slice(0, capacity)); } catch { /* a bad file is not fatal */ }
+  }
   record(b: BlockedEntry): BlockedEntry {
     this.entries.unshift(b);
     if (this.entries.length > this.capacity) this.entries.pop();
+    try { this.persist?.save(this.entries); } catch { /* disk full etc.: the live stream still has it */ }
     this.emit(b);
     return b;
   }

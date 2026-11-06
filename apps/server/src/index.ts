@@ -11,7 +11,8 @@ import { createApp } from "./app";
 import { createArkivMemoryStore } from "./arkiv/store";
 import { startSync } from "./memory/sync";
 import { mountPayments } from "./payments/mount";
-import { createRuntime } from "./runtime";
+import { join } from "node:path";
+import { createRuntime, fileBlockedStore } from "./runtime";
 
 const log = (line: string) => console.log(`${new Date().toISOString().slice(11, 19)} ${line}`);
 
@@ -61,7 +62,7 @@ async function main() {
     lifetimeSec: { memory: config.app.arkivExpirySec.memory, evidence: config.app.arkivExpirySec.evidence, notice: config.app.arkivExpirySec.notice, paymentIntent: config.app.arkivExpirySec.paymentIntent, paymentDecision: config.app.arkivExpirySec.paymentDecision },
     log,
   });
-  const runtime = createRuntime({ config, ens, store, log });
+  const runtime = createRuntime({ config, ens, store, log, blockedStore: fileBlockedStore(join(root, ".data", `blocked-${config.app.appNamespace}-${config.app.team.id}.json`)) });
   const sync = startSync({ store, graph: runtime.graph, bus: runtime.bus, notices: runtime.notices, tickMs: 30_000, log });
   const t0 = Date.now();
   const rebuilt = await sync.ready;

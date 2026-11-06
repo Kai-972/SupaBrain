@@ -22,3 +22,6 @@ contracts/broadcast/*/31337/
 
 .DS_Store
 *.log
+
+# server runtime state (refusal log)
+.data/

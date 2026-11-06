@@ -106,7 +106,8 @@ export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority
     const send = (s: { seq: number; event: unknown }) => res.write(`id: ${s.seq}\ndata: ${JSON.stringify(strip(s.event))}\n\n`);
     for (const s of bus.since(since)) send(s);
     const off = bus.subscribe(send);
-    const ping = setInterval(() => res.write(": ping\n\n"), 15_000);
+    // A named event (not a comment) so the browser can see it: the web app's watchdog reconnects when pings stop.
+    const ping = setInterval(() => res.write(`event: ping\ndata: ${bus.head()}\n\n`), 10_000);
     req.on("close", () => { off(); clearInterval(ping); });
   });
 

@@ -5,8 +5,8 @@
     "environment": "production",
     "verifyBaseUrl": "https://developer.world.org",
     "rpSignatureTtlSec": 300,
-    "allowLegacyProofs": false,
-    "credentials": ["proof_of_human", "selfie"],
+    "allowLegacyProofs": true,
+    "credentials": ["proof_of_human"],
     "actionPrefix": "supabrain-pay",
     "pollIntervalMs": 2000
   },

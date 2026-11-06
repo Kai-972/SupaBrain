@@ -4,7 +4,7 @@
 // something else can't hide a poisoned address. Every ENS failure fails closed (authority unknown → blocked).
 // HARD reasons block; SOFT reasons need a World approval; none → allow.
 import type { AgentView, EnsAuthority, GraphView, MemoryNode, PayReason } from "@supabrain/shared";
-import { formatUnits, getAddress, isAddress, keccak256, parseUnits, stringToHex } from "viem";
+import { formatUnits, getAddress, isAddress, keccak256, parseUnits, stringToHex, zeroAddress } from "viem";
 import { normalize } from "viem/ens";
 
 type Hex = `0x${string}`;
@@ -20,6 +20,11 @@ export interface PolicyContext {
   maxRoots: number;
   /** Token decimals (USDC: 6, checked at startup). */
   decimals: number;
+  /**
+   * Addresses the team's own infrastructure controls (agent wallets, the vault, the token, server keys), lowercase →
+   * label. Money sent there leaves the vault's controls (ceilings, kill switch, revocations), so they are never payees.
+   */
+  protectedPayees?: ReadonlyMap<string, string>;
 }
 
 export interface PolicyRequest {
@@ -126,6 +131,13 @@ async function decide(ctx: PolicyContext, req: PolicyRequest, amountUnits: bigin
     payeeEns = payeeName;
   } else {
     payee = getAddress(req.payee);
+  }
+
+  // Never a payee: the zero address, or anything the team's own infrastructure controls (V3 red team R1/R2).
+  if (payee === zeroAddress) return blockedEarly(notAuthorized("payee is the zero address"), amountUnits, a);
+  const guarded = ctx.protectedPayees?.get(payee.toLowerCase());
+  if (guarded) {
+    return blockedEarly(notAuthorized(`payee is a team-controlled wallet (${guarded}): money sent there would leave the vault's controls`), amountUnits, a);
   }
 
   const addrNodes = graph.memoriesByAddress(payee);

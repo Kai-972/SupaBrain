@@ -310,7 +310,7 @@ describe("decidePayment: red team (V3)", () => {
 });
 
 describe("decidePayment: V3 red team round 2 (each was ALLOWED before the fix)", () => {
-  const AGENT_W = "0xA000000000000000000000000000000000000001"; // lead-claude's wallet in this fixture
+  const AGENT_W = "0xA000000000000000000000000000000000000001" as const; // lead-claude's wallet in this fixture
   const VAULT = "0x2DA794b8dD00AfC970B372D7Cf960EcD1f190Ec8";
   const TOKEN = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
   const ZERO = "0x0000000000000000000000000000000000000000";
@@ -329,7 +329,7 @@ describe("decidePayment: V3 red team round 2 (each was ALLOWED before the fix)",
   ])("R1/R2: %s can't be paid even after a prior approval and a clean memory", async (_n, addr) => {
     guarded();
     f.paid.add(addr.toLowerCase()); // a human approved one payment there before
-    f.graph.add(node("0xR1", { trust: 2, kind: "address", address: addr, roots: [] })); // a clean agent memory
+    f.graph.add(node("0xR1", { trust: 2, kind: "address", address: addr as `0x${string}`, roots: [] })); // a clean agent memory
     const d = await decidePayment(f.ctx, { agent: "lead-claude", payee: addr, amount: "1" });
     expect(d.outcome).toBe("blocked");
     if (d.outcome === "error") throw new Error();

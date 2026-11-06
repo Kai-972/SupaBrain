@@ -41,6 +41,8 @@ export interface PaymentsRuntime {
   policySigner: LocalAccount;
   guardian: Signer;
   approvals: ApprovalProvider;
+  /** Team-controlled addresses that are never payees (agent wallets, vault, token, server keys); lowercase → label. */
+  protectedPayees?: ReadonlyMap<string, string>;
   now(): number; // ms
   log?(msg: string): void; // names and public values only
 }
@@ -74,6 +76,16 @@ export function createPaymentsEngine(deps: PaymentsDeps, rt: PaymentsRuntime): P
   const intents = new Map<string, Intent>();
   const order: string[] = [];
   const log = rt.log ?? (() => undefined);
+
+  // One evaluate→execute at a time per agent: otherwise concurrent payments all read spentToday before any lands and
+  // jointly pass the ENS daily limit (V3 red team R3). Waiting for a human happens outside the lock.
+  const locks = new Map<string, Promise<unknown>>();
+  function withAgentLock<T>(agent: string, fn: () => Promise<T>): Promise<T> {
+    const prev = locks.get(agent) ?? Promise.resolve();
+    const next = prev.catch(() => undefined).then(fn);
+    locks.set(agent, next.catch(() => undefined));
+    return next;
+  }
 
   const record = (i: Intent): Payment => ({
     intentId: i.intentId, agent: i.agent, payee: i.payee, payeeEns: i.payeeEns,
@@ -112,7 +124,7 @@ export function createPaymentsEngine(deps: PaymentsDeps, rt: PaymentsRuntime): P
       return { failed: `vault read failed: ${errMsg(e)}` };
     }
     const d = await decidePayment(
-      { ens: deps.ens, graph: deps.graph, hasPaid, spentTodayUnits: spent, maxRoots: rt.maxRoots, decimals: rt.decimals },
+      { ens: deps.ens, graph: deps.graph, hasPaid, spentTodayUnits: spent, maxRoots: rt.maxRoots, decimals: rt.decimals, protectedPayees: rt.protectedPayees },
       req,
     );
     if (d.outcome === "error") return { failed: d.error };
@@ -169,6 +181,11 @@ export function createPaymentsEngine(deps: PaymentsDeps, rt: PaymentsRuntime): P
       await settle(i, { status: "expired", intentId: i.intentId });
       return;
     }
+    await withAgentLock(i.agent, () => approvedPath(i));
+  }
+
+  async function approvedPath(i: Intent): Promise<void> {
+    if (i.final) return;
     // Approval clears SOFT reasons only. Every HARD check runs again, live.
     const signer = rt.agentSigner(i.agent);
     if (!signer) {
@@ -195,6 +212,10 @@ export function createPaymentsEngine(deps: PaymentsDeps, rt: PaymentsRuntime): P
   async function pay(agent: string, input: { payee: string; amount: string; memo: string; cites?: string[] }): Promise<PayDecision> {
     const req: PolicyRequest = { agent, payee: input.payee, amount: input.amount, cites: input.cites };
     const i = newIntent(agent, req, input.memo);
+    return withAgentLock(agent, () => decideAndRun(i, agent, req, input.cites));
+  }
+
+  async function decideAndRun(i: Intent, agent: string, req: PolicyRequest, cites: string[] | undefined): Promise<PayDecision> {
     const signer = rt.agentSigner(agent);
     if (!signer) return settle(i, { status: "failed", error: `no signing key for agent ${agent}`, intentId: i.intentId });
 
@@ -205,7 +226,7 @@ export function createPaymentsEngine(deps: PaymentsDeps, rt: PaymentsRuntime): P
     i.payeeEns = d.payeeEns;
     i.amountUnits = d.amountUnits;
     i.roots = d.roots;
-    i.lineage = [...new Set([...d.lineage, ...(input.cites ?? []), ...d.path])];
+    i.lineage = [...new Set([...d.lineage, ...(cites ?? []), ...d.path])];
 
     if (d.outcome === "blocked") return settle(i, { status: "blocked", reasons: d.reasons, path: d.path, intentId: i.intentId });
     if (d.outcome === "allow") return settle(i, await execute(i, signer, false));
@@ -242,7 +263,7 @@ export function createPaymentsEngine(deps: PaymentsDeps, rt: PaymentsRuntime): P
     return true;
   }
 
-  return {
+  const api: Payments & { settled(intentId: string): Promise<PayDecision> } = {
     pay,
 
     async status(intentId) {
@@ -298,6 +319,8 @@ export function createPaymentsEngine(deps: PaymentsDeps, rt: PaymentsRuntime): P
       if (i) await cancelIntent(i);
     },
   };
+  Object.defineProperty(api, "__rt", { value: rt, enumerable: false }); // tests only: rebuild with overrides
+  return api;
 
   async function agentWallet(label: string): Promise<Hex> {
     try {

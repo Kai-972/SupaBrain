@@ -83,6 +83,17 @@ export function buildRuntime(deps: PaymentsDeps, env: NodeJS.ProcessEnv = proces
     },
   };
 
+  // Never payees (V3 red team R1/R2): money sent to a server-held key or to the vault/token leaves the vault's controls.
+  // The owner is deliberately NOT here: refunds go to the owner, whose key never touches the server.
+  const protectedPayees = new Map<string, string>([
+    [dep.address.toLowerCase(), "BrainVault"],
+    [usdc.address.toLowerCase(), `${usdc.symbol} token`],
+    [policySigner.address.toLowerCase(), "policy signer"],
+    [guardian.account.address.toLowerCase(), "guardian"],
+  ]);
+  for (const [label, a] of Object.entries(cfg.deployments.ens?.agents ?? {})) protectedPayees.set(a.wallet.toLowerCase(), `agent wallet ${label}`);
+  for (const [label, s] of agents) protectedPayees.set(s.account.address.toLowerCase(), `agent wallet ${label}`);
+
   const vault = createVaultClient({ publicClient, address: dep.address, txUrl: (hash) => explorerLink(net.explorer.tx, { hash }) });
 
   const ready = (async () => {
@@ -115,6 +126,7 @@ export function buildRuntime(deps: PaymentsDeps, env: NodeJS.ProcessEnv = proces
     policySigner,
     guardian,
     approvals,
+    protectedPayees,
     now: () => Date.now(),
     log: (m) => console.warn(`[payments] ${redactUrls(m)}`),
   };

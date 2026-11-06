@@ -6,7 +6,7 @@ type Story = typeof story & { tagText?: string; tagW?: number; blockedCount?: nu
 
 export function mountLanding(root: HTMLElement, S: Story): () => void {
   const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const cssv = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const cssv = (n, el = document.documentElement) => getComputedStyle(el).getPropertyValue(n).trim();
   const GLOW = 10;
   const q = (s) => root.querySelector(s);
   const qa = (s) => [...root.querySelectorAll(s)];
@@ -20,7 +20,7 @@ export function mountLanding(root: HTMLElement, S: Story): () => void {
     if (!cv) return;
     const ctx = cv.getContext("2d");
     let W, H, N = [], E = [], P = [], lie = -1, lieT = 0, run = true;
-    const C = () => ({ line: cssv("--line"), node: cssv("--line2"), flow: cssv("--flow"), lie: cssv("--lie") });
+    const C = () => ({ line: cssv("--line2", cv), node: cssv("--dim", cv), flow: cssv("--yellow", cv), lie: cssv("--lie", cv) });
     const R = (a, b) => a + Math.random() * (b - a);
     function init() {
       const d = Math.min(2, devicePixelRatio || 1), r = cv.getBoundingClientRect(); W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0);
@@ -173,7 +173,7 @@ export function mountLanding(root: HTMLElement, S: Story): () => void {
   /* ============ dot-matrix tiles ============ */
   qa("canvas[data-m]").forEach((cv) => {
     const ctx = cv.getContext("2d"), mode = cv.dataset.m; let W, H, cols, rows, sp = 11, cells = [], run = false; const t0 = performance.now() - 4000;
-    const C = () => ({ off: cssv("--line"), dim: cssv("--line2"), flow: cssv("--flow"), fg: cssv("--fg"), lie: cssv("--lie"), amber: cssv("--amber") });
+    const C = () => ({ off: cssv("--line", cv), dim: cssv("--line2", cv), flow: cssv("--fg", cv), fg: cssv("--dim", cv), lie: cssv("--lie", cv), amber: cssv("--yellow", cv) });
     function init() { const d = Math.min(2, devicePixelRatio || 1), r = cv.getBoundingClientRect(); W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); cols = Math.floor((W - 16) / sp); rows = Math.floor((H - 16) / sp); cells = []; for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) cells.push({ x, y, r: Math.random(), life: Math.random(), keep: Math.random() < 0.06 }); }
     function dot(x, y, c, a, rad?) { ctx.globalAlpha = a; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(8 + x * sp + sp / 2, 8 + y * sp + sp / 2, rad || 2.6, 0, 6.3); ctx.fill(); }
     function draw(now) {

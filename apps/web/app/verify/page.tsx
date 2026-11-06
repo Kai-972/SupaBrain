@@ -43,7 +43,7 @@ function Verify() {
             <div className="codewrap"><pre className="code">pnpm verify:memory {key}</pre><Copy text={`pnpm verify:memory ${key}`} /></div>
           </div>
         </div>
-        <HeadsTable id={id} heads={heads} />
+        <div data-tour="heads"><HeadsTable id={id} heads={heads} /></div>
         <h2 className="h2">Honest limits</h2>
         <div className="card pad" style={{ display: "grid", gap: 10 }}>{faq.limits.map((l, i) => <p key={i} className="small" style={{ margin: 0 }}>{l}</p>)}</div>
         <h2 className="h2">Questions judges ask</h2>

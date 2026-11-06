@@ -24,7 +24,7 @@ interface Props {
   onSelect: (key: string) => void;
 }
 
-const HEAD_H = 56, ROW = 64, TOP = 24, TIMECOL = 64;
+const HEAD_H = 60, ROW = 72, TOP = 26, TIMECOL = 72;
 const LANE_COLOR: Record<string, string> = { claude: "var(--vc)", gemini: "var(--vg)", openai: "var(--vo)", human: "var(--vh)" };
 
 export function CommitGraph({ nodes, blocked, lanes, heads, selected, hot, cascade, onSelect }: Props) {
@@ -136,7 +136,7 @@ export function CommitGraph({ nodes, blocked, lanes, heads, selected, hot, casca
               <g key={`b${r.at}${i}`} className="node blockrow" onMouseEnter={(e) => setTip({ x: e.clientX, y: e.clientY, row: r })}>
                 <rect x={x - 6} y={y - 6} width={12} height={12} rx={2} className="blk" />
                 <path className="x" style={{ opacity: 1, stroke: "var(--lie-on)" }} d={`M${x - 3},${y - 3}L${x + 3},${y + 3}M${x + 3},${y - 3}L${x - 3},${y + 3}`} />
-                <g className="tag bad"><rect x={lx} y={y - 8} width={label.length * 6.1 + 12} height={16} rx={4} /><text x={lx + (label.length * 6.1 + 12) / 2} y={y + 3.2} textAnchor="middle">{label}</text></g>
+                <g className="tag bad"><rect x={lx} y={y - 8} width={label.length * 6.7 + 14} height={16} rx={4} /><text x={lx + (label.length * 6.7 + 14) / 2} y={y + 3.2} textAnchor="middle">{label}</text></g>
                 {!narrow && <text className="meta" x={lx} y={y + 21}>{r.b.ens ?? r.b.agent} · nothing was written · {r.b.tool}</text>}
               </g>
             );
@@ -149,7 +149,7 @@ export function CommitGraph({ nodes, blocked, lanes, heads, selected, hot, casca
           const color = LANE_COLOR[n.vendor] ?? "var(--fg)";
           const right = !narrow || x < W / 2;
           const avail = right ? W - x - 30 : x - 30;
-          const maxCh = Math.max(12, Math.floor(avail / 7.2));
+          const maxCh = Math.max(12, Math.floor(avail / 7.9));
           const raw = n.text.replace(/\s+/g, " ").trim() || n.kind;
           const label = raw.length > maxCh ? raw.slice(0, maxCh - 1) + "…" : raw;
           const lx = right ? x + 16 : x - 16;
@@ -161,7 +161,7 @@ export function CommitGraph({ nodes, blocked, lanes, heads, selected, hot, casca
           if (isHead && !q) tags.push({ t: "HEAD", c: "warn" });
           if (!isCp) tags.push({ t: n.kind.toUpperCase(), c: "mut" });
           let tx = lx;
-          const tagEls = tags.map((t) => { const w = t.t.length * 6.1 + 12; const gx = right ? tx : tx - w; tx = right ? tx + w + 5 : tx - w - 5; return <g key={t.t} className={`tag ${t.c}`}><rect x={gx} y={y + 9} width={w} height={15} rx={4} /><text x={gx + w / 2} y={y + 19.6} textAnchor="middle">{t.t}</text></g>; });
+          const tagEls = tags.map((t) => { const w = t.t.length * 6.7 + 14; const gx = right ? tx : tx - w; tx = right ? tx + w + 5 : tx - w - 5; return <g key={t.t} className={`tag ${t.c}`}><rect x={gx} y={y + 10} width={w} height={17} rx={4} /><text x={gx + w / 2} y={y + 21.8} textAnchor="middle">{t.t}</text></g>; });
           const attach = [r.files.length ? `▤ ${r.files.length} file${r.files.length > 1 ? "s" : ""}` : "", r.tasks.length ? `☐ ${r.tasks.length} task${r.tasks.length > 1 ? "s" : ""}` : "", n.checkpoint?.done?.length ? `✓ ${n.checkpoint.done.length} done` : ""].filter(Boolean).join(" · ");
           const client = n.checkpoint?.client;
           const meta = `T${n.trust}${client ? ` · ${client === "supabrain-lab" ? "LAB" : client}` : ""}${attach ? ` · ${attach}` : ""}${n.source ? ` · ${n.source.id}` : ""}`;
@@ -172,7 +172,7 @@ export function CommitGraph({ nodes, blocked, lanes, heads, selected, hot, casca
               style={{ transformBox: "fill-box", transformOrigin: "center" }}
               onClick={() => onSelect(n.key)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(n.key); } }}
               onMouseEnter={(e) => setTip({ x: e.clientX, y: e.clientY, row: r })} onMouseLeave={() => setTip(undefined)}>
-              <rect x={Math.min(x, lx) - 12} y={y - 16} width={Math.abs(lx - x) + Math.min(avail, label.length * 7.3) + 24} height={44} fill="transparent" />
+              <rect x={Math.min(x, lx) - 12} y={y - 16} width={Math.abs(lx - x) + Math.min(avail, label.length * 7.9) + 24} height={44} fill="transparent" />
               <circle className="sel" cx={x} cy={y} r={13} />
               {isHead && !q && <circle className="headring" cx={x} cy={y} r={11} />}
               {casc?.has(n.key) && <circle className="rip" cx={x} cy={y} r={6}><animate attributeName="r" from="6" to="140" dur="1.4s" fill="freeze" /><animate attributeName="opacity" from="0.9" to="0" dur="1.4s" fill="freeze" /></circle>}
@@ -180,7 +180,7 @@ export function CommitGraph({ nodes, blocked, lanes, heads, selected, hot, casca
               <path className="x" d={`M${x - 3.2},${y - 3.2}L${x + 3.2},${y + 3.2}M${x + 3.2},${y - 3.2}L${x - 3.2},${y + 3.2}`} />
               <text className="lb" x={lx} y={y + 4.5} textAnchor={anchor}>{label}</text>
               {tagEls}
-              {!narrow && <text className="meta" x={tx + (right ? 2 : -2)} y={y + 20} textAnchor={anchor}>{meta}</text>}
+              {!narrow && <text className="meta" x={tx + (right ? 2 : -2)} y={y + 23} textAnchor={anchor}>{meta}</text>}
             </g>
           );
         })}

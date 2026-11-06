@@ -51,13 +51,13 @@ function BrainPage() {
         {(["graph", "ais", "log"] as const).map((t) => <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>{t === "graph" ? "Commits" : t === "ais" ? "AIs" : "Live log"}</button>)}
       </div>
       <div className="bgrid">
-        <aside className={`rail${tab !== "ais" ? " mhide" : ""}`} aria-label="The AIs">
+        <aside className={`rail${tab !== "ais" ? " mhide" : ""}`} aria-label="The AIs" data-tour="rail">
           <div className="row" style={{ justifyContent: "space-between" }}><span className="eyebrow"><i />AIs · {brain?.agents.length ?? 0}</span><Link className="btn g xs" href={href("/connect")}>+ Connect</Link></div>
           {!brain && [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 180 }} />)}
           {brain?.agents.map((a) => <AgentCard key={a.label} a={a} rule={rules?.agents.find((r) => r.agent === a.label)} head={heads.find((h) => h.agent === a.label)} />)}
           <Link className="btn g sm wide" href={href(`/b/${id}/rules`)}>Rules on ENS →</Link>
         </aside>
-        <section className={`stage${tab !== "graph" ? " mhide" : ""}`} aria-label="Commit graph">
+        <section className={`stage${tab !== "graph" ? " mhide" : ""}`} aria-label="Commit graph" data-tour="graph">
           <div className="stagebar">
             <span className="mono tiny dim">FIG. 1</span><b>Commit graph</b>
             <span className="small muted hide-sm">one lane per AI · newest at the bottom</span>

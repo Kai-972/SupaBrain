@@ -52,10 +52,10 @@ function LabPage() {
       <div className="lab">
         <Console agent={L} other={R} agents={agents} onAgent={setLeft} presentPin={(e) => setPin(e)} />
         <div className="centre">
-          <RulesStrip />
+          <div data-tour="rules"><RulesStrip /></div>
           <NextReads as={agents.find((a) => a.label === reader)} agents={agents} onAs={setReader} tick={doneCount} />
         </div>
-        <Console agent={R} other={L} agents={agents} onAgent={setRight} presentPin={(e) => setPin(e)} />
+        <div data-tour="lab-attack" style={{ minWidth: 0 }}><Console agent={R} other={L} agents={agents} onAgent={setRight} presentPin={(e) => setPin(e)} /></div>
       </div>
       {present && pinned && <div className="toastpin"><Outcome e={pinned} agent={agents.find((a) => a.label === pinned.agent)} other={pinned.agent === left ? R : L} /></div>}
       {login && <OwnerLogin onClose={() => setLogin(false)} />}

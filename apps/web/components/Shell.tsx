@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
 import { boot, brainId, refreshAdmin, refreshRules, toast, useStore } from "@/lib/store";
 import { Logo, Modal } from "./ui";
+import { startTour, Tour } from "./Tour";
 
 export function useBoot() {
   const sp = useSearchParams();
@@ -26,18 +27,18 @@ export function useBrainId() {
 }
 
 function Pref() {
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState("light");
   const [big, setBig] = useState(false);
-  useEffect(() => { setTheme(document.documentElement.dataset.theme ?? "dark"); setBig(document.documentElement.dataset.big === "1"); }, []);
+  useEffect(() => { setTheme(document.documentElement.dataset.theme ?? "light"); setBig(document.documentElement.dataset.big === "1"); }, []);
   const save = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
   return (
     <>
       <button className="iconbtn hide-sm" aria-pressed={big} title="Projector size (bigger text)" onClick={() => {
         const n = !big; setBig(n); if (n) document.documentElement.dataset.big = "1"; else delete document.documentElement.dataset.big; save("sb-big", n ? "1" : "0");
       }}>Aa</button>
-      <button className="iconbtn" title={theme === "light" ? "Dark theme" : "Light theme"} aria-label="Toggle theme" onClick={() => {
-        const n = theme === "light" ? "dark" : "light"; setTheme(n); document.documentElement.dataset.theme = n; save("sb-theme", n);
-      }}>{theme === "light" ? "☾" : "☀"}</button>
+      <button className="iconbtn" title={theme === "dark" ? "Light theme" : "Dark theme"} aria-label="Toggle theme" onClick={() => {
+        const n = theme === "dark" ? "light" : "dark"; setTheme(n); if (n === "dark") document.documentElement.dataset.theme = "dark"; else delete document.documentElement.dataset.theme; save("sb-theme", n);
+      }}>{theme === "dark" ? "☀" : "☾"}</button>
     </>
   );
 }
@@ -127,6 +128,7 @@ export function Shell({ children, right, wide }: { children: ReactNode; right?: 
           </nav>
           <span className="spacer" />
           {right}
+          <button className="btn ink sm hide-sm" onClick={startTour} title="A guided 4-minute walk-through with what to say and click">Take the tour</button>
           <LiveDot />
           <Pref />
           <OwnerButton />
@@ -139,6 +141,7 @@ export function Shell({ children, right, wide }: { children: ReactNode; right?: 
       </header>
       {children}
       <Toasts />
+      <Tour />
     </div>
   );
 }

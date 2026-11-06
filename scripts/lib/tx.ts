@@ -90,8 +90,19 @@ export class Runner {
     // When broadcasting, earlier steps are already mined, so even "depends on earlier steps" steps can be simulated.
     if (step.simulate !== false || this.broadcast) {
       try {
-        await pub.simulateContract({ account, address: step.address, abi: step.abi, functionName: step.functionName, args: step.args as unknown[], value: step.value });
-        estimate = await pub.estimateContractGas({ account, address: step.address, abi: step.abi, functionName: step.functionName, args: step.args as unknown[], value: step.value });
+        // Public RPCs are load-balanced: right after a deploy a lagging node answers "returned no data" (no code
+        // yet). That is not a revert; retry a few times before believing it.
+        for (let attempt = 1; ; attempt++) {
+          try {
+            await pub.simulateContract({ account, address: step.address, abi: step.abi, functionName: step.functionName, args: step.args as unknown[], value: step.value });
+            estimate = await pub.estimateContractGas({ account, address: step.address, abi: step.abi, functionName: step.functionName, args: step.args as unknown[], value: step.value });
+            break;
+          } catch (e) {
+            const lagging = e instanceof Error && /returned no data/.test(e.message);
+            if (!lagging || attempt >= 5) throw e;
+            await new Promise((r) => setTimeout(r, 3_000));
+          }
+        }
         simulated = "ok";
         console.log(`    sim   ok (gas estimate ${estimate})`);
       } catch (e) {

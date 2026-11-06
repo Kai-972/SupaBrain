@@ -22,6 +22,11 @@
         "hash": "0x3f363dcb95354fe9aad5fcfaf81ae8c2f29b648bf1f69b70cd9988f75012d780",
         "url": "https://sepolia.etherscan.io/tx/0x3f363dcb95354fe9aad5fcfaf81ae8c2f29b648bf1f69b70cd9988f75012d780",
         "at": "2026-11-06T02:36:36.669Z"
+      },
+      "mint": {
+        "hash": "0xb5de91bcc447b0dcef964f7399222f29f3317319480c79c5bb77bfeee5762a4c",
+        "url": "https://sepolia.etherscan.io/tx/0xb5de91bcc447b0dcef964f7399222f29f3317319480c79c5bb77bfeee5762a4c",
+        "at": "2026-11-06T02:36:00.000Z"
       }
     }
   },
@@ -44,6 +49,112 @@
       }
     }
   },
-  "agents": {},
+  "agents": {
+    "gem-research": {
+      "label": "gem-research",
+      "ens": "gem-research.supabrain.eth",
+      "labelhash": "0xdd958735dfc667b0f13a6993cb556e1c889cfa74b9ac905971d6621b812bc992",
+      "wallet": "0x6c57ACAA7116c8b539EbA60698B7b644C6b4590c",
+      "resolver": "0x5f849E68CbF67Fc4219Fe7E2f810e725afA960c4",
+      "resolverSalt": "94853881797011628856930975040099737134094331491718103066147848143316101708384",
+      "expiry": 1794537636,
+      "txs": {
+        "deployResolver": {
+          "hash": "0xafb80af59904e3577d12fa36af590ede933f5b91171c54b63c5a0865d1b491b8",
+          "url": "https://sepolia.etherscan.io/tx/0xafb80af59904e3577d12fa36af590ede933f5b91171c54b63c5a0865d1b491b8",
+          "at": "2026-11-06T02:41:02.422Z"
+        },
+        "grantMemoryHead": {
+          "hash": "0x29eb861b19b729b35c1c033bf21634c2c7014081badf344fdea73feaf7b534e6",
+          "url": "https://sepolia.etherscan.io/tx/0x29eb861b19b729b35c1c033bf21634c2c7014081badf344fdea73feaf7b534e6",
+          "at": "2026-11-06T02:41:14.265Z"
+        },
+        "register": {
+          "hash": "0xa5dff4507edbaba49e6723e82ed28450dd3aee00ba32380a592ce11a80ed38e9",
+          "url": "https://sepolia.etherscan.io/tx/0xa5dff4507edbaba49e6723e82ed28450dd3aee00ba32380a592ce11a80ed38e9",
+          "at": "2026-11-06T02:41:26.299Z"
+        }
+      },
+      "records": {
+        "sb.role": "worker",
+        "sb.scope": "research",
+        "sb.pay.cap": "2",
+        "sb.pay.daily": "4",
+        "sb.status": "active",
+        "sb.vendor": "gemini",
+        "agent-context": "Supabrain agent gem-research.supabrain.eth: worker (gemini) writing to \"research\". Rules are ENS records only the team owner can change."
+      }
+    },
+    "lead-claude": {
+      "label": "lead-claude",
+      "ens": "lead-claude.supabrain.eth",
+      "labelhash": "0x34048fdd99f2c049a47e5530cbe56c562d35ce4219fd9becf5a6f6ce2b62c3c7",
+      "wallet": "0xEd4ae94521A00BE3e432173F00009AFB90641bfC",
+      "resolver": "0x1943fE27afFDF9acEFE5e17b4131d4da3ea94957",
+      "resolverSalt": "16347516236854862054491161442251514009581111091848564673530119745446781547814",
+      "expiry": 1794537684,
+      "txs": {
+        "deployResolver": {
+          "hash": "0x4a3f01e3d26ba271173a690549db948dc689547239f270a99d4b91812560ad4a",
+          "url": "https://sepolia.etherscan.io/tx/0x4a3f01e3d26ba271173a690549db948dc689547239f270a99d4b91812560ad4a",
+          "at": "2026-11-06T02:41:48.700Z"
+        },
+        "grantMemoryHead": {
+          "hash": "0x665597df10a621d4fcdbce86a00a9ec56101fb3b918bfd0d45d94d1d5d14d9c3",
+          "url": "https://sepolia.etherscan.io/tx/0x665597df10a621d4fcdbce86a00a9ec56101fb3b918bfd0d45d94d1d5d14d9c3",
+          "at": "2026-11-06T02:42:02.115Z"
+        },
+        "register": {
+          "hash": "0x6e67dc4abd5398041a24fb6c91f7127383f4599927eff5a3ea2ea64c188114ba",
+          "url": "https://sepolia.etherscan.io/tx/0x6e67dc4abd5398041a24fb6c91f7127383f4599927eff5a3ea2ea64c188114ba",
+          "at": "2026-11-06T02:42:14.858Z"
+        }
+      },
+      "records": {
+        "sb.role": "lead",
+        "sb.scope": "*",
+        "sb.pay.cap": "4",
+        "sb.pay.daily": "30",
+        "sb.status": "active",
+        "sb.vendor": "claude",
+        "agent-context": "Supabrain agent lead-claude.supabrain.eth: lead (claude) writing to \"*\". Rules are ENS records only the team owner can change."
+      }
+    },
+    "gpt-writer": {
+      "label": "gpt-writer",
+      "ens": "gpt-writer.supabrain.eth",
+      "labelhash": "0x5a26a62eabb4a246dd3c8f404498e2ca58f7aac3b5519f16768e8d6512812666",
+      "wallet": "0x4B35c28ad6A77A49d63c052E9c35AdC7A47E14fA",
+      "resolver": "0xCd01AbeAD0693A00737A38F63e7eefa6A0b3C735",
+      "resolverSalt": "86710886248427143643372217300996372861367358215795276057898995518534822333325",
+      "expiry": 1794537768,
+      "txs": {
+        "grantMemoryHead": {
+          "hash": "0x0cdcf56fb31ead1b801add15ff729ee7086326e0372f99154e8800bf39097367",
+          "url": "https://sepolia.etherscan.io/tx/0x0cdcf56fb31ead1b801add15ff729ee7086326e0372f99154e8800bf39097367",
+          "at": "2026-11-06T02:43:13.629Z"
+        },
+        "register": {
+          "hash": "0xe64006f9bba071de3d1549d9c9535ee8b43255c1a7fca20502e999315402cc89",
+          "url": "https://sepolia.etherscan.io/tx/0xe64006f9bba071de3d1549d9c9535ee8b43255c1a7fca20502e999315402cc89",
+          "at": "2026-11-06T02:43:21.289Z"
+        },
+        "deployResolver": {
+          "hash": "0x18e73e01885582971a53e2694eb3ee2f9e70adaafae826fc5946ad066c326142",
+          "url": "https://sepolia.etherscan.io/tx/0x18e73e01885582971a53e2694eb3ee2f9e70adaafae826fc5946ad066c326142",
+          "at": "2026-11-06T02:42:00.000Z"
+        }
+      },
+      "records": {
+        "sb.role": "worker",
+        "sb.scope": "comms",
+        "sb.pay.cap": "0",
+        "sb.pay.daily": "0",
+        "sb.status": "active",
+        "sb.vendor": "openai",
+        "agent-context": "Supabrain agent gpt-writer.supabrain.eth: worker (openai) writing to \"comms\". Rules are ENS records only the team owner can change."
+      }
+    }
+  },
   "vendors": {}
 }

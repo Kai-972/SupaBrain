@@ -20,8 +20,8 @@ const view = (label: string, wallet: `0x${string}`, o: Partial<AgentView> = {}):
 });
 const flush = () => new Promise((r) => setTimeout(r, 5));
 
-describe("lineage survives the demo sequence (Lane B repro of a live run; it.fails until graph.walk is fixed)", () => {
-  it.fails("M1 ← E1 and M2 ← M1 keep their parents after seeding, confirmations and a blocked P1", async () => {
+describe("lineage survives the demo sequence (Lane B repro of a live run)", () => {
+  it("M1 ← E1 and M2 ← M1 keep their parents after seeding, confirmations and a blocked P1", async () => {
     const ens = new FakeEns({
       agents: { "lead-claude": view("lead-claude", W.lead), "gem-research": view("gem-research", W.gem, { role: "worker", scope: "research", vendor: "gemini" }) },
       names: { "acme.supabrain.eth": ACME }, vendors: ["acme.supabrain.eth"],

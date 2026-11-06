@@ -55,7 +55,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] contents encrypted on Arkiv; the brain's AIs and owner read them; live check on the explorer
 
 ### Step 6: hosting + simple website (A, C)
-- [x] server on Render free (Singapore): https://supabrain-otter.onrender.com (brain otter) · [x] website on Vercel: https://supabrain-eth.vercel.app (API proxied on the same domain, so the owner cookie is first-party) · [ ] full demo from the hosted version (blackslate.me subdomains dropped: no DNS access with Kai offline)
+- [x] server on Render free (Singapore): https://supabrain-otter.onrender.com (brain otter) · [x] website on Vercel: https://supabrain-eth.vercel.app (API proxied on the same domain, so the owner cookie is first-party) · [x] full demo from the hosted version: `pnpm demo:injection --base https://supabrain-otter.onrender.com` 10/10 (2026-11-07 02:45 IST) (blackslate.me subdomains dropped: no DNS access with Kai offline)
 
 ### Step 7: ship
 - [ ] README · [ ] SPONSORS · [ ] arkiv/* · [ ] DEMO_SCRIPT · [ ] SECURITY · [ ] video · [ ] rehearsals · [ ] submitted
@@ -178,6 +178,13 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Log: Lane A (Brain)
+
+### 2026-11-07 02:45 IST · A (Srijit's Claude) · v2 Step 6 hosted judge scene
+- did: ran `pnpm demo:injection --base https://supabrain-otter.onrender.com` (token secret = the host's, read from Render, never printed) on otter; Gemini's scope restored to `*` (it was `*` before). Website: under 360px the top bar drops the logo icon so "Sign in" stays on screen at 320px
+- proof: 10/10 checks · Claude's commit 0x0f001406…6e4e · scope → docs/ https://sepolia.etherscan.io/tx/0xcb2d2eb8e26ab574a280c06b8ba6c38dbc902e397fa222e816a1046d1d1e5e2f · STOPPED (instruction-override) · SCOPE refusal for .github/workflows · HEAD https://sepolia.etherscan.io/tx/0xf08c00305bca6c653ac624d88dfcd504a1fece6460f1f41af5321de707f3cf75 · restore https://sepolia.etherscan.io/tx/0xddf70fc25ac22848970ec5d47788cb0b11351ddb15035221a9576564f77c1484 · https://supabrain-eth.vercel.app/b/otter headline moved 4·3·0 → 5·4·1
+- result: PASS
+- next: rehearse the pitch on the hosted site
+- asks/blockers: none
 
 ### 2026-11-07 02:25 IST · A (Srijit's Claude) · v2 Step 6 hosting
 - did: Render web service `supabrain-otter` (free, Singapore, created through the Render API from the public repo; 12 env values, no owner key; fresh TOKEN_SIGNING_SECRET for the host) and Vercel project `supabrain-eth` (root apps/web). The website proxies `/api/*` and `/healthz` to Render (`SUPABRAIN_API_ORIGIN`, `NEXT_PUBLIC_SERVER_URL="/"`), so the SameSite=Lax owner cookie works. `.vercelignore` keeps `.env*` and `.data/` out of CLI uploads. `.github/workflows/keep-warm.yml` pings both every 10 min (Render's free tier sleeps after 15 idle minutes)

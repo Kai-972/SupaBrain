@@ -354,3 +354,5 @@ a.link:hover, .lede4 a:hover, .p-proof a:hover, .bk-proof a:hover, .res4 a:hover
 .codewrap pre { flex: 1; min-width: 0; overflow-x: auto; margin: 0; }
 .codewrap .btn { position: static; flex: none; margin-top: 8px; }
 .linkstack { display: inline-flex; flex-direction: column; gap: 4px; }
+/* Smallest phones (320px): keep "Sign in" on screen. */
+@media (max-width: 360px) { .topbar4 .in { gap: 4px; padding: 0 10px; } .navlink { padding: 0 6px; font-size: .9rem; } .topbar4 .btn.sm { padding: 0 10px; } .topbar4 .logo { display: none; } }

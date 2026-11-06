@@ -24,7 +24,8 @@
     "ens:add-agent": "tsx scripts/ens/add-agent.ts",
     "ens:prove": "tsx scripts/ens/prove-roles.ts",
     "ens:unregister": "tsx scripts/ens/unregister.ts",
-    "ens:set-records": "tsx scripts/ens/set-records.ts"
+    "ens:set-records": "tsx scripts/ens/set-records.ts",
+    "ens:status": "tsx scripts/ens/status.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

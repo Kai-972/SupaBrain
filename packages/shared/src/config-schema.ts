@@ -22,6 +22,7 @@ export const AppFileSchema = z
     ens: z.object({
       teamLabel: Label.nullable(), // ASK in S1
       leaseDays: z.number().int().positive(),
+      cacheTtlSec: z.number().int().positive(), // how long an authority read may be reused (a few blocks)
       teamNameDurationDays: z.number().int().positive(),
       textKeys: z.object({
         role: z.string(), scope: z.string(), payCap: z.string(), payDaily: z.string(), status: z.string(),

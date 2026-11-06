@@ -5,6 +5,7 @@
   "ens": {
     "teamLabel": "supabrain",
     "leaseDays": 7,
+    "cacheTtlSec": 10,
     "teamNameDurationDays": 28,
     "textKeys": {
       "role": "sb.role",

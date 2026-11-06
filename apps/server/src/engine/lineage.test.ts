@@ -63,3 +63,14 @@ describe("validation", () => {
     expect(() => validateSource({ type: "web", id: "é".repeat(65) })).toThrow(/128/);
   });
 });
+
+describe("scopeAllows with a trailing slash (v2: the website writes scopes like \"docs/\")", () => {
+  it("docs/ allows docs and below, nothing else", () => {
+    expect(scopeAllows("docs/", "docs/readme.md")).toBe(true);
+    expect(scopeAllows("docs/", "docs")).toBe(true);
+    expect(scopeAllows("docs/", ".github/workflows/deploy.yml")).toBe(false);
+    expect(scopeAllows("docs/", "docsevil/x.md")).toBe(false);
+    expect(scopeAllows("src/app/", "src/app/page.tsx")).toBe(true);
+    expect(scopeAllows("src/app/", "src/api/x.ts")).toBe(false);
+  });
+});

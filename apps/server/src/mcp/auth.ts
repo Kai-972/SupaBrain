@@ -9,7 +9,7 @@ export const agentOf = (auth: AuthInfo | undefined): string | undefined => auth?
  * Bearer token from `Authorization: Bearer <t>` or the path (`/mcp/t/:token`, for clients that cannot send headers,
  * such as Claude.ai custom connectors). 401 + WWW-Authenticate on any failure; never echoes the token.
  */
-export function agentAuth(p: { secret: string; knownLabels: readonly string[] }) {
+export function agentAuth(p: { secret: string; knownLabels: readonly string[]; log?: (line: string) => void }) {
   return (req: Request, res: Response, next: NextFunction) => {
     const fromPath = typeof req.params.token === "string" ? req.params.token : undefined;
     const header = req.headers.authorization;
@@ -17,7 +17,9 @@ export function agentAuth(p: { secret: string; knownLabels: readonly string[] })
     const token = fromPath ?? fromHeader;
     const check = token ? verifyAgentToken(token, { secret: p.secret, knownLabels: p.knownLabels }) : ({ ok: false, reason: "missing" } as const);
     if (!check.ok) {
-      const description = check.reason === "missing" ? "Missing bearer token" : `Token rejected: ${check.reason}`;
+      // The client learns only that the token is not valid; why (expired, forged, unknown agent) goes to our log.
+      const description = check.reason === "missing" ? "Missing bearer token" : "Invalid or expired token";
+      if (check.reason !== "missing") p.log?.(`mcp auth rejected: ${check.reason} on ${req.method} ${req.route?.path ?? "?"}`);
       res.set("WWW-Authenticate", `Bearer error="invalid_token", error_description="${description}"`);
       res.status(401).json({ error: "invalid_token", error_description: description });
       return;

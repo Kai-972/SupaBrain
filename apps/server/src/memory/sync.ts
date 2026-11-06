@@ -30,12 +30,15 @@ export function startSync(d: SyncDeps) {
       return;
     }
     d.graph.upsert(n);
-    if (announce) d.bus.emit({ t: "memory", node: d.graph.get(n.key)!, edges: n.parents.map((parent) => ({ parent, child: n.key })) });
+    if (announce) {
+      log(`arkiv watcher: +memory ${n.key} by ${n.agent} (written elsewhere)`);
+      d.bus.emit({ t: "memory", node: d.graph.get(n.key)!, edges: n.parents.map((parent) => ({ parent, child: n.key })) });
+    }
   };
 
   const handlers: StoreWatchHandlers = {
     onMemory: (n) => { errors = 0; merge(n, true); },
-    onRevocation: (t) => { errors = 0; d.graph.applyRevocation(t); },
+    onRevocation: (t) => { errors = 0; log(`arkiv watcher: revocation ${t.type}:${t.id}`); d.graph.applyRevocation(t); },
     onExtended: (key, expiresAt) => {
       if (!d.graph.has(key)) return;
       d.graph.patch(key, { expiresAt });

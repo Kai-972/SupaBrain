@@ -1,6 +1,5 @@
 // Lane B security review of the MCP token design (B-MONEY S4). Each test is a confirmed finding, written as the
-// behaviour we WANT. They are marked `it.fails` so main stays green while the hole is open: when Lane A's fix lands,
-// the test starts passing, `it.fails` turns red, and the fix flips it to `it(...)`.
+// behaviour we WANT. They were `it.fails` while the hole was open; Lane A fixed F1–F3 (+ D4) and flipped them to `it`.
 // Findings: docs/PROGRESS.md (Requests, B → A) and SECURITY.md §7.
 import type { AddressInfo } from "node:net";
 import { request as httpRequest, type Server } from "node:http";
@@ -11,6 +10,8 @@ import { findRootDir, loadConfigFrom } from "@supabrain/shared/config";
 import { createApp } from "../app";
 import { createPaymentsDisabled } from "../payments-disabled";
 import { issueAgentToken } from "../auth/tokens";
+import { createRuntime } from "../runtime";
+import { FakeMemoryStore } from "../memory/fake-store";
 
 const SECRET = "r".repeat(40);
 const config = loadConfigFrom(findRootDir());
@@ -24,10 +25,11 @@ let server: Server | undefined;
 afterEach(() => { server?.close(); server = undefined; });
 
 function start(lines: string[]) {
-  const app = createApp({
-    config, payments: createPaymentsDisabled(), ens: new FakeEns({ agents: { "gem-research": agent("gem-research") } }),
-    tokenSecret: SECRET, log: (l) => lines.push(l),
-  });
+  const ens = new FakeEns({ agents: { "gem-research": agent("gem-research") } });
+  // A-BRAIN S2: MCP is only mounted with the memory runtime (without it every route answers 503, which would make
+  // these findings "fail" for the wrong reason).
+  const runtime = createRuntime({ config, ens, store: new FakeMemoryStore({ "gem-research": agent("gem-research").wallet, team: ("0x" + "4d".repeat(20)) as `0x${string}` }) });
+  const app = createApp({ config, payments: createPaymentsDisabled(), ens, runtime, tokenSecret: SECRET, log: (l) => lines.push(l) });
   server = app.listen(0);
   return (server.address() as AddressInfo).port;
 }
@@ -53,7 +55,7 @@ function post(port: number, path: string, body: string, headers: Record<string, 
 const settle = () => new Promise((r) => setTimeout(r, 20)); // the log line is written on res "finish"
 
 describe("MCP token design review (Lane B)", () => {
-  it.fails("F1: a path token is never written to the log, whatever the URL's letter case", async () => {
+  it("F1: a path token is never written to the log, whatever the URL's letter case", async () => {
     // Express matches routes case-insensitively, so /MCP/T/<token> authenticates; the redaction regex is lowercase-only.
     const lines: string[] = [];
     const port = start(lines);
@@ -67,7 +69,7 @@ describe("MCP token design review (Lane B)", () => {
     for (const l of lines) expect(l, "log line leaks the path token").not.toContain(token);
   });
 
-  it.fails("F2: a malformed JSON body gets a JSON-RPC parse error, not a stack trace (unauthenticated)", async () => {
+  it("F2: a malformed JSON body gets a JSON-RPC parse error, not a stack trace (unauthenticated)", async () => {
     const port = start([]);
     const r = await post(port, "/mcp", "{not json");
     expect(r.status).toBe(400);
@@ -75,7 +77,7 @@ describe("MCP token design review (Lane B)", () => {
     expect(() => JSON.parse(r.body)).not.toThrow();
   });
 
-  it.fails("F3: an authenticated client can't forge log lines through clientInfo", async () => {
+  it("F3: an authenticated client can't forge log lines through clientInfo", async () => {
     const lines: string[] = [];
     const port = start(lines);
     const token = issueAgentToken({ label: "gem-research", ttlSec: 3600, secret: SECRET });
@@ -84,5 +86,19 @@ describe("MCP token design review (Lane B)", () => {
     await settle();
     const all = lines.join("\n");
     expect(all.split("\n").filter((l) => l.startsWith("mcp ")).length, "one request must be one log line").toBe(1);
+  });
+
+  it("D4: a 401 does not say why a token was rejected (the reason goes to the server log only)", async () => {
+    const lines: string[] = [];
+    const port = start(lines);
+    const expired = issueAgentToken({ label: "gem-research", ttlSec: 1, secret: SECRET, now: 1_000_000 });
+    const forged = issueAgentToken({ label: "gem-research", ttlSec: 3600, secret: "x".repeat(40) });
+    const a = await post(port, "/mcp", initialize(), { authorization: `Bearer ${expired}` });
+    const b = await post(port, "/mcp", initialize(), { authorization: `Bearer ${forged}` });
+    expect([a.status, b.status]).toEqual([401, 401]);
+    expect(a.body).toBe(b.body);
+    await settle();
+    expect(lines.some((l) => l.includes("expired"))).toBe(true);
+    expect(lines.some((l) => l.includes("bad_signature"))).toBe(true);
   });
 });

@@ -46,5 +46,14 @@ export function createApp({ config, payments, ens, runtime, tokenSecret, publicB
     });
   }
 
+  // Errors never leak a stack trace or file paths (Lane B review F2): malformed JSON is a JSON-RPC parse error.
+  app.use((err: { type?: string; message?: string }, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (res.headersSent) return;
+    if (err?.type === "entity.parse.failed") return void res.status(400).json({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error: the body is not valid JSON" }, id: null });
+    if (err?.type === "entity.too.large") return void res.status(413).json({ jsonrpc: "2.0", error: { code: -32600, message: "Request too large" }, id: null });
+    log?.(`unhandled error on ${req.method} ${req.route?.path ?? "?"}: ${String(err?.message ?? err).split("\n")[0]}`);
+    res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal error" }, id: null });
+  });
+
   return app;
 }

@@ -39,5 +39,5 @@ export function verifyAgentToken(token: string, p: { secret: string; knownLabels
 
 /** Never log a path token. */
 export function redactTokenPath(path: string): string {
-  return path.replace(/^(\/mcp\/t\/)[^/?#]+/, "$1***");
+  return path.replace(/^(\/mcp\/t\/)[^/?#]+/i, "$1***"); // case-insensitive: Express routes ignore case
 }

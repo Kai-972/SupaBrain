@@ -17,19 +17,43 @@ Line numbers refer to the commit that last updated this file.
 
 | # | Threat | Control | Where |
 |---|---|---|---|
-| T1 | **The payee came from outside content.** A "bank details changed" email, a web page or a poisoned memory supplies the address. | The policy walks the payee's lineage over the **whole team graph**, never the agent's read-set. A trust-1 (outside content) root behind an unverified payee means a human must approve. | `packages/payments/src/policy.ts:131` (graph lookup), `:175` (`OUTSIDE_CONTENT_PAYEE`) |
-| T2 | **A memory's address disagrees with the vendor's ENS record.** | Hard block, no override. This also applies when the payee is given as an ENS name: if memories tie the address to a name whose ENS record differs, the payment is blocked. | `policy.ts:138–145` (`ENS_MISMATCH`) |
-| T3 | **The payee derives from a revoked source.** | Hard block (`QUARANTINED_LINEAGE`). Pending intents whose supporting lineage is hit are cancelled. The vault gets `revokeRoot` so the root is dead on chain too. | `policy.ts:164`, `engine.ts:258–275`, `BrainVault.sol:156`, `:182` |
-| T4 | **New payee, over the per-payment cap, or over the daily limit.** | A fresh World ID approval, bound to this exact intent. Caps are read live from ENS records, never from config. | `policy.ts:179–186`, `engine.ts:215` (`intentHash`), `world/humanApproval.ts:106` (action = intent) |
+| T1 | **The payee came from outside content.** A "bank details changed" email, a web page or a poisoned memory supplies the address. | The policy walks the payee's lineage over the **whole team graph**, never the agent's read-set. A trust-1 (outside content) root behind an unverified payee means a human must approve. | `packages/payments/src/policy.ts:143` (graph lookup), `:187` (`OUTSIDE_CONTENT_PAYEE`) |
+| T2 | **A memory's address disagrees with the vendor's ENS record.** | Hard block, no override. This also applies when the payee is given as an ENS name: if memories tie the address to a name whose ENS record differs, the payment is blocked. | `policy.ts:150–157` (`ENS_MISMATCH`) |
+| T3 | **The payee derives from a revoked source.** | Hard block (`QUARANTINED_LINEAGE`). Pending intents whose supporting lineage is hit are cancelled. The vault gets `revokeRoot` so the root is dead on chain too. | `policy.ts:176`, `engine.ts:279–296`, `BrainVault.sol:156`, `:182` |
+| T4 | **New payee, over the per-payment cap, or over the daily limit.** | A fresh World ID approval, bound to this exact intent. Caps are read live from ENS records, never from config. | `policy.ts:191–197`, `engine.ts:236` (`intentHash`), `world/humanApproval.ts:106` (action = intent) |
 | T5 | **A compromised server or a skipped workflow** (the Binance lesson: the policy lived in a workflow the attacker skipped). | Agents never hold the budget. The only way to move it is `BrainVault.pay`, which checks on chain: the caller owns its live ENS name, a fresh policy-signer attestation covers this exact payment, no root is revoked, the intent is unused, and the owner-set daily ceiling holds. | `BrainVault.sol:140–175` |
-| T6 | **A killed agent keeps spending.** | `pay` calls `getOwner(labelhash)` on the team's ENSv2 registry on every call. Unregister the name and the next payment reverts. Proven on Sepolia: [`AgentNotRegistered` revert](https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579). The server re-checks ENS authority on every payment and again after a human approves. | `BrainVault.sol:146`, `policy.ts:110`, `engine.ts:172–190` |
-| T7 | **Replay or a stale approval.** | The vault burns `intentId` and enforces `deadline`. The EIP-712 domain includes `chainId` and `verifyingContract`. High-s signatures are rejected. World proofs are one-time per `(action, nullifier)`, pinned to the configured environment and our signed nonce. An approval that arrives after the intent expired counts as expired. | `BrainVault.sol:150–161`, `humanApproval.ts:179–193`, `:233`, `engine.ts:168` |
-| T8 | **The vendor's ENS changes while a human is approving.** | After approval every hard check runs again, live. If the payee now resolves to a different address than the one the human approved, the payment is blocked. | `engine.ts:183` |
-| T9 | **A cancel races an in-flight payment.** | Once the attestation is signed and the vault call is in flight, the intent can't be cancelled, so the record always matches the chain. | `engine.ts:127` |
-| T10 | **The agent's key isn't the wallet ENS says it is.** | Blocked (`AGENT_NOT_AUTHORIZED`), and the vault would revert anyway. | `engine.ts:120`, `BrainVault.sol:146` |
-| T11 | **ENS, the vault RPC or World is unreachable.** | Fail closed. Unknown authority blocks. A failed vault read fails the payment. A World failure is never an approval. At startup the server checks chain ID, contract code, USDC decimals, and that the vault's policy signer is our key, before the first payment. | `policy.ts:91`, `engine.ts:112`, `humanApproval.ts:208–231`, `runtime.ts:88–99` |
-| T12 | **Prompt injection through memory.** An email tells an agent to pay someone. | Outside content can't authorize money: it can only make a human look (T1). Retrieved memory is framed to agents as information, not instructions (Lane A's MCP prompt). | `policy.ts:175` |
+| T6 | **A killed agent keeps spending.** | `pay` calls `getOwner(labelhash)` on the team's ENSv2 registry on every call. Unregister the name and the next payment reverts. Proven on Sepolia: [`AgentNotRegistered` revert](https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579). The server re-checks ENS authority on every payment and again after a human approves. | `BrainVault.sol:146`, `policy.ts:115`, `engine.ts:189–209` |
+| T7 | **Replay or a stale approval.** | The vault burns `intentId` and enforces `deadline`. The EIP-712 domain includes `chainId` and `verifyingContract`. High-s signatures are rejected. World proofs are one-time per `(action, nullifier)`, pinned to the configured environment and our signed nonce. An approval that arrives after the intent expired counts as expired. | `BrainVault.sol:150–161`, `humanApproval.ts:179–193`, `:233`, `engine.ts:180` |
+| T8 | **The vendor's ENS changes while a human is approving.** | After approval every hard check runs again, live. If the payee now resolves to a different address than the one the human approved, the payment is blocked. | `engine.ts:200` |
+| T9 | **A cancel races an in-flight payment.** | Once the attestation is signed and the vault call is in flight, the intent can't be cancelled, so the record always matches the chain. | `engine.ts:139` |
+| T10 | **The agent's key isn't the wallet ENS says it is.** | Blocked (`AGENT_NOT_AUTHORIZED`), and the vault would revert anyway. | `engine.ts:132`, `BrainVault.sol:146` |
+| T11 | **ENS, the vault RPC or World is unreachable.** | Fail closed. Unknown authority blocks. A failed vault read fails the payment. A World failure is never an approval. At startup the server checks chain ID, contract code, USDC decimals, and that the vault's policy signer is our key, before the first payment. | `policy.ts:96`, `engine.ts:124`, `humanApproval.ts:208–231`, `runtime.ts:99–110` |
+| T12 | **Prompt injection through memory.** An email tells an agent to pay someone. | Outside content can't authorize money: it can only make a human look (T1). Retrieved memory is framed to agents as information, not instructions (Lane A's MCP prompt). | `policy.ts:187` |
 | T13 | **Secrets leak** (keys, RPC keys, the World signing key). | Secrets only in `.env.local` (gitignored, mode 600). The pre-commit hook runs `pnpm lint:hardcode` and `pnpm check:secrets`. Scripts print names and public addresses only, and RPC URLs are redacted in errors. | `.githooks/pre-commit`, `scripts/check-secrets.mjs`, `runtime.ts` (`redactUrls`) |
+| T14 | **Paying a team-controlled wallet** (V3 red team R1/R2). Money sent to an agent's own server-held wallet, the guardian or policy signer, the vault or the token leaves every vault control. Before the fix, one human approval plus a clean memory made later payments there **allowed**. | Hard block, no approval overrides it: every agent wallet in the ENS deployment, the vault, USDC, the policy signer, the guardian and the zero address are never payees. The owner stays payable for refunds. | `policy.ts:136–140`, `runtime.ts:88` |
+| T15 | **Concurrent payments race the daily limit** (V3 red team R3). Eight concurrent 4 USDC payments all read `spentToday` before any landed, so all passed a 30 USDC ENS daily limit. | evaluate → execute is serialised per agent, so each payment sees the previous one's spend. Waiting for a human happens outside the lock. The vault's on-chain ceiling is the backstop. | `engine.ts:83` |
+
+### 2.1 V3 policy red team (2026-11-06)
+Goal: find inputs that get a **bad payment allowed**. Each attack was written as a failing test first (`packages/payments/src/policy.test.ts`, `engine.test.ts`, commit b228947), then fixed (1c8ae65). Each fix was then disabled on purpose to confirm its test fails without it.
+
+**Broke, now fixed:**
+- **R1:** paying an agent's own wallet, or its ENS name. **R2:** paying the vault, the token or the zero address. Both were allowed after one approval (T14).
+- **R3:** concurrent payments beating the daily limit (T15).
+
+**Held (already tested):**
+- an email-supplied `attacker.eth`;
+- a cleared read-set or empty `cites`;
+- citing human memories to launder an outside-content payee;
+- an observer agent, an unregistered agent, a quarantined or expired agent;
+- inconsistent ENS records, `payCap` 0, an ENS outage;
+- over the daily limit;
+- a quarantined ancestor behind an active-looking memory;
+- too many lineage roots (an error, never silent truncation);
+- a vendor address that another memory ties to a different team name;
+- malformed amounts or payees;
+- phishing memories about the vendor polluting the honest payment's roots.
+
+**Accepted by design:** a payee that is already paid, verified, and clean of outside content can be paid again under the caps without a human. That's the "known payee" path, and the vault ceiling still bounds it.
 
 ## 3. Key custody
 

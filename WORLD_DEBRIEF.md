@@ -18,12 +18,12 @@ The agent can't skip the check or trigger it itself. An ENS mismatch or a revoke
 Status of the protected action: approve → **paid** runs end to end against the real compiled BrainVault on anvil (`packages/payments/src/vault/vault.anvil.test.ts`; the `Paid` event carries `humanApproved=true`). The live Sepolia run happens once the server mounts payments (Lane A, S5). The vault is already on Sepolia and has made a real payment.
 
 ## How we integrate (flow)
-1. The policy returns `pending_human` and the engine snapshots the payee, amount and lineage roots (`engine.ts:203–215`).
+1. The policy returns `pending_human` and the engine snapshots the payee, amount and lineage roots (`engine.ts:225–236`).
 2. **Action = the payment:** `supabrain-pay:<intentHash>`, where `intentHash = keccak256(agent, payee, amount, rootsHash, intentId, intentExpiry)` (`vault/attestation.ts:51`, `world/humanApproval.ts:106`).
 3. The server signs `rp_context` for that action with our RP signing key (`signRequest`, `idkitAdapter.ts:10`). The signal is the intent hash too.
 4. `IDKit.request(...).constraints(...)` runs **from Node** and returns a `connectorURI`. The dashboard shows it as a QR on the owner-only approval card, and the MCP `pay` call returns `pending_human` at once (`idkitAdapter.ts:16`).
 5. The server polls the bridge (`waitForHumanApproval`, `humanApproval.ts:247`), sleeping the interval before each poll and keeping going through retryable bridge errors.
-6. On a confirmed result: backend validation (below), then **every hard policy check again, live** (`engine.ts:172–190`), then a fresh EIP-712 attestation with `humanApproved=true`, then `BrainVault.pay`.
+6. On a confirmed result: backend validation (below), then **every hard policy check again, live** (`engine.ts:189–209`), then a fresh EIP-712 attestation with `humanApproved=true`, then `BrainVault.pay`.
 
 ## How we validate on the backend (fail closed)
 `verifyApprovalResult` (`packages/payments/src/world/humanApproval.ts:165–235`). Any failure is `failed`, never an approval:
@@ -41,8 +41,8 @@ Tests: 46 in `humanApproval.test.ts`. Deliberately disabling the action, signal 
 ## Where the denied, expired and cancelled paths are
 | Path | Trigger | Code | Proof |
 |---|---|---|---|
-| **Denied** | Human rejects in World App (`user_rejected` / `verification_rejected`) | `humanApproval.ts:282` → `engine.ts:160–166` | Live 2026-11-06 08:00 (`verification_rejected`) · tests |
-| **Expired** | Bridge `timeout`, the RP signature window passing, or an approval arriving after the intent's expiry | `humanApproval.ts:283`, `:259` · `engine.ts:168` | Unit tests (`waitForHumanApproval`, engine "approval after expiry") |
+| **Denied** | Human rejects in World App (`user_rejected` / `verification_rejected`) | `humanApproval.ts:282` → `engine.ts:173–179` | Live 2026-11-06 08:00 (`verification_rejected`) · tests |
+| **Expired** | Bridge `timeout`, the RP signature window passing, or an approval arriving after the intent's expiry | `humanApproval.ts:283`, `:259` · `engine.ts:180` | Unit tests (`waitForHumanApproval`, engine "approval after expiry") |
 | **Cancelled** | Owner cancels on the dashboard, a revoke cancels intents in its blast radius, or app-side abort | `engine.ts` `cancel` / `onRevoke`; `humanApproval.ts:258` | Live (`--cancel-after`) · tests |
 | **Failed** | Any other World error, a failed verify, a replayed proof | `humanApproval.ts:285`, `:165–235` | Tests |
 

@@ -28,8 +28,8 @@ import { ensContext, hasFlag } from "../lib/ensctx";
 import { readAt, requireOk, type TxStep } from "../lib/tx";
 
 const MNEMONIC_ENV = "BRAIN_AGENT_MNEMONIC";
-// Gas per step measured from our S1 receipts (config/deployments/ens.sepolia.json), +15%: used only to size the
-// dry-run cost when a step cannot be simulated yet (it depends on an earlier deploy).
+// Gas per step, measured from our receipts with headroom: used as each step's fixed gas limit (never trust a single
+// estimate from a load-balanced RPC) and to size the dry-run cost. Sepolia gas is cheap; under-gassing is the risk.
 const GAS_GUESS: Record<string, bigint> = { deployRegistry: 1_040_000n, registerBrain: 850_000n, deployResolver: 3_600_000n, grantMemoryHead: 300_000n, registerAgent: 850_000n };
 
 function flagList(name: string): string[] | undefined {
@@ -134,6 +134,9 @@ async function main() {
       };
     }
 
+    // Fixed gas limits above the measured use: right after a deploy a lagging RPC node can simulate against the
+    // pre-deploy state and return a tiny estimate (tundra's grant got 38k instead of 258k and ran out of gas).
+    for (const s of steps) s.gas ??= GAS_GUESS[s.id];
     plannedTxs += steps.length;
     const brainGas = steps.reduce((s, x) => s + (GAS_GUESS[x.id] ?? 500_000n), 0n);
     plannedGas += brainGas;

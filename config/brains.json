@@ -64,10 +64,10 @@
     }
   ],
   "funding": {
-    "perWalletGlm": "0.35",
+    "perWalletGlm": "0.33",
     "writesPerWallet": 200,
     "bytesPerWrite": 20000,
     "topUpBelowFraction": 0.5,
-    "sizing": "pnpm brains:write-cost on 2026-11-06: 24 Rabdi receipts fit gasUsed ≈ 13k + 81 gas per input byte at a flat 1 gwei. A 20 KB checkpoint ≈ 1.63M gas ≈ 0.0016 tGLM; 200 of them ≈ 0.33 tGLM, plus ~0.015 tGLM so one maximum-size write's upfront gas limit (≤ half the 30M block) still passes the balance check"
+    "sizing": "pnpm brains:write-cost on 2026-11-06: 23 Rabdi receipts fit gasUsed ≈ 52k + 77.5 gas per input byte at a flat 1 gwei. A 20 KB checkpoint ≈ 1.6M gas ≈ 0.0016 tGLM, a typical 6 KB write ≈ 0.0005. 0.33 tGLM ≈ 195 writes of 20 KB (or ~600 of 6 KB) plus ~0.015 tGLM so one maximum-size write's upfront gas limit still passes the balance check. Set to 0.33 (from 0.35) so one 10 tGLM faucet claim funds all 30 AI wallets; top up with pnpm brains:fund when a wallet falls below half"
   }
 }

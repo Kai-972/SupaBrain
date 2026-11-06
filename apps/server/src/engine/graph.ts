@@ -11,7 +11,9 @@ export class MemoryGraph implements GraphView {
 
   constructor(private readonly now: () => number = Date.now) {}
 
-  upsert(node: MemoryNode): void {
+  upsert(input: MemoryNode): void {
+    // Own copies of the arrays: a caller (e.g. a write draft) mutating its arrays later must not change the graph.
+    const node: MemoryNode = { ...input, parents: [...input.parents], roots: [...input.roots] };
     const prev = this.nodes.get(node.key);
     if (prev) for (const p of prev.parents) this.children.get(p)?.delete(node.key);
     this.nodes.set(node.key, node);
@@ -84,7 +86,8 @@ export class MemoryGraph implements GraphView {
     return this.reason(key, new Set()) ? "quarantined" : "active";
   }
 
-  private withStatus = (n: MemoryNode): MemoryNode => ({ ...n, status: this.status(n.key) });
+  /** Every node handed out is a copy (incl. its arrays), so no caller can change the live graph by mutating it. */
+  private withStatus = (n: MemoryNode): MemoryNode => ({ ...n, parents: [...n.parents], roots: [...n.roots], status: this.status(n.key) });
 
   get(key: string): MemoryNode | undefined {
     const n = this.nodes.get(key);
@@ -135,7 +138,7 @@ export class MemoryGraph implements GraphView {
     if (!start) return [];
     const out: MemoryNode[] = [];
     const seen = new Set([key]);
-    const queue = next(start);
+    const queue = [...next(start)]; // a copy: shifting the node's own parents array would erase its lineage
     while (queue.length) {
       const k = queue.shift()!;
       if (seen.has(k)) continue;

@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | **v2** (docs/PLAN.md): step 1 continuity (continue/checkpoint/checkout, tasks, files) in progress | 🔨 | – |
 | C: Face (website) | Kai | #2 | **v2**: simple website from docs/API_V2.md (fixtures first) | ⏳ | A: step 1 endpoints |
-| B: Money & Security (policy, vault, World) + v2 brains on ENS | Srijit | #3 | S5/S6 ✅ live. **v2**: B1 brains on ENS, B2 funding, B3 rules writer, B4 demo payments, B5 Codex/ChatGPT tests, B6 SECURITY.md | ⏳ | – |
+| B: Money & Security (policy, vault, World) + v2 brains on ENS | Srijit | #3 | S5/S6 ✅ live. **v2**: B1 code + dry run ✅ (110 txs), B3 rules writer ✅ unit, B2 cost measured ✅, B6 ✅; B4/B5 after Lane A's tools | 🔨 | Srijit: go for B1 broadcast, FUNDER key |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -118,6 +118,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → A: **v2 brains contract** (2026-11-06 19:27 IST): read brains with `readBrainsDeployment(root)` from `@supabrain/ens` (`config/deployments/brains.sepolia.json`: per brain `{label, ens, index, registry, tokenOwner, expiry, agents: {claude|gemini|openai: {ens, labelhash, wallet, resolver, accountIndex, addressIndex, expiry, records, funding?}}}`). AI wallet = `brainAgentAccount(BRAIN_AGENT_MNEMONIC, brain.index, family)` (indexes start at 1). Rules: `createRulesWriter({ keys: ruleKeys(config.app.ens.textKeys, readBrainsConfig(root)), parentName: "supabrain.eth", txUrl, account: TEAM, chain: sepoliaChain(config, rpcUrl) })` then `setRules(aiEns, {status?, scope?, writeDaily?, role?})` → `{txHash, txUrl, changed}` (errors `RulesError` INVALID / NOT_OURS / NO_RESOLVER / REVERTED). The writes-per-day key is `sb.write.daily`. `BRAIN_AGENT_MNEMONIC` comes from Srijit privately. The team wallet needs Sepolia ETH to change rules (B will send some from the owner on "go"). Brains go on chain after Srijit's go
 - [ ] A → B: **v2 tasks B1–B6** (docs/PLAN.md §4, DECISIONS 2026-11-06 19:30): brains on ENS + `config/deployments/brains.sepolia.json` + `ens:brains-status`; tGLM funding from a separate FUNDER key (cost per write measured first); `packages/ens/src/rules.ts` rules writer; demo-brain payments re-check after step 1; Codex/ChatGPT tests; SECURITY.md MVP update. Wallet derivation: `mnemonicToAccount(BRAIN_AGENT_MNEMONIC, { accountIndex: brainIndex, addressIndex: familyIndex })`, families [claude, gemini, openai] (2026-11-06 19:30 IST)
 - [ ] A → C: **v2 website contract is `docs/API_V2.md`** (sign-in, brains, connect, summary, checkpoints, tasks, files, notes, rules, Stop, review). Build on fixtures with the MOCK DATA banner until each step lands; simple pages first (2026-11-06 19:30 IST)
 - [ ] C → A: `/healthz` is outside the `/api` CORS scope (`app.use("/api", cors(...))`), so the browser on :3000 gets a CORS error and can't read `payments: enabled|disabled`. Ask: mount `cors()` on `/healthz` too (or add `GET /api/health`). Until then the web app skips health and always shows the Payments nav (2026-11-06 16:00 IST)
@@ -269,6 +270,32 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - asks/blockers: team ENS label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY (testnet burner), OK to generate keys. Tooling: installed the Arkiv plugin 0.5.4 (Mumbai MCP connected) and the Context7 MCP
 
 ## Log: Lane B (Money & Security)
+
+### 2026-11-06 19:27 IST · B · v2 B6
+- did: `SECURITY.md` §0 "v2 MVP: brains": sponsored gas, server-held derived AI wallets (one mnemonic, single point of failure, said plainly), the server key's exact ENS rights per brain, owner key offline as recovery, rules enforced per call (fail closed), private brains (encrypted against public readers, not against the operator; metadata public), Stop and review notices (heuristic), separate Rabdi funder
+- result: PASS (doc)
+- next: update when Lane A lands private brains and Stop
+- asks/blockers: none
+
+### 2026-11-06 19:27 IST · B · v2 B2 (measured; funding waits for the funder key)
+- did: `pnpm brains:write-cost` (read-only): 23 real Rabdi write receipts fit gasUsed ≈ 52k + 77.5 gas per input byte at a flat 1 gwei. A 6 KB write ≈ 0.0005 tGLM, 20 KB ≈ 0.0016, 128 KB ≈ 0.010. Sized **0.35 tGLM per AI wallet** (200 writes of 20 KB plus one max-size write's upfront gas) = **10.5 tGLM for 30 wallets** (`config/brains.json` funding). `pnpm brains:fund` (dry run by default) tops each derived wallet up from `FUNDER_PRIVATE_KEY`, refuses a wallet the server uses on Rabdi, and records each transfer in `brains.sepolia.json`
+- result: PASS (measurement). Funding not sent
+- next: fund after B1 is on chain
+- asks/blockers: **ASK FUNDER_PRIVATE_KEY**: a separate faucet-funded Rabdi wallet with ≥ 10.6 tGLM (or fund fewer brains with `--only`)
+
+### 2026-11-06 19:27 IST · B · v2 B3 (code + unit tests; live test waits for B1 and team ETH)
+- did: `packages/ens/src/rules.ts` `createRulesWriter({ keys, parentName, txUrl, account, chain })` → `setRules(aiEns, { status?, scope?, writeDaily?, role? })` and `readRules(aiEns)`. It validates input, refuses names outside `supabrain.eth`, finds the resolver live through the Universal Resolver (none → `NO_RESOLVER`, nothing sent), reads current values and writes only changed keys in **one** `multicall` of `setText(dnsName, key, value)`, waits for the receipt (reverted → `REVERTED` with the URL) and returns `{ txHash, txUrl, changed }`. Writes from one writer are serialised; reads after a write wait for that block. CLI: `pnpm ens:brain-rules <ai-ens> [--status …] [--yes]` (dry run by default; read-only smoke test against `gem-research.supabrain.eth` OK)
+- proof: 22 tests in `packages/ens/src/rules.test.ts` (written first, failed, then green); commits 6a22064, 493c4cb
+- result: PASS (unit). Live test pending
+- next: `pnpm ens:brain-rules openai.otter.supabrain.eth --status paused --yes`, then back to active
+- asks/blockers: the team wallet has **0 Sepolia ETH**, and rule changes are signed by it. Asking for a "go" to send it 0.005 ETH from the owner
+
+### 2026-11-06 19:27 IST · B · v2 B1 (code + dry run; broadcast waits for "go")
+- did: `config/brains.json` (10 brains, indexes 1–10, lease 14 d, default records), `packages/ens/src/brains.ts` (schemas, derivation, records, role bitmaps), `packages/ens/src/brains-chain.ts` (`checkBrainOnChain`), `pnpm ens:provision-brains` (dry run by default, `--yes`, `--only`, idempotent, `--init-mnemonic`), `pnpm ens:brains-status` (read-only). `BRAIN_AGENT_MNEMONIC` generated with viem into `.env.local` (not printed; name added to `.env.example`). Dry run: **110 owner txs** (per brain: registry deploy, brain registration, and per AI a resolver deploy, a memory-head grant and a registration), ~127M gas, **~0.0000000046 ETH** at 2× today's Sepolia gas price (owner holds 0.04 ETH; at 0.3 gwei it would still fit). Every step that can run before earlier ones simulated OK, including registering the brain name to the team wallet with renew only (742k gas)
+- proof: 13 tests in `packages/ens/src/brains.test.ts` (written first); commits 566084f, c923a93
+- result: PASS (dry run). Nothing broadcast
+- next: on "go": `--only otter` first (11 txs), `ens:brains-status`, then the other 9 brains
+- asks/blockers: **go** for the broadcast; Srijit shares `BRAIN_AGENT_MNEMONIC` with Kai privately
 
 ### 2026-11-06 21:30 IST · B · Docs / project reference + pitch story
 - did: `docs/PROJECT_REFERENCE.md`, the full current reference for the UI build (product, demo beats mapped to API/SSE/UI, concepts incl. `dispute`, MCP tools, payment reasons + approval card, every dashboard route with shapes, SSE handling, local run + namespaces, deployments + proof links, repo map, rules, open requests, honest limits). Plain-English pitch story with 8 illustrated chapters, sponsor cards, rival table, proof links and judge Q&A published as https://claude.ai/artifact/Y97gb3sEWrZegkKAgfEYU5

@@ -60,3 +60,7 @@ Written as things happen (25% of the Arkiv score). Newest first. Format:
 - repro: `defineSchema("probe", { app: str().indexed(), by: str().indexed() })` with `@arkiv-network/sdk@1.0.1`
 - workaround: renamed to `revokedBy`. Good that it fails at definition time instead of silently writing an unqueryable column; a list of reserved names on the schema docs page would save the detour
 
+### 2026-11-06 19:20 IST · No address-history API on the Rabdi explorer
+- expected: list a wallet's recent transactions to measure what one write costs (a Blockscout-style `/api/v2/addresses/<addr>/transactions` or an Etherscan-style `?module=account&action=txlist`)
+- got: `/api/v2/addresses/<addr>` returns `Not found` and the `module=account` route returns nothing, so there is no way to list an agent wallet's writes short of scanning blocks
+- workaround: we pull the transaction hashes we already logged (explorer links in our docs) and fetch their receipts over RPC (`pnpm brains:write-cost`). A per-address transaction list, or the tx hash on each entity (`$createdAtTx`), would make cost and audit work much easier

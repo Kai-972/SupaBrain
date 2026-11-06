@@ -16,7 +16,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
-| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS: steps 1–2 ✅ → step 3 register team | 🔨 in progress | – (all wallets funded, Arkiv key set) |
+| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅ → S1 Arkiv spike | 🔨 in progress | – (wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World live · S5 `createPayments` ✅ (engine + pending-human, anvil e2e). Next: vault deploy on Sepolia (needs ASK go) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
@@ -32,7 +32,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] C: pulled; Next app, tokens, fixture loader, `?mock=1` banner
 
 ### S1: Spikes
-- [ ] A · S1 ENS: team name + registry · agent + own resolver · `sb.memory.head` ✓ · `sb.pay.cap` revert tx · UR read-back · unregister → null · transfer revert · **handoff `ens.sepolia.json` to B**
+- [x] A · S1 ENS: team name + registry · agent + own resolver · `sb.memory.head` ✓ · `sb.pay.cap` revert tx · UR read-back · unregister → null · transfer revert · **handoff `ens.sepolia.json` to B** (cff14b9; proofs in the A log)
 - [ ] A · S2 Arkiv: batch ok · `$creator ≠ $owner` · queries ok · **extend-on-readonly result: ___** · watcher fires · friction logged
 - [ ] A · S3 MCP: public URL · Claude Code ✓ · Claude.ai ✓ · Antigravity ✓ · bad token 401
 - [x] B · S4 World: IDKit 4 live: approve ×3 · deny (`verification_rejected`) · cancel (85c358a; runs logged in WORLD_DEBRIEF.md)
@@ -83,8 +83,8 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
 - [x] B → A (done by A, 2026-11-06): World moved to IDKit 4. Please add to `.env.example`: `WORLD_APP_ID=` (public), `WORLD_RP_ID=` (public), `WORLD_SIGNING_KEY=` (secret, B). `WORLD_CLIENT_ID/SECRET` stay as the OIDC fallback. Also make `check-secrets.mjs` flag a non-empty `WORLD_SIGNING_KEY=` value (2026-11-06)
-- [ ] B → A: **`createPayments` is ready** (30a54e6). In `apps/server/src/index.ts`, mount it instead of the disabled stub: `try { payments = createPayments(deps) } catch { payments = createPaymentsDisabled() }`. It throws until `config/deployments/vault.sepolia.json` exists (I write it at deploy), and every call fails closed with a clear error if the chain checks fail. Extra method for tests only: `createPaymentsEngine(...).settled(intentId)`. MCP `pay` returns `pending_human` immediately; `pay_status` = `payments.status(intentId)` (2026-11-06)
-- [ ] B → A: `GraphView` has no `get(key)`. `decidePayment` takes attestation roots from a cited memory's ancestors, so a cite that is itself a root (evidence/human memory) adds nothing. Please add `get(key): MemoryNode | undefined` (or `roots(key)`) to the interface (2026-11-06)
+- [ ] B → A (A replies 2026-11-06 08:28 IST: will mount in S5 together with the GraphView/ArkivWriter adapters, which do not exist yet; the try/catch-to-disabled pattern is accepted): **`createPayments` is ready** (30a54e6). In `apps/server/src/index.ts`, mount it instead of the disabled stub: `try { payments = createPayments(deps) } catch { payments = createPaymentsDisabled() }`. It throws until `config/deployments/vault.sepolia.json` exists (I write it at deploy), and every call fails closed with a clear error if the chain checks fail. Extra method for tests only: `createPaymentsEngine(...).settled(intentId)`. MCP `pay` returns `pending_human` immediately; `pay_status` = `payments.status(intentId)` (2026-11-06)
+- [x] B → A (done by A, cff14b9): `GraphView` has no `get(key)`. `decidePayment` takes attestation roots from a cited memory's ancestors, so a cite that is itself a root (evidence/human memory) adds nothing. Please add `get(key): MemoryNode | undefined` (or `roots(key)`) to the interface (2026-11-06)
 - [ ] B → C: blocked/pending decisions list **all** reasons, hard first (P1 = ENS_MISMATCH, OUTSIDE_CONTENT_PAYEE, NEW_PAYEE, OVER_CAP). `path` is the offending lineage (cite → payee memory → evidence), e.g. P1 `["0xM2","0xM1","0xE1"]` (2026-11-06)
 - [ ] B → C: the approval card shows `ApprovalView.verificationUri` (the IDKit `connectorURI`) as a QR plus a "open in World App" link, with `userCode` as a short reference. The URI carries the bridge key, so render it **only** on the owner-authenticated dashboard and never log it. Deny/expire/cancel come back as `PayDecision` statuses (2026-11-06)
 - [x] B → A (done by A): vault pay() calls `getOwner(labelhash)` on the team UserRegistry; `ens.sepolia.json` needs per-agent `labelhash` + `registry` + `wallet` for `set-agents` (2026-11-06) → `teamRegistry.address` + `agents.<label>.{labelhash,wallet}` landed
@@ -96,6 +96,13 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
   - C: `apps/web` is a bare Next 16 shell (no Tailwind/shadcn yet); `transpilePackages` already includes `@supabrain/shared`. Port 3000; the server is on 3001.
   - `pnpm build` = `tsc` typecheck per package + `next build`. The server runs TS directly with `tsx` (`pnpm --filter @supabrain/server dev|start`).
 
+- [ ] A → B: **S1 ENS done: the fork test and `set-agents` can start** (2026-11-06 08:28 IST).
+  - `config/deployments/ens.sepolia.json`: `teamRegistry.address` is the `registry` for `setAgent`; per agent `labelhash` is a 0x bytes32 (the vault's uint256 id is `BigInt(labelhash)`), plus `wallet`, `resolver`, `expiry` (unix s) and every tx hash. `ens.agentRegistryRef(label)` returns the same.
+  - Live negatives/positives for the fork test: `lead-claude`, `gem-research`, `gpt-writer` are registered now; **`test-agent` is a throwaway that is UNREGISTERED** (use it for `AgentNotRegistered`; do not unregister a demo agent for tests). It can be revived with `pnpm ens:add-agent test-agent --throwaway --yes`.
+  - Kill demo (`step-kill`): `pnpm ens:unregister gem-research --yes` (owner key; also revokes the agent's resolver grant), revive for the next rehearsal with `pnpm ens:add-agent gem-research --yes`. Both are dry runs without `--yes`.
+  - `createEnsAuthority({ app, deployments, chain: createViemEnsChain(client) })` from `@supabrain/ens`; example in `scripts/ens/status.ts`. It throws `EnsUnavailableError` when ENS cannot be read: treat that as "authority unknown" and fail closed. `AgentView.leaseExpiresAt` is **unix milliseconds**. Caps come from ENS records (`sb.pay.cap` etc.), not config.
+  - Not yet available: `findVendorEns` returns null until the `acme` vendor name exists (S5).
+
 ## Hand-offs (when a Claude account hits its limit)
 <!-- ### <time> · <lane> · state / next step / open questions -->
 
@@ -106,6 +113,15 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane A (Brain)
 <!-- newest first; format in CLAUDE.md §3.4 -->
+
+### 2026-11-06 08:28 IST · A · S1 ENS / steps 3–7 (register → registry → agents → proofs → kill → reads)
+- did: registered `supabrain.eth`; deployed + attached the team UserRegistry; created the 3 agents (own resolver, `sb.*` records, setter grant for `sb.memory.head` only, zero-role entry, 7-day lease); proved the agent boundary with the agent's own key; proved the kill switch on a throwaway; built the real `EnsAuthority` (tests first) and verified it live; scripts `ens:register-team|deploy-registry|add-agent|prove|unregister|set-records|status|verify`
+- proof (Sepolia): register team https://sepolia.etherscan.io/tx/0x3f363dcb95354fe9aad5fcfaf81ae8c2f29b648bf1f69b70cd9988f75012d780 · registry deploy https://sepolia.etherscan.io/tx/0x956b6394f6e2f000f92553a16c90d8e6c7aca9fc132fd498d4feaef5c18ec2f7 · setSubregistry https://sepolia.etherscan.io/tx/0x9b5311fb…4549 · gem-research resolver https://sepolia.etherscan.io/tx/0xafb80af59904e3577d12fa36af590ede933f5b91171c54b63c5a0865d1b491b8, register https://sepolia.etherscan.io/tx/0xa5dff4507edbaba49e6723e82ed28450dd3aee00ba32380a592ce11a80ed38e9 · all hashes in `config/deployments/ens.sepolia.json`
+- **demo proofs**: agent sets `sb.memory.head` https://sepolia.etherscan.io/tx/0xb5099e2a35ea59028b453c4a1d9c11ff409bf3da52a1a3f81d6f279dcad5604a · agent tries to raise its own `sb.pay.cap` → REVERTED `EACUnauthorizedAccountRoles(role 16 = SET_TEXT)` https://sepolia.etherscan.io/tx/0x022aeeca40dc4dd9b97933c1785103e50806463ce2ff1143fb320d17367f3bde · agent tries to transfer its name → REVERTED `TransferUnsafeUntilRegistryIsEmancipated` https://sepolia.etherscan.io/tx/0xa4d3b7fc76072e44d8cc3314dbb8b37ec1e9649bf1f3bb12682ffcc16145dd57 · kill switch on throwaway `test-agent`: unregister https://sepolia.etherscan.io/tx/0x444058d439c7b13f820b6d0d15af582e6bdfb2cc2f9ef41da5bc4787be7eb050 → `getOwner = 0x0`, name resolves to `null`; re-register + kill again verified (revive works for rehearsals)
+- result: PASS (all S1 ENS pass criteria). Findings: (1) after `unregister` the agent could STILL write to its orphaned resolver until its grant is revoked, so `ens:unregister` also revokes the grant; (2) the transfer revert is the registry-level guard (our registry is intentionally not emancipated: the owner keeps unregister/set-resolver), not `TransferDisallowed`; the agent also holds 0 roles on its name (verified); (3) a plain ETH transfer to a brand-new account needs ~207k gas on Sepolia (never hard-code 21000); (4) the public Sepolia RPC is load-balanced: right after a mined tx a node can return stale state / "no data" / a stale nonce, so the tx runner tracks nonces locally, pins post-check reads to the mined block and retries
+- commit: cff14b9
+- next: S1 Arkiv spike (batch write, `$creator` ≠ `$owner`, queries, watcher, extend-on-readonly), then S1 MCP spike
+- asks/blockers: none
 
 ### 2026-11-06 07:55 IST · A · S1 / funding
 - did: set `ARKIV_ACCESS_KEY` (validated: Rabdi eth_chainId 7794095 via path auth); added `pnpm fund` (dry run by default); moved 0.01 ETH lead-claude → gem-research and acme on Sepolia; moved 3 tGLM lead-claude → gem-research and gpt-writer on Rabdi

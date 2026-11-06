@@ -6,7 +6,7 @@ import { demoContext, opt } from "./lib";
 export async function runBlocked(): Promise<boolean> {
   const { config, client, seed } = await demoContext();
   const payee = opt("payee") ?? seed.attackerAddress;
-  if (!payee) throw new Error("no attacker address: pass --payee 0x… or run the seed (config/deployments/demo-seed.json)");
+  if (!payee) throw new Error("no attacker address: pass --payee 0x… or run pnpm demo:seed against this server (config/deployments/demo-seed.<namespace>.json)");
   const cites = opt("cites")?.split(",") ?? (seed.keys?.M2 ? [seed.keys.M2] : undefined);
   const inv = (config.demo as { invoice?: { amountUsdc?: string; memo?: string } }).invoice ?? {};
   const r = await stepBlocked(client, { payee, amount: inv.amountUsdc ?? "5", memo: inv.memo ?? "invoice", cites });

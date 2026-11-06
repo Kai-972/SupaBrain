@@ -131,3 +131,26 @@ describe("createRulesWriter.setRules", () => {
     expect(await writer(c.io).readRules(NAME)).toEqual({ status: "active", scope: "src/", writeDaily: "200", role: "worker" });
   });
 });
+
+describe("setHead: an AI's newest checkpoint as a git-style ref on its ENS name (sb.memory.head)", () => {
+  const KEY = `0x${"cd".repeat(32)}` as Hex;
+  const headWriter = (io: RulesChainIO) => createRulesWriter({ keys: KEYS, headKey: "sb.memory.head", parentName: "supabrain.eth", txUrl: (h) => `explorer/tx/${h}`, io });
+
+  it("writes the checkpoint key to sb.memory.head in one setText, through the same serialised queue", async () => {
+    const c = fakeChain();
+    const r = await headWriter(c.io).setHead(NAME, KEY);
+    expect(c.sent[0]!.calls.map((x) => decoded(x).args)).toEqual([[dnsEncode(NAME), "sb.memory.head", KEY]]);
+    expect(r).toMatchObject({ txHash: HASH, changed: { head: { from: null, to: KEY } } });
+  });
+
+  it("same head again → no transaction", async () => {
+    const c = fakeChain({ texts: { "sb.memory.head": KEY } });
+    expect((await headWriter(c.io).setHead(NAME, KEY)).txHash).toBeNull();
+  });
+
+  it("refuses a key that is not an Arkiv entity key, and needs headKey configured", async () => {
+    const c = fakeChain();
+    await expect(headWriter(c.io).setHead(NAME, "0x1234" as Hex)).rejects.toMatchObject({ code: "INVALID" });
+    await expect(writer(c.io).setHead(NAME, KEY)).rejects.toMatchObject({ code: "INVALID" });
+  });
+});

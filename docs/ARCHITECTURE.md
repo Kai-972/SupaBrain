@@ -38,7 +38,7 @@ Source of truth for the plan: [CLAUDE.md](../CLAUDE.md). This page describes how
 - **Agent tokens** (`apps/server/src/auth/tokens.ts`): `base64url("<label>|<exp>|<HMAC-SHA256>")` signed with `TOKEN_SIGNING_SECRET`; 7-day default (`config/app.json` `mcp.tokenTtlDays`). Checked in constant time; unknown agent, wrong signature, malformed or expired → **401 + `WWW-Authenticate: Bearer error="invalid_token"`**. Path tokens are redacted in logs (`/mcp/t/***`).
 - **A token is not a permission.** It only says which agent is calling. What that agent may do is read live from ENS on every call (`whoami`, `remember`, `pay`): if its name is unregistered or its status is not active, it is refused even with a valid token. If ENS cannot be read, the answer is "authority unknown", never a guess.
 - **Host allowlist**: only `localhost` and the `PUBLIC_BASE_URL` host are accepted (DNS-rebinding protection from the SDK).
-- `pnpm mcp:token <agent>` issues a token and prints the snippet per client (the same builder backs `/api/pair` and the `/connect` page in S4 ⏳).
+- `pnpm mcp:token <agent>` issues a token and prints the snippet per client. The owner can also pair from the dashboard: `POST /api/pair` returns the token, the snippets, the copy prompt and a QR to `<web>/connect?code=…` (a 10-minute code the page swaps via `GET /api/pair/:code`, so the token itself is never in a QR).
 
 | Client | How it connects | Verified |
 |---|---|---|
@@ -59,8 +59,8 @@ Code: `apps/server/src/memory/service.ts`, `engine/*`, `arkiv/store.ts`, `memory
 ## Data flow: revoke (built, S3)
 Code: `apps/server/src/memory/undo.ts`. Dry run (live memories whose roots include the target, or by its author, plus all descendants; authors, vendors, readers from the read log, pending payments, the vault root hash `keccak256(id)`) → the team wallet writes `sb.revocation` (max lifetime) and nothing else happens unless that lands → quarantine → `payments.onRevoke` (vault `revokeRoot` / `pauseAgent`, cancel intents; a failure is reported, the revoke stands) → purge read-sets → notices for authors and readers (in memory at once, `sb.notice` on Arkiv) → SSE `revocation` + `notice`. Each agent's next tool result starts with the retraction. Keep = one owner batch extending the memory and its edge + taint rows; refused when quarantined, so lies fade. On Arkiv, every memory derived from a source is one query away: `sb.taint where root = X`.
 
-## Data flow: pay
-Lane B's `createPayments`: policy over the whole team graph (ENS mismatch hard block, outside-content payee, caps) → intent → World approval when needed → attestation → BrainVault on Sepolia, which itself checks `getOwner(labelhash) == agent wallet` on chain. Mounted in the server in S5 ⏳.
+## Data flow: pay (mounted, S5)
+Lane B's `createPayments`: policy over the whole team graph (ENS mismatch hard block, outside-content payee, caps) → intent → World approval when needed → attestation → BrainVault on Sepolia, which itself checks `getOwner(labelhash) == agent wallet` on chain. Mounted by `apps/server/src/payments/mount.ts`: Lane B's engine gets the live graph (`GraphView`), the team wallet's `sb.payment` writer and the event bus; `pay` / `pay_status` are MCP tools whose agent comes only from the token; an agent revoked on Arkiv is refused before the engine; a PAID decision becomes a `payment` memory written by the paying agent. If payments cannot start (missing key, no vault), the honest disabled stub stays mounted and the reason is logged.
 
 ## Keys and custody
 | Key | Where | Used for |

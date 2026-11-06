@@ -212,6 +212,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
 
+### 2026-11-06 IST · B · S5/S6 live / revoke → P3 World-approved → PAID
+- did: owner login; `POST /api/dryrun` email:acme-0611 → E1 M1 M2 M3 E2 M5 · 3 agents · 3 vendors · readers gem-research, lead-claude. `POST /api/revoke` (go) → cascade exactly those 6 (H1 H2 M4 stay active), notices to all 3 agents, vault `revokedRoot(keccak("email:acme-0611")) = true`. `pnpm demo:step approve` (go): lead-claude got the retraction notice, `pay(acme.supabrain.eth, 5)` → PENDING HUMAN (OVER_CAP) → Srijit approved in World App → PAID
+- proof: Arkiv revocation https://rabdi.explorer.arkiv.network/tx/0x6933acedc8f959aa3cde69e9620e8bdb26e039389e05315524990b7305bd78ae · vault revokeRoot https://sepolia.etherscan.io/tx/0x7083d77c6266ac8afb64021d1899eb1ac7f6dd94298fafcff8153659fd983137 · **P3 PAID** https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528 (Paid event: agent lead-claude, payee 0xf15f…B5A5 = acme ENS, 5 USDC, humanApproved=true, roots=[H1] only, email root absent) · sb.payment pending https://rabdi.explorer.arkiv.network/tx/0xa7e41fc8a50ad59bc0dec851cc3b78ff0bff75a5f8ec5180a60bcc5d2caca152 → paid https://rabdi.explorer.arkiv.network/tx/0xa16166ae16892e3ea2bea0ffb1a18f34e756e4ef20e30c43120aeb72290adb12 · 85 s pending → paid · vault 9 → 4 USDC · `payment` memory by lead-claude in /api/graph
+- result: PASS
+- commit: (this entry)
+- next: deny path, cancel path, revoke-vs-vault on-chain refusal
+- asks/blockers: `/api/payments` forgets decisions made before a server restart (engine keeps intents in memory; they are on Arkiv) → Request
+
 ### 2026-11-06 IST · B · S5 live / local server, seed, P1 BLOCKED
 - did: /start (pull, `pnpm i`, 372 tests green, doctor: no hard failures, vault 9 USDC, guardian 0.01 ETH). `.env.local`: `SUPABRAIN_APP_NAMESPACE=supabrain-mumbai26-b`, `PUBLIC_BASE_URL` off. Waited for Kai's server to stop (his /healthz went from JSON to ngrok offline). Local server: "rebuilt from Arkiv (supabrain-mumbai26-b/team1): 0 memories", "payments enabled". `pnpm demo:seed` (go): 9 memories confirmed on Arkiv in 6.0 s; graph trust/lineage = fixture. `pnpm demo:step blocked` (go)
 - proof: P1 → **BLOCKED** [ENS_MISMATCH (0xf892…Ff6c vs acme.supabrain.eth = 0xf15f…B5A5), OUTSIDE_CONTENT_PAYEE (email:acme-0611), NEW_PAYEE, OVER_CAP]; `GET /api/payments` shows it; Arkiv sb.payment by the team wallet: https://rabdi.explorer.arkiv.network/tx/0xe5783a4e5849d5c1588c791f776cfaa29c1ba389c841ba29a045a7b540e2a11a

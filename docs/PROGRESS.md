@@ -620,6 +620,12 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane C (Face)
 
+### 2026-11-07 00:53 IST · C · v4 live check: an owner send in Try it, in the browser
+- did: signed in as the owner in the browser pane. On `maple`: Try it → Gemini → Attacks → **Poisoned README** → Send as Gemini. Gates 1–2 passed and the flow stopped at **Content: STOPPED · INJECTION** ("Tries to override the next AI's instructions") with the real excerpt and the Arkiv revocation link. **What Claude reads now** ran a real `continue` as Claude: **✓ NOT RECEIVED**. Live updated on its own (4 injections stopped; a new red stop on Gemini's lane). The refusal log was saved to `.data/blocked-*.json`. Fixed: the result box's body inherited the red/green text colour
+- result: PASS
+- next: rehearse the tour on `otter`
+- asks/blockers: none
+
 ### 2026-11-07 00:13 IST · C · v4 redesign (docs/UI_REDESIGN_PROMPT.md) + real-time pipeline
 - did:
   - **Pipeline:** `/api/stream` sends a named `ping` every 10 s and the store runs a watchdog that reconnects with `?since` when pings stop. The refusal log is persisted (`.data/`), so the counts survive restarts. A recent-change map means the graph animates only what just changed.

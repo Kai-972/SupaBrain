@@ -194,7 +194,9 @@ body { line-height: 1.55; }
 .gate4.fail .gv { color: var(--lie); }
 .gate4.rest, .gate4.skip { opacity: .4; }
 .res4 { display: grid; gap: 10px; padding: 22px 24px; border-radius: 20px; border: 1.5px solid var(--line2); background: var(--panel); animation: fade4 .3s ease; }
+.res4, .res4.bad, .res4.ok, .res4.warn { color: var(--fg); } /* the tone is on the title only, not the body (global .bad/.ok are text colours) */
 .res4 > b { font: 600 1.05rem var(--mono); letter-spacing: .02em; }
+.reads4 > .row > b { color: var(--fg); }
 .res4.ok { border-color: color-mix(in srgb, var(--flow) 55%, transparent); } .res4.ok > b { color: var(--flow); }
 .res4.bad { border-color: var(--lie); } .res4.bad > b { color: var(--lie); }
 .res4.warn { border-color: var(--amber); }

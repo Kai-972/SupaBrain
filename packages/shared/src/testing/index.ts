@@ -82,6 +82,10 @@ export class FakeGraph implements GraphView {
     if (n) this.byKey.set(key, { ...n, status });
   }
 
+  get(key: string) {
+    return this.byKey.get(key);
+  }
+
   memoriesByAddress(addr: Hex) {
     const a = addr.toLowerCase();
     return [...this.byKey.values()].filter((n) => n.address?.toLowerCase() === a);

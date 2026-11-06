@@ -25,6 +25,12 @@ describe("FakeGraph", () => {
     expect(g.memoriesBySubject("acme.demo.eth").map((n) => n.key)).toEqual(["0xM1"]);
   });
 
+  it("gets one node by key, including quarantined ones", () => {
+    g.setStatus("0xM1", "quarantined");
+    expect(g.get("0xM1")?.status).toBe("quarantined");
+    expect(g.get("0xNOPE")).toBeUndefined();
+  });
+
   it("reports status and treats unknown keys as expired", () => {
     g.setStatus("0xM1", "quarantined");
     expect(g.status("0xM1")).toBe("quarantined");

@@ -177,7 +177,7 @@
       "wallet": "0x2348Db5F1b8ed2158ef65FD2b601949574390190",
       "resolver": "0x1e6a79A3cE022543b23c47CC2febcb1DbA2B9d02",
       "resolverSalt": "76596131848004554548093236869315030081457396266955524735583223828586392176340",
-      "expiry": 1794538008,
+      "expiry": 1794538548,
       "txs": {
         "deployResolver": {
           "hash": "0xd89bee0c93220a42616990111c00d84507d24679013e1dfeaf5fd479a15e3765",
@@ -185,24 +185,24 @@
           "at": "2026-11-06T02:47:22.538Z"
         },
         "grantMemoryHead": {
-          "hash": "0x1b65e985ef15ba341b059afdc85176352339a4f6e3d1e867fc13538fc1898d57",
-          "url": "https://sepolia.etherscan.io/tx/0x1b65e985ef15ba341b059afdc85176352339a4f6e3d1e867fc13538fc1898d57",
-          "at": "2026-11-06T02:47:36.388Z"
+          "hash": "0x3cddfa584567083bc1147ec98a1956efc12af41e6008bab10682196fe65f9890",
+          "url": "https://sepolia.etherscan.io/tx/0x3cddfa584567083bc1147ec98a1956efc12af41e6008bab10682196fe65f9890",
+          "at": "2026-11-06T02:56:17.932Z"
         },
         "register": {
-          "hash": "0x22ac828a1bf5e8a7b4a85ccca94bdf7aee0ab9465369d0ec45b6bb14f9d8ecf5",
-          "url": "https://sepolia.etherscan.io/tx/0x22ac828a1bf5e8a7b4a85ccca94bdf7aee0ab9465369d0ec45b6bb14f9d8ecf5",
-          "at": "2026-11-06T02:47:47.804Z"
+          "hash": "0x924db1d27ad7c702c5c17f2ff6ee23b2823a1a4a430e608e7a91bcada3a41bcb",
+          "url": "https://sepolia.etherscan.io/tx/0x924db1d27ad7c702c5c17f2ff6ee23b2823a1a4a430e608e7a91bcada3a41bcb",
+          "at": "2026-11-06T02:56:34.187Z"
         },
         "revokeGrant": {
-          "hash": "0x802ed7350edfa08e3b46e709160551b791d35b0332c154b15eb248e73b2bc160",
-          "url": "https://sepolia.etherscan.io/tx/0x802ed7350edfa08e3b46e709160551b791d35b0332c154b15eb248e73b2bc160",
-          "at": "2026-11-06T02:50:14.211Z"
+          "hash": "0x984daca2b5996e680c6392bbc9905f4da1254e21ae0b139bf831153090ba1b45",
+          "url": "https://sepolia.etherscan.io/tx/0x984daca2b5996e680c6392bbc9905f4da1254e21ae0b139bf831153090ba1b45",
+          "at": "2026-11-06T02:57:12.397Z"
         },
         "unregister": {
-          "hash": "0x444058d439c7b13f820b6d0d15af582e6bdfb2cc2f9ef41da5bc4787be7eb050",
-          "url": "https://sepolia.etherscan.io/tx/0x444058d439c7b13f820b6d0d15af582e6bdfb2cc2f9ef41da5bc4787be7eb050",
-          "at": "2026-11-06T02:49:00.000Z"
+          "hash": "0x0c8bfc8f2035110aa09b8db9b20fb0010c043363e14c13c3169fddce728276f0",
+          "url": "https://sepolia.etherscan.io/tx/0x0c8bfc8f2035110aa09b8db9b20fb0010c043363e14c13c3169fddce728276f0",
+          "at": "2026-11-06T02:57:00.238Z"
         }
       },
       "records": {
@@ -215,7 +215,7 @@
         "agent-context": "Supabrain agent test-agent.supabrain.eth: worker (claude) writing to \"test\". Rules are ENS records only the team owner can change."
       },
       "throwaway": true,
-      "unregisteredAt": "2026-11-06T02:50:15.621Z"
+      "unregisteredAt": "2026-11-06T02:57:15.603Z"
     }
   },
   "vendors": {}

@@ -15,6 +15,7 @@ export interface EnsAuthority {
 
 // §6.3 — Lane A provides these adapters.
 export interface GraphView {                      // read-only view of the in-memory graph
+  get(key: string): MemoryNode | undefined;               // one node by key (includes quarantined); undefined if unknown or expired
   memoriesByAddress(addr: `0x${string}`): MemoryNode[];   // includes quarantined
   memoriesBySubject(ensName: string): MemoryNode[];
   ancestors(key: string): MemoryNode[];

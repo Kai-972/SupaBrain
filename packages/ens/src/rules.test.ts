@@ -154,3 +154,20 @@ describe("setHead: an AI's newest checkpoint as a git-style ref on its ENS name 
     await expect(writer(c.io).setHead(NAME, KEY)).rejects.toMatchObject({ code: "INVALID" });
   });
 });
+
+describe("validateRules: sb.guard and sb.deny", () => {
+  it("guard: * / none / a list of known checks (array or comma string); deny: path prefixes or none", () => {
+    expect(validateRules({ guard: "*" })).toEqual({ guard: "*" });
+    expect(validateRules({ guard: [] })).toEqual({ guard: "none" });
+    expect(validateRules({ guard: ["remote-code", "instruction-override", "remote-code"] })).toEqual({ guard: "remote-code,instruction-override" });
+    expect(validateRules({ guard: "payment-redirect, secret-exfiltration" })).toEqual({ guard: "payment-redirect,secret-exfiltration" });
+    expect(validateRules({ deny: [".github/", ".env", "scripts/"] })).toEqual({ deny: ".github/,.env,scripts/" });
+    expect(validateRules({ deny: "none" })).toEqual({ deny: "none" });
+  });
+  it.each([
+    [{ guard: ["telepathy"] }, /guard/],
+    [{ deny: ["../etc"] }, /deny/],
+    [{ deny: ["/abs"] }, /deny/],
+    [{ deny: ["src/*"] }, /deny/],
+  ])("refuses %j", (patch, why) => { expect(() => validateRules(patch as never)).toThrow(why); });
+});

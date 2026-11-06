@@ -190,3 +190,24 @@ describe("v2 rules: paused and writes per day", () => {
     expect((await auth.getAgentAuthority("gem-research")).status).toBe("paused");
   });
 });
+
+describe("v2 rulebook records: sb.guard and sb.deny", () => {
+  const appRB = { ...(app as object), ens: { ...(app as { ens: object }).ens, textKeys: { ...((app as { ens: { textKeys: object } }).ens.textKeys), writeDaily: "sb.write.daily", guard: "sb.guard", deny: "sb.deny" } } } as never;
+  const t = (extra: Record<string, string>) => ({ "gem-research.supabrain.eth": { "sb.role": "worker", "sb.scope": "*", "sb.pay.cap": "0", "sb.pay.daily": "0", "sb.status": "active", "sb.vendor": "gemini", ...extra } });
+  const read = async (extra: Record<string, string>) => createEnsAuthority({ app: appRB, deployments, chain: fakeChain({ texts: t(extra) }).chain, now: () => NOW }).getAgentAuthority("gem-research");
+
+  it("guard: absent or * → every check; none → no checks; a list → those (unknown names fail closed to every check)", async () => {
+    const all = ["instruction-override", "remote-code", "payment-redirect", "secret-exfiltration", "rule-tampering", "agent-to-agent-command"];
+    expect((await read({})).guard).toEqual(all);
+    expect((await read({ "sb.guard": "*" })).guard).toEqual(all);
+    expect((await read({ "sb.guard": "none" })).guard).toEqual([]);
+    expect((await read({ "sb.guard": "remote-code,payment-redirect" })).guard).toEqual(["remote-code", "payment-redirect"]);
+    expect((await read({ "sb.guard": "remote-code,telepathy" })).guard).toEqual(all);
+  });
+
+  it("deny: comma-separated protected paths; absent or none → nothing protected", async () => {
+    expect((await read({ "sb.deny": ".github/,.env" })).deny).toEqual([".github/", ".env"]);
+    expect((await read({ "sb.deny": "none" })).deny).toEqual([]);
+    expect((await read({})).deny).toEqual([]);
+  });
+});

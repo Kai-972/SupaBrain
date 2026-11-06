@@ -1,4 +1,5 @@
-// pnpm ens:brain-rules <ai-ens-name> [--status active|paused] [--scope "*"|<path/>] [--write-daily N] [--role lead|worker|observer] [--yes]
+// pnpm ens:brain-rules <ai-ens-name> [--status active|paused] [--scope "*"|<path/>] [--write-daily N] [--role lead|worker|observer]
+//                     [--guard "*"|none|check,check] [--deny ".github/,scripts/"|none] [--yes]
 // v2 B3: change an AI's rules on ENS the way the server does (packages/ens/src/rules.ts), signed by the TEAM wallet.
 // No rule flags: prints the current rules. Without --yes: prints what would change and sends nothing.
 import { createRulesWriter, readBrainsConfig, ruleKeys, validateRules, type RulesPatch } from "@supabrain/ens";
@@ -26,6 +27,8 @@ async function main() {
   if (flag("scope")) patch.scope = flag("scope");
   if (flag("write-daily")) patch.writeDaily = flag("write-daily");
   if (flag("role")) patch.role = flag("role") as RulesPatch["role"];
+  if (flag("guard")) patch.guard = flag("guard");
+  if (flag("deny")) patch.deny = flag("deny");
 
   const now = await writer.readRules(name);
   console.log(`${name} now: ${Object.entries(now).map(([k, v]) => `${k}=${v ?? "∅"}`).join(" ")}`);

@@ -25,6 +25,25 @@
       }
     }
   },
+  "teamRegistry": {
+    "address": "0xd5bC492deE1A41873Fa382fF17017F6D5506c41c",
+    "implementation": "0x9bd8a88719068d09ecee662f36c0e3856708366a",
+    "factory": "0xda70306c98e97ece36f997a21368e53298572991",
+    "salt": "113869868453403445413511479498156476367460553595561869427524563107116087231742",
+    "owner": "0xFcf02A7aaf14e83ff1296A771f89d6A2A520E198",
+    "txs": {
+      "deployRegistry": {
+        "hash": "0x956b6394f6e2f000f92553a16c90d8e6c7aca9fc132fd498d4feaef5c18ec2f7",
+        "url": "https://sepolia.etherscan.io/tx/0x956b6394f6e2f000f92553a16c90d8e6c7aca9fc132fd498d4feaef5c18ec2f7",
+        "at": "2026-11-06T02:37:37.412Z"
+      },
+      "setSubregistry": {
+        "hash": "0x9b5311fbfa14c3d8faaf30b6ba69a72d25b55cbcd63b82f48a0ed9f56aee4549",
+        "url": "https://sepolia.etherscan.io/tx/0x9b5311fbfa14c3d8faaf30b6ba69a72d25b55cbcd63b82f48a0ed9f56aee4549",
+        "at": "2026-11-06T02:37:47.703Z"
+      }
+    }
+  },
   "agents": {},
   "vendors": {}
 }

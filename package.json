@@ -31,7 +31,8 @@
     "vault:fund": "tsx scripts/vault/fund.ts",
     "vault:status": "tsx scripts/vault/status.ts",
     "vault:pay-proof": "tsx scripts/vault/pay-proof.ts",
-    "vault:abi": "bash scripts/vault/gen-abi.sh"
+    "vault:abi": "bash scripts/vault/gen-abi.sh",
+    "demo:step-kill": "tsx scripts/demo/step-kill.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

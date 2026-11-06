@@ -137,8 +137,8 @@ describe("MCP endpoint", () => {
     const gemini = await connect(`${base}/mcp/t/${tokenFor("gem-research")}`);
 
     const tools = (await gemini.listTools()).tools.map((t) => t.name).sort();
-    expect(tools).toEqual(["check_notices", "explain", "pay", "pay_status", "recall", "remember", "whoami"]);
-    expect((await gemini.listPrompts()).prompts.map((p) => p.name)).toEqual(["supabrain_rules"]);
+    expect(tools).toEqual(["check_notices", "checkout", "checkpoint", "continue", "explain", "pay", "pay_status", "recall", "remember", "whoami"]);
+    expect((await gemini.listPrompts()).prompts.map((p) => p.name)).toEqual(["continue", "supabrain_rules"]);
 
     const a = await claude.callTool({ name: "remember", arguments: { text: "Acme Studio is our logo designer; invoice #12 is 5 USDC", kind: "fact", folder: "finance", subject: "acme.supabrain.eth" } });
     const aKey = (a.structuredContent as { key: string }).key;

@@ -1,9 +1,10 @@
 import express, { type Express } from "express";
 import type { AppConfig, EnsAuthority, Payments } from "@supabrain/shared";
-import { mountApi } from "./api/routes";
+import { cors, mountApi } from "./api/routes";
 import { adminAuth } from "./auth/admin";
 import { mountMcp } from "./mcp/routes";
 import { mountPairing } from "./api/pair";
+import { mountBrainApi } from "./api/brains";
 import { createUndo } from "./memory/undo";
 import type { Runtime } from "./runtime";
 
@@ -22,15 +23,18 @@ export interface AppDeps {
   webBaseUrl?: string;
   /** DASHBOARD_ADMIN_PASSPHRASE; admin login is off (503) without it */
   adminPassphrase?: string;
+  /** expose the v1 MCP tools too; index.ts passes config mcp.legacyTools (false in production), tests default to true */
+  legacyTools?: boolean;
   log?: (line: string) => void;
 }
 
-export function createApp({ config, payments, ens, runtime, tokenSecret, publicBaseUrl, webBaseUrl, adminPassphrase, log }: AppDeps): Express {
+export function createApp({ config, payments, ens, runtime, tokenSecret, publicBaseUrl, webBaseUrl, adminPassphrase, legacyTools, log }: AppDeps): Express {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1); // behind ngrok / Render: req.ip and req.secure come from the proxy
-  app.use(express.json({ limit: "64kb" }));
+  app.use(express.json({ limit: "512kb" })); // a checkpoint carries file contents (≤ 256 KB of files)
 
+  app.use("/healthz", cors(config.app.server.allowedOrigins)); // the website reads payments: enabled|disabled
   app.get("/healthz", (_req, res) => {
     res.json({
       ok: true,
@@ -41,9 +45,11 @@ export function createApp({ config, payments, ens, runtime, tokenSecret, publicB
   });
 
   if (ens && runtime && tokenSecret) {
-    mountMcp(app, { config, service: runtime.service, clients: runtime.clients, payments, tokenSecret, publicBaseUrl, log });
+    mountMcp(app, { config, service: runtime.service, continuity: runtime.continuity, clients: runtime.clients, payments, tokenSecret, publicBaseUrl, log, legacyTools: legacyTools ?? true });
     const admin = adminAuth({ secret: tokenSecret, passphrase: adminPassphrase, sessionHours: config.app.server.adminSessionHours, secureCookie: !!publicBaseUrl?.startsWith("https://") }); // hardcode-ok: protocol prefix check, not an endpoint
-    mountApi(app, { config, ens, runtime, admin, payments, undo: createUndo({ config, runtime, payments, log }) });
+    const undo = createUndo({ config, runtime, payments, log });
+    mountApi(app, { config, ens, runtime, admin, payments, undo });
+    mountBrainApi(app, { config, ens, runtime, undo, owner: admin.require });
     mountPairing(app, { config, tokenSecret, publicBaseUrl, webBaseUrl: webBaseUrl ?? config.app.web.baseUrl, owner: admin.require });
   } else {
     app.all(["/mcp", "/mcp/t/:token", "/api/{*rest}"], (_req, res) => {

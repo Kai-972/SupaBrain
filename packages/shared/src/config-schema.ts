@@ -70,6 +70,7 @@ export const AppFileSchema = z
     mcp: z.object({
       tokenTtlDays: z.number().int().positive(), // agent bearer token lifetime
       pairCodeTtlSec: z.number().int().positive(), // the /connect?code=… QR code lives this long
+      legacyTools: z.boolean().default(false), // v1 tools (whoami, recall, remember, explain, check_notices) for scripts; AIs see the v2 tools
     }),
     web: z.object({ baseUrl: z.url() }), // the dashboard (Lane C); PUBLIC_WEB_URL overrides it (e.g. a local UI)
   })

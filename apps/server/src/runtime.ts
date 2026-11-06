@@ -3,6 +3,7 @@ import type { AppConfig, EnsAuthority } from "@supabrain/shared";
 import { MemoryGraph } from "./engine/graph";
 import { NoticeBox, ReadLog, ReadSets } from "./engine/session";
 import { EventBus } from "./events";
+import { createContinuityService } from "./memory/continuity-service";
 import { createMemoryService } from "./memory/service";
 import type { MemoryStore } from "./memory/store";
 
@@ -15,10 +16,13 @@ export function createRuntime(p: { config: AppConfig; ens: EnsAuthority; store: 
   const readSets = new ReadSets(p.config.app.readSet.ttlSec, now);
   const readLog = new ReadLog();
   const notices = new NoticeBox();
-  const service = createMemoryService({ config: p.config, ens: p.ens, store: p.store, graph, readSets, readLog, notices, bus, now, log: p.log });
+  const deps = { config: p.config, ens: p.ens, store: p.store, graph, readSets, readLog, notices, bus, now, log: p.log };
+  const service = createMemoryService(deps);
+  /** v2: continue / checkpoint / checkout (docs/PLAN.md §3.2) */
+  const continuity = createContinuityService({ ...deps, service });
   /** last MCP client seen per agent (from `initialize`), for whoami and the agents rail */
   const clients = new Map<string, ClientSeen>();
-  return { graph, bus, readSets, readLog, notices, service, store: p.store, clients };
+  return { graph, bus, readSets, readLog, notices, service, continuity, store: p.store, clients };
 }
 
 export type Runtime = ReturnType<typeof createRuntime>;

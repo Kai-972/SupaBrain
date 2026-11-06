@@ -6,6 +6,8 @@
 import type { CheckpointView, FileView, MemoryNode, TaskView, Vendor } from "@supabrain/shared";
 import type { MemoryGraph } from "./graph";
 
+export { NOTE_KINDS };
+
 export const LIMITS = {
   summaryChars: 2000,
   nextChars: 500,
@@ -20,6 +22,7 @@ export const LIMITS = {
   checkoutBytes: 200 * 1024,
 } as const;
 
+const NOTE_KINDS = new Set(["fact", "decision", "plan", "address", "evidence", "ref"]);
 const utf8 = (s: string) => new TextEncoder().encode(s).length;
 const live = (n: MemoryNode) => n.status === "active";
 
@@ -114,7 +117,7 @@ export function checkpointViews(g: MemoryGraph): CheckpointView[] {
   return all.filter((n) => n.kind === "checkpoint" && n.status !== "expired").map((c): CheckpointView => ({
     key: c.key, agent: c.agent, vendor: c.vendor, summary: c.text, ...(c.checkpoint?.next ? { next: c.checkpoint.next } : {}),
     done: c.checkpoint?.done ?? [], files: filesOf.get(c.key) ?? [], parents: c.parents, trust: c.trust, status: c.status, createdAt: c.createdAt,
-    ...(c.pending ? { pending: true } : {}), ...(c.proofUrl ? { proofUrl: c.proofUrl } : {}), ...(c.status === "quarantined" && g.why(c.key) ? { why: g.why(c.key)! } : {}),
+    ...(c.checkpoint?.client ? { client: c.checkpoint.client } : {}), ...(c.pending ? { pending: true } : {}), ...(c.proofUrl ? { proofUrl: c.proofUrl } : {}), ...(c.status === "quarantined" && g.why(c.key) ? { why: g.why(c.key)! } : {}),
   }));
 }
 
@@ -148,15 +151,14 @@ export interface ResumePack {
   readKeys: string[];
 }
 
-const NOTE_KINDS = new Set(["fact", "decision", "plan", "address", "evidence", "ref"]);
 
-export function resumePack(g: MemoryGraph, o: { agent: string; team: string; name: string; now: number }): ResumePack {
+export function resumePack(g: MemoryGraph, o: { agent: string; team: string; name: string; now: number; notes?: MemoryNode[] }): ResumePack {
   const cps = new Map(checkpointViews(g).map((c) => [c.key, c]));
   const hs = [...heads(g).values()].map((n) => cps.get(n.key)!).filter(Boolean);
   const tasks = taskViews(g);
   const open = tasks.filter((t) => t.status === "open");
   const done = tasks.filter((t) => t.status === "done").sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0)).slice(0, 5);
-  const notes = g.all().filter((n) => NOTE_KINDS.has(n.kind) && live(n)).slice(-LIMITS.packNotes).reverse()
+  const notes = (o.notes ?? g.all().filter((n) => NOTE_KINDS.has(n.kind) && live(n)).slice(-LIMITS.packNotes).reverse())
     .map((n) => ({ key: n.key, text: n.text, kind: n.kind, agent: n.agent, vendor: n.vendor, trust: n.trust, createdAt: n.createdAt }));
   const files = fileViews(g);
   return {

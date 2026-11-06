@@ -58,6 +58,7 @@ async function main() {
   const app = createApp({
     config, payments, ens, runtime,
     tokenSecret: requireEnv("TOKEN_SIGNING_SECRET"), publicBaseUrl, webBaseUrl: env.PUBLIC_WEB_URL, adminPassphrase: env.DASHBOARD_ADMIN_PASSPHRASE, log,
+    legacyTools: process.env.SUPABRAIN_LEGACY_TOOLS === "1" || config.app.mcp.legacyTools, // AIs see continue/checkpoint/checkout
   });
   const server = app.listen(port, () => {
     log(`supabrain server on :${port} (app=${config.app.appNamespace}, team=${config.app.team.id})`);

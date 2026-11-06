@@ -79,7 +79,7 @@ export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority
     const nodes = graph.since(since);
     const disputes = await service.disputesFor(nodes);
     res.json({
-      nodes: nodes.map((n) => { const dp = disputes.get(n.key); return dp ? { ...n, dispute: dp } : n; }),
+      nodes: nodes.map((n) => { const m = n.kind === "file" ? { ...n, text: "" } : n; const dp = disputes.get(n.key); return dp ? { ...m, dispute: dp } : m; }), // file contents: /api/brains/:id/files/content
       edges: nodes.flatMap((n) => n.parents.map((parent) => ({ parent, child: n.key }))), seq: graph.maxSeq(),
     });
   });
@@ -98,11 +98,12 @@ export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority
     res.json(service.recallLog(agent).filter((r) => !q || r.query.toLowerCase().includes(q)));
   });
 
-  app.get("/api/stream", (req, res) => {
+  app.get(["/api/stream", "/api/brains/:id/stream"], (req, res) => {
     const since = Number(req.query.since ?? req.headers["last-event-id"] ?? 0) || 0;
     res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive", "X-Accel-Buffering": "no" });
     res.write("retry: 2000\n\n");
-    const send = (s: { seq: number; event: unknown }) => res.write(`id: ${s.seq}\ndata: ${JSON.stringify(s.event)}\n\n`);
+    const strip = (e: unknown) => { const m = e as { t?: string; node?: { kind?: string } }; return m.t === "memory" && m.node?.kind === "file" ? { ...m, node: { ...m.node, text: "" } } : e; };
+    const send = (s: { seq: number; event: unknown }) => res.write(`id: ${s.seq}\ndata: ${JSON.stringify(strip(s.event))}\n\n`);
     for (const s of bus.since(since)) send(s);
     const off = bus.subscribe(send);
     const ping = setInterval(() => res.write(": ping\n\n"), 15_000);

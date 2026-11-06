@@ -11,7 +11,7 @@ export interface SourceRef { type: "email" | "web" | "file" | "tool" | "chat" | 
 // Private content stays off chain; Arkiv only holds this pointer + a non-secret label.
 export interface PrivateRef { kind: "github" | "notion" | "url"; locator: string; version?: string; label: string }
 // A checkpoint is a commit: what the agent did (text), what comes next, and the task keys it ticked.
-export interface CheckpointInfo { next?: string; done: string[] }
+export interface CheckpointInfo { next?: string; done: string[]; client?: string }   // client = the app that made it, e.g. "claude-code 2.1"
 // A file version (kind "file"): the content is the memory text; the parent is the checkpoint that wrote it.
 export interface FileInfo { path: string; size: number; sha256: string; deleted?: boolean }
 //   github: locator "owner/repo:path", version = commit SHA (required for github)
@@ -82,7 +82,7 @@ export interface TaskView { key: string; title: string; status: "open" | "done" 
 export interface FileView { path: string; size: number; sha256: string; agent: string; vendor: Vendor; checkpoint: string;
   key: string; at: number; versions: number; proofUrl?: string }
 export interface CheckpointView { key: string; agent: string; vendor: Vendor; summary: string; next?: string; done: string[];
-  files: string[]; parents: string[]; trust: Trust; status: Status; createdAt: number; pending?: boolean; proofUrl?: string; why?: string }
+  files: string[]; parents: string[]; trust: Trust; status: Status; createdAt: number; client?: string; pending?: boolean; proofUrl?: string; why?: string }
 
 // Dashboard API client ids (CLAUDE.md §6.4).
 export type Client = "claude-code" | "claude-ai" | "antigravity" | "gemini-cli" | "chatgpt";

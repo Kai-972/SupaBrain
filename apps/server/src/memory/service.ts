@@ -255,6 +255,7 @@ export function createMemoryService(d: ServiceDeps) {
       return d.notices.markRead(agent);
     },
 
+    requireActive,
     readers: (keys: string[]) => d.readLog.readers(keys),
     recallLog: (agent?: string) => recallLog.filter((r) => !agent || r.agent === agent),
     lastWriteAt: (agent: string) => lastWriteAt.get(agent),

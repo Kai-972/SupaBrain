@@ -105,7 +105,8 @@
   },
   "mcp": {
     "tokenTtlDays": 7,
-    "pairCodeTtlSec": 600
+    "pairCodeTtlSec": 600,
+    "legacyTools": false
   },
   "web": {
     "baseUrl": "https://supabrain.blackslate.me"

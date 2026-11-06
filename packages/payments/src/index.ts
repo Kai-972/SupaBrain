@@ -37,3 +37,6 @@ export {
   type VerifyResult,
 } from "./world/humanApproval";
 export { idkitDeps, idkitSigner, idkitBridge } from "./world/idkitAdapter";
+
+// Payment policy (B-MONEY.md §3)
+export { decidePayment, type PolicyContext, type PolicyDecision, type PolicyRequest } from "./policy";

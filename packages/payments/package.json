@@ -16,6 +16,7 @@
     "@supabrain/shared": "workspace:*",
     "@worldcoin/idkit-core": "4.6.0",
     "jose": "^6.2.15",
+    "viem": "2.57.16",
     "zod": "^4.6.7"
   },
   "devDependencies": {

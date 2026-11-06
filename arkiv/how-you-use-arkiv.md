@@ -7,8 +7,8 @@ The write path and queries behind every row are proven live in the S1 spike. The
 
 | Feature | Arkiv entities | What the user sees |
 |---|---|---|
-| ⏳ An AI remembers something | `sb.memory` + `sb.edge` ×parents + `sb.taint` ×roots, one batch | the node appears in the graph with a proof link to the Rabdi transaction |
-| ⏳ Lineage ("why does the AI believe this?") | `sb.edge`, `sb.taint` | clicking a node shows its ancestors and roots |
+| ✅ An AI remembers something ([`apps/server/src/arkiv/store.ts`](../apps/server/src/arkiv/store.ts)) | `sb.memory` + `sb.edge` ×parents + `sb.taint` ×roots + `changeOwnership`, one batch signed by the agent's wallet | the node appears at once (pending) and gets its Rabdi proof link ~5 s later |
+| ✅ Lineage ("why does the AI believe this?") (`explain` tool, `/api/memory/:key`) | `sb.edge`, `sb.taint`, parents/roots in the body | every path back to the roots with trust, author and status per hop |
 | ⏳ Keep | `extendEntity` on memory + edges + taints, one owner-signed batch | a node stops fading; its expiry date moves out |
 | ✅ Memories fade after 2 days | entity expiry | a lie nobody kept disappears from the shared store by itself (proven: a 60 s memory was gone from queries at exactly its expiry block; no event is emitted, the server emits `expired` itself) |
 | ⏳ Undo ("this source is wrong") | `sb.revocation` (max lifetime), `sb.notice` | cascade of red nodes, retraction notices in every vendor's next answer |
@@ -22,7 +22,7 @@ The write path and queries behind every row are proven live in the S1 spike. The
 - Every write goes through one guarded path ([`packages/arkiv/src/guarded-send.ts`](../packages/arkiv/src/guarded-send.ts)): chain id check, plain `execute()` to the Arkiv registry only, estimate first (a revert stops us before signing), `gas = max(1,000,000 + 400,000×(ops−1), 2×estimate)` within half the block gas limit, balance covers the worst case, nonce unchanged, returned hash equals the signed one. One write queue per signer. No automatic retry.
 
 ## Reads (which user-facing features read from Arkiv)
-Design (built in S2): the dashboard and the MCP tools read from an in-memory graph that is **rebuilt from Arkiv at startup** and kept current by `watchEntityEvents` (start the watcher first, then query; events carry no attributes, so each created key is fetched and kept only if `app`, `team` and `$creator` match); `/api/advisories` and the README query read **live** from Arkiv. Query patterns proven live in the spike (340 to 810 ms each):
+Built in S2 ([`memory/sync.ts`](../apps/server/src/memory/sync.ts)): the dashboard and the MCP tools read from an in-memory graph that is **rebuilt from Arkiv at startup** and kept current by `watchEntityEvents` (start the watcher first, then query; events carry no attributes, so each created key is fetched and kept only if `app`, `team` and `$creator` match); Proven live: a restarted server rebuilt the whole graph from Arkiv alone in ~1.5 s, and a second server instance's writes reached the first through the watcher and out over SSE. `/api/advisories` (S7) and the README query read **live** from Arkiv. Query patterns proven live in the spike (340 to 810 ms each):
 
 - memories by `app + team + folder`
 - `sb.taint` by `root = X` (returns exactly the memories derived from X, the revoke set)

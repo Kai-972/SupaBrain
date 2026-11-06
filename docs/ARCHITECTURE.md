@@ -13,15 +13,15 @@ Source of truth for the plan: [CLAUDE.md](../CLAUDE.md). This page describes how
  │ express                                                                              │
  │  /healthz            liveness (uptime pinger, host health check)                      │
  │  /mcp, /mcp/t/:token stateless MCP: a new McpServer + transport per POST              │
- │  /api/*  ⏳          dashboard API (CLAUDE.md §6.4)                                   │
- │  /api/stream ⏳      SSE to the dashboard                                             │
+ │  /api/*              dashboard API (CLAUDE.md §6.4); owner actions ⏳ S3              │
+ │  /api/stream         SSE to the dashboard (replay with ?since / Last-Event-ID)        │
  │                                                                                      │
  │  auth/tokens.ts      HMAC agent tokens → req.auth → tool handlers (extra.authInfo)    │
- │  Engine ⏳            graph · read-sets · read log · trust · quarantine · revoke       │
+ │  Engine              graph · read-sets · read log · trust · quarantine; revoke ⏳ S3  │
  │   ├─ EnsAuthority   packages/ens       live getOwner + sb.* records, 10 s cache,     │
  │   │                                    fail closed                                   │
  │   ├─ Arkiv          packages/arkiv     one guarded writer per wallet, watcher,        │
- │   │                                    startup rebuild ⏳                             │
+ │   │                                    startup rebuild from Arkiv                     │
  │   └─ Payments       packages/payments  policy → World approval → BrainVault (Lane B) │
  └────────┬──────────────────────────────┬──────────────────────────────┬───────────────┘
           ▼                              ▼                              ▼
@@ -49,12 +49,12 @@ Source of truth for the plan: [CLAUDE.md](../CLAUDE.md). This page describes how
 | ChatGPT (developer mode) | path-token URL, auth none | ⏳ stretch |
 
 ## Hosting
-- **Now**: the server runs on a laptop behind an **ngrok static domain** (`PUBLIC_BASE_URL`). Good for development and as a demo-day spare.
+- **Now**: the server runs on a laptop behind an **ngrok static domain** (`PUBLIC_BASE_URL`), started with `pnpm dev:public` (ngrok traffic inspection off, because it records full URLs including path tokens). Good for development and as a demo-day spare.
 - **Planned**: **Render free web service** deployed from `main`, secrets in Render's env, a free uptime pinger on `/healthz` so it does not sleep before a demo. Exactly one instance (the per-wallet write queue and in-memory graph require it). The owner key never goes on the host.
-- **Dashboard**: Vercel (Lane C). Because the dashboard and the server are on different domains, admin auth must not rely on a cookie (third-party cookies are blocked by many browsers): login returns a short-lived admin token the UI sends as a header ⏳.
+- **Domain**: `supabrain.blackslate.me` (UI, Vercel, Lane C) and `api.supabrain.blackslate.me` (server). Same site, so the owner session is an httpOnly `SameSite=Lax` cookie (`sb_admin`), signed with a key derived only for admin sessions; CORS allows the configured dashboard origins with credentials.
 
-## Data flow: remember / recall ⏳
-`recall` returns non-quarantined memories (quarantined ones flagged, never as facts) and adds them to the agent's read-set and the read log. `remember` checks ENS (registered, active, folder within `sb.scope`), takes `cites` or the read-set as parents, computes trust = min(parents) and roots = union, then the agent's own wallet writes one Arkiv batch: memory + edges + taint rows + `changeOwnership` to the team wallet (proven in the S1 spike: one transaction, `$creator` agent ≠ `$owner` team).
+## Data flow: remember / recall (built, S2)
+Code: `apps/server/src/memory/service.ts`, `engine/*`, `arkiv/store.ts`, `memory/sync.ts`. Every tool first re-checks the agent on ENS (registered to its wallet, status active, records complete; unreadable ENS → "authority unknown"). `recall` ranks by shared words + recency within an optional folder, returns quarantined items flagged with a reason (never as facts), adds only active ones to the agent's read-set and logs every reader. `remember` checks ENS (registered, active, folder within `sb.scope`), takes `cites` or the read-set as parents, computes trust = min(parents) and roots = union, then the agent's own wallet writes one Arkiv batch: memory + edges + taint rows + `changeOwnership` to the team wallet (one transaction, `$creator` agent ≠ `$owner` team). The tool answers as soon as the key is known (`pending`); the dashboard gets `memory` at once and `confirmed` with the proof link when the receipt lands (~5 s), or `write_failed`. On startup the server starts the watcher, then loads every memory for `app + team` from the known wallets (rejecting any whose `$creator` is not the agent it names) and rebuilds the graph; memories written by another process arrive through the watcher.
 
 ## Data flow: revoke ⏳
 Dry run (memories, agents, vendors, readers, pending payments) → team wallet writes `sb.revocation` (max lifetime) → `payments.onRevoke` (vault `revokeRoot`, cancel intents) → purge read-sets → `sb.notice` for authors and readers → SSE. Revoke finds every derived memory with one query: `sb.taint where root = X`.

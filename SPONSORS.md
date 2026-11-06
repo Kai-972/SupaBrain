@@ -55,7 +55,7 @@ Supabrain's whole point is that a team's AIs share one memory they can all read 
 - [x] `arkiv/schema.md`, `arkiv/how-you-use-arkiv.md` (with a runnable query: `pnpm arkiv:query`)
 - [ ] `arkiv/why-arkiv.md`, `arkiv/reach.md` (S8, from real data)
 - [ ] README wallet-address table (S8, generated from `config/deployments/arkiv.rabdi.json`)
-- [ ] Server reads the UI's data from Arkiv (S2)
+- [x] Server reads the UI's data from Arkiv: the graph is rebuilt from Arkiv at startup and kept current by `watchEntityEvents` (`apps/server/src/memory/sync.ts`, `arkiv/store.ts`); a restart rebuilt everything from the chain alone
 - [ ] Video timestamp
 
 ## World: World ID (human approval for agent payments)

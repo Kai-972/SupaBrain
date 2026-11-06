@@ -1,11 +1,23 @@
 {
-  "issuer": "https://auth.world.org",
-  "scope": "openid",
-  "requireEnrolledSub": false,
+  "mode": "idkit",
   "approvalTtlSec": 900,
-  "authTimeSkewSec": 5,
-  "pollMaxIntervalSec": 30,
-  "notes": "Production issuer per auth.world.org/docs. Sandbox issuer is https://sandbox.auth.world.org (separate portal, credentials and test World IDs). ASK the World booth which one to use for judging; endpoints are never hard-coded, they come from ${issuer}/.well-known/openid-configuration.",
-  "source": "https://auth.world.org/docs and https://auth.world.org/.well-known/openid-configuration",
+  "idkit": {
+    "environment": "production",
+    "verifyBaseUrl": "https://developer.world.org",
+    "rpSignatureTtlSec": 300,
+    "allowLegacyProofs": false,
+    "credentials": ["proof_of_human", "selfie"],
+    "actionPrefix": "supabrain-pay",
+    "pollIntervalMs": 2000
+  },
+  "oidc": {
+    "issuer": "https://auth.world.org",
+    "scope": "openid",
+    "requireEnrolledSub": false,
+    "authTimeSkewSec": 5,
+    "pollMaxIntervalSec": 30
+  },
+  "notes": "Primary: World ID 4 via IDKit (Human-in-the-loop pattern). App id, rp id and signing key come from env (WORLD_APP_ID, WORLD_RP_ID, WORLD_SIGNING_KEY) from the Developer Portal. Environment is pinned because staging/sandbox accept test proofs. Fallback: OIDC device flow at auth.world.org, whose portal needs an enterprise Google Workspace account (account_not_eligible for us). ASK the World booth which product the prize means.",
+  "source": "https://docs.world.org/world-id/idkit/integrate, https://docs.world.org/agents/human-in-the-loop/integrate, https://docs.world.org/api-reference/developer-portal/verify, @worldcoin/idkit-core@4.6.0 types; oidc: https://auth.world.org/docs",
   "verifiedAt": "2026-11-06"
 }

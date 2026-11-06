@@ -9,10 +9,12 @@
   "scripts": {
     "build": "tsc -p .",
     "typecheck": "tsc -p .",
-    "world:spike": "tsx scripts/world-spike.ts"
+    "world:spike": "tsx scripts/world-spike.ts",
+    "world:oidc-spike": "tsx scripts/oidc-spike.ts"
   },
   "dependencies": {
     "@supabrain/shared": "workspace:*",
+    "@worldcoin/idkit-core": "4.6.0",
     "jose": "^6.2.15",
     "zod": "^4.6.7"
   },

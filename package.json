@@ -36,7 +36,8 @@
     "arkiv:spike": "tsx scripts/arkiv/spike.ts",
     "arkiv:query": "tsx scripts/arkiv/query.ts",
     "mcp:token": "tsx scripts/keys/mcp-token.ts",
-    "ens:add-vendor": "tsx scripts/ens/add-vendor.ts"
+    "ens:add-vendor": "tsx scripts/ens/add-vendor.ts",
+    "demo:step": "tsx scripts/demo/step.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

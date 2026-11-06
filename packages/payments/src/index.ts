@@ -70,3 +70,6 @@ export { decidePayment, type PolicyContext, type PolicyDecision, type PolicyRequ
 export { attestationDigest, intentHash, newIntentId, rootHash, rootsHash, signAttestation, PAYMENT_TYPES, type VaultDomain, type VaultPayment } from "./vault/attestation";
 export { createVaultClient, VaultRevert, type VaultClient, type VaultTx } from "./vault/client";
 export { brainVaultAbi } from "./vault/abi";
+
+// MCP pay / pay_status tools (Lane A mounts: registerPaymentTools(server, { payments, agentOf }))
+export { registerPaymentTools, describeDecision, type PaymentToolDeps } from "./mcp-tools";

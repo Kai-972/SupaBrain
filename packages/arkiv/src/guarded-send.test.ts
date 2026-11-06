@@ -2,7 +2,7 @@ import { encodeErrorResult, encodeFunctionData, keccak256, parseAbi, type Hex } 
 import { describe, expect, it } from "vitest";
 import { ARKIV_ERRORS_ABI } from "./errors";
 import { ArkivWriteError } from "./errors";
-import { guardedSend, type ArkivChainPort, type TxSigner } from "./guarded-send";
+import { DryRunStop, guardedSend, type ArkivChainPort, type TxSigner } from "./guarded-send";
 
 const REGISTRY = ("0x" + "44".repeat(20)) as Hex;
 const SIGNER = ("0x" + "a1".repeat(20)) as Hex;
@@ -22,6 +22,7 @@ function setup(over: Partial<ArkivChainPort> = {}) {
     blockGasLimit: async () => 100_000_000n,
     balance: async () => 10n ** 18n,
     estimateGas: async () => 300_000n,
+    call: async () => undefined,
     sendRaw: async (raw) => { calls.push("sendRaw"); sent.push(raw); return keccak256(raw); },
     ...over,
   };
@@ -82,6 +83,24 @@ describe("guardedSend", () => {
     expect(calls).toEqual([]);
   });
 
+  it("when estimateGas gives no revert data (Rabdi), asks eth_call for it and names the error", async () => {
+    const data = encodeErrorResult({ abi: ARKIV_ERRORS_ABI, errorName: "NotOwner", args: [("0x" + "01".repeat(32)) as Hex, SIGNER, OTHER] });
+    const { deps, req, calls } = setup({
+      estimateGas: async () => { throw new Error("Execution error without revert data"); },
+      call: async () => { throw Object.assign(new Error("reverted"), { data }); },
+    });
+    const err = (await guardedSend(deps, req).catch((e) => e)) as ArkivWriteError;
+    expect(err.code).toBe("ESTIMATE_FAILED");
+    expect(err.message).toContain("NotOwner");
+    expect(calls).toEqual([]);
+  });
+
+  it("keeps the estimate's own message when eth_call has nothing more to say", async () => {
+    const { deps, req } = setup({ estimateGas: async () => { throw new Error("Execution error without revert data"); } });
+    const err = (await guardedSend(deps, req).catch((e) => e)) as ArkivWriteError;
+    expect(err.message).toContain("Execution error without revert data");
+  });
+
   it("finds revert data nested in a cause chain", async () => {
     const data = encodeErrorResult({ abi: ARKIV_ERRORS_ABI, errorName: "NotOwner", args: [("0x" + "01".repeat(32)) as Hex, SIGNER, OTHER] });
     const inner = Object.assign(new Error("inner"), { data });
@@ -126,5 +145,24 @@ describe("guardedSend", () => {
     const failing = setup({ sendRaw: async () => { attempts++; throw new Error("socket hang up"); } });
     expect(await codeOf(guardedSend(failing.deps, failing.req))).toBe("SEND_FAILED");
     expect(attempts).toBe(1);
+  });
+
+  it("dry run: runs every check and the estimate, then stops with the gas plan and signs/sends nothing", async () => {
+    const { deps, req, calls } = setup();
+    const stop = (await guardedSend({ ...deps, dryRun: true }, req).catch((e) => e)) as DryRunStop;
+    expect(stop).toBeInstanceOf(DryRunStop);
+    expect(stop.plan).toMatchObject({ gas: 1_800_000n, estimate: 300_000n, ops: 3, nonce: 7, gasPrice: 1_000_000_000n });
+    expect(calls).toEqual([]);
+  });
+
+  it("dry run still refuses what a real run would refuse (revert, funds, chain)", async () => {
+    for (const [over, code] of [
+      [{ estimateGas: async () => { throw new Error("execution reverted"); } }, "ESTIMATE_FAILED"],
+      [{ balance: async () => 0n }, "INSUFFICIENT_FUNDS"],
+      [{ chainId: async () => 1 }, "CHAIN_MISMATCH"],
+    ] as [Partial<ArkivChainPort>, string][]) {
+      const { deps, req } = setup(over);
+      expect(await codeOf(guardedSend({ ...deps, dryRun: true }, req))).toBe(code);
+    }
   });
 });

@@ -51,6 +51,7 @@ export function viemPort(rpc: PublicClient): ArkivChainPort {
     blockGasLimit: async () => (await rpc.getBlock({ blockTag: "latest", includeTransactions: false })).gasLimit,
     balance: (address) => rpc.getBalance({ address, blockTag: "latest" }),
     estimateGas: ({ from, to, data }) => rpc.estimateGas({ account: from, to, data, blockTag: "latest" }),
+    call: ({ from, to, data }) => rpc.call({ account: from, to, data, blockTag: "latest" }),
     sendRaw: (serializedTransaction) => rpc.sendRawTransaction({ serializedTransaction }),
   };
 }

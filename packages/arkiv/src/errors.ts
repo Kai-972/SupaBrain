@@ -50,7 +50,7 @@ export const ARKIV_ERRORS_ABI = parseAbi([
 ]);
 
 /** Walk an error's cause chain for revert data (`data: 0x…`), the way viem nests it. */
-function findRevertData(error: unknown): Hex | undefined {
+export function revertDataOf(error: unknown): Hex | undefined {
   const seen = new Set<unknown>();
   for (let e: unknown = error; e && typeof e === "object" && !seen.has(e); e = (e as { cause?: unknown }).cause) {
     seen.add(e);
@@ -64,7 +64,7 @@ function findRevertData(error: unknown): Hex | undefined {
 
 /** A short, URL-free description of a failure; names the Arkiv error when the node returned revert data. */
 export function describeError(error: unknown): string {
-  const data = findRevertData(error);
+  const data = revertDataOf(error);
   if (data) {
     try {
       const d = decodeErrorResult({ abi: ARKIV_ERRORS_ABI, data });
@@ -73,4 +73,14 @@ export function describeError(error: unknown): string {
   }
   const msg = error instanceof Error ? ((error as { shortMessage?: string }).shortMessage ?? error.message) : String(error);
   return redactUrls(msg).split("\n")[0] ?? "unknown error";
+}
+
+/** Walk the cause chain for an instance of `ctor`. The SDK and viem wrap errors thrown from our guarded transport. */
+export function findCause<T extends Error>(error: unknown, ctor: new (...args: never[]) => T): T | undefined {
+  const seen = new Set<unknown>();
+  for (let e: unknown = error; e && typeof e === "object" && !seen.has(e); e = (e as { cause?: unknown }).cause) {
+    seen.add(e);
+    if (e instanceof ctor) return e;
+  }
+  return undefined;
 }

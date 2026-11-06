@@ -32,7 +32,9 @@
     "vault:status": "tsx scripts/vault/status.ts",
     "vault:pay-proof": "tsx scripts/vault/pay-proof.ts",
     "vault:abi": "bash scripts/vault/gen-abi.sh",
-    "demo:step-kill": "tsx scripts/demo/step-kill.ts"
+    "demo:step-kill": "tsx scripts/demo/step-kill.ts",
+    "arkiv:spike": "tsx scripts/arkiv/spike.ts",
+    "arkiv:query": "tsx scripts/arkiv/query.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

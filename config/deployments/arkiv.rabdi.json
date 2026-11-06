@@ -1,0 +1,178 @@
+{
+  "network": "Arkiv Rabdi DB-Chain testnet",
+  "chainId": 7794095,
+  "registry": "0x4400000000000000000000000000000000000044",
+  "knownCreators": {
+    "team": "0x4eA717986244B28B8af633f698FdDf8308D35A56",
+    "lead-claude": "0xEd4ae94521A00BE3e432173F00009AFB90641bfC",
+    "gem-research": "0x6c57ACAA7116c8b539EbA60698B7b644C6b4590c",
+    "gpt-writer": "0x4B35c28ad6A77A49d63c052E9c35AdC7A47E14fA"
+  },
+  "limits": {
+    "maxLifetimeBlocks": "7884000",
+    "blockSeconds": 2,
+    "blockGasLimit": "30000000",
+    "gasPriceWei": "1000000000"
+  },
+  "spike": {
+    "s2": {
+      "key": "0xc9c5a0b0403f0f452a23f342a6fe39c4cc15f9a7f55e95babafdaec8a376a140",
+      "tx": "0xaf0a833a3c6be6f88006d2d1b81d17d8b140667234080476f2331f1d665181bc",
+      "creator": "0x6c57ACAA7116c8b539EbA60698B7b644C6b4590c",
+      "owner": "0x4eA717986244B28B8af633f698FdDf8308D35A56",
+      "sameBatchTransfer": true,
+      "expiresAtBlock": "361841",
+      "gas": {
+        "used": "193748",
+        "limit": "1400000",
+        "estimate": "196453",
+        "ops": 2
+      },
+      "totalMs": 5684
+    },
+    "s3": {
+      "lineage": {
+        "e1": "0x4eba3e4051641a5bc504c3845862c59ce2c0eb990585c68c3a037039b00634e4",
+        "e2": "0x3060c72aaa75f71b35ae5d638f902a124d6e950234ad4f8a761aa73cdf970a96",
+        "t1": "0xaeaaedd01e4762888f64da350a31a63181dc6e79ba0141e1a013f7804b0c30ed",
+        "t2": "0xa90d23fd7825236921b7aa5153c8e7b65dfad7e2d1d602bf683448162b795a67",
+        "m": "0xc82273f00e579bc43947a9f169497960d1265971250f0527cf44bd99a72a91ac",
+        "edge1": "0xd78f98a8dc4a08cdab2b909f12ed185d5081b65dd493a862e6adfca60463c49a",
+        "edge2": "0xbffe5f0c81e15f827f54a31fadc5b735f038a0932e4c833a47ce0ed0d0d0cdba",
+        "tm1": "0x21af196b304671c1aa56472aafc4b7b46dec93bfcbe073401cfde46df1e7a61b",
+        "tm2": "0x2db84548ea7b2b5d420712d8226eda49a70abc14dc8262c652c58619afceaa6f",
+        "r1": "spike-email-mw4fafze",
+        "r2": "spike-web-mw4fafze",
+        "txs": {
+          "evidence": "0x377cc7c1b00297829f90026c9e6d3cba8cf134015b56b8990ab651d263e0304e",
+          "derived": "0x2eebd1878ee1b2076b20e8fec0b49559fcc2b4238c71d0c998f1294fe8c8ee34"
+        }
+      },
+      "gas": {
+        "batchA": {
+          "used": "670362",
+          "limit": "3800000",
+          "estimate": "676850",
+          "ops": 8,
+          "totalMs": 7415
+        },
+        "batchB": {
+          "used": "741823",
+          "limit": "4600000",
+          "estimate": "748878",
+          "ops": 10,
+          "totalMs": 5182
+        }
+      }
+    },
+    "s4": {
+      "memories": {
+        "rows": 4,
+        "containsAll": true
+      },
+      "taintByRoot": {
+        "rows": 2,
+        "ok": true
+      },
+      "edgesByParent": {
+        "rows": 1,
+        "ok": true
+      },
+      "creatorFilter": {
+        "agentRows": 4,
+        "otherRows": 0
+      },
+      "ownedByTeam": 4,
+      "trustFilter": 3
+    },
+    "s5": {
+      "controls": [
+        {
+          "name": "creator (agent) extends after handing over ownership",
+          "refused": true,
+          "expected": "NotOwner",
+          "matched": true,
+          "message": "batch would revert: NotOwner(0xc82273f00e579bc43947a9f169497960d1265971250f0527cf44bd99a72a91ac, 0x6c57ACAA7116c8b539EbA60698B7b644C6b4590c, 0x4eA717986244B28B8af633f698FdDf8308D35A56) (nothing was signed)"
+        },
+        {
+          "name": "owner (team) patches a readonly memory",
+          "refused": true,
+          "expected": "ReadOnlyEntity",
+          "matched": true,
+          "message": "batch would revert: ReadOnlyEntity(0xc82273f00e579bc43947a9f169497960d1265971250f0527cf44bd99a72a91ac) (nothing was signed)"
+        },
+        {
+          "name": "owner shortens the lifetime",
+          "refused": true,
+          "expected": "ExpiryNotExtended",
+          "matched": true,
+          "message": "batch would revert: ExpiryNotExtended(0xc82273f00e579bc43947a9f169497960d1265971250f0527cf44bd99a72a91ac, 275458, 361622) (nothing was signed)"
+        },
+        {
+          "name": "creator (agent) takes ownership back",
+          "refused": true,
+          "expected": "NotOwner",
+          "matched": true,
+          "message": "batch would revert: NotOwner(0xc82273f00e579bc43947a9f169497960d1265971250f0527cf44bd99a72a91ac, 0x6c57ACAA7116c8b539EbA60698B7b644C6b4590c, 0x4eA717986244B28B8af633f698FdDf8308D35A56) (nothing was signed)"
+        }
+      ],
+      "extendReadonly": {
+        "works": true,
+        "before": "361622",
+        "after": "577802",
+        "tx": "0x43923a1001afe178a39f2511e4d4ce1f26f826d3efb845266e6d7457724f23bb",
+        "gas": {
+          "used": "52525",
+          "limit": "1000000",
+          "ops": 1
+        },
+        "totalMs": 7227
+      },
+      "keepBatch": {
+        "allExtended": true,
+        "tx": "0x3853419d2c1adc070e93d22b373402e5764291557e6790c4a70bd77ef3f81224",
+        "ops": 5,
+        "gas": {
+          "used": "207743",
+          "limit": "2600000"
+        },
+        "totalMs": 7145
+      }
+    },
+    "s6": {
+      "fired": true,
+      "events": [
+        {
+          "type": "EntityCreated",
+          "block": "275413",
+          "latencyMsFromSubmit": 11148
+        },
+        {
+          "type": "OwnershipTransferred",
+          "block": "275413",
+          "latencyMsFromSubmit": 11149
+        }
+      ],
+      "errors": []
+    },
+    "s7": {
+      "key": "0x3f671280a42aa060f0a178e00b4a4f738ab962f4d49828533797065958ff6aea",
+      "tx": "0x73c0ea659ab06f5bd2130b04c2d8859fd517ca00a0f72600a18e9fd35b58df98",
+      "createdBlock": "275542",
+      "expiresAtBlock": "275572",
+      "vanished": true,
+      "goneAtHeadBlock": "275572",
+      "eventsForKey": [
+        {
+          "type": "EntityCreated",
+          "block": "275542"
+        },
+        {
+          "type": "OwnershipTransferred",
+          "block": "275542"
+        }
+      ],
+      "eventAtExpiry": false
+    }
+  }
+}

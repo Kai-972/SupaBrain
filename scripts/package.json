@@ -8,6 +8,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@arkiv-network/sdk": "1.0.1",
     "@supabrain/arkiv": "workspace:*",
     "@supabrain/ens": "workspace:*",
     "@supabrain/shared": "workspace:*",

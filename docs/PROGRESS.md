@@ -16,7 +16,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
-| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅ → S1 Arkiv spike | 🔨 in progress | – (wallets funded, Arkiv key set) |
+| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅, S1 Arkiv ✅ → S1 MCP spike (needs a public host) | 🔨 in progress | host choice for the MCP spike (Render likely; ngrok fallback) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), **S2 ✅ on Sepolia**: deployed, agents set, funded, real pay ✓, on-chain kill ✓. Next: guardian ETH, then S6 live World → paid | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
@@ -33,7 +33,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S1: Spikes
 - [x] A · S1 ENS: team name + registry · agent + own resolver · `sb.memory.head` ✓ · `sb.pay.cap` revert tx · UR read-back · unregister → null · transfer revert · **handoff `ens.sepolia.json` to B** (cff14b9; proofs in the A log)
-- [ ] A · S2 Arkiv: batch ok · `$creator ≠ $owner` · queries ok · **extend-on-readonly result: ___** · watcher fires · friction logged
+- [x] A · S2 Arkiv: batch ok · `$creator ≠ $owner` in ONE tx · queries ok · **extend-on-readonly: WORKS (owner extends; nobody patches; Keep = 1 batch)** · watcher fires · expiry exact · friction logged (8 entries) (proofs in the A log; `pnpm arkiv:query`)
 - [ ] A · S3 MCP: public URL · Claude Code ✓ · Claude.ai ✓ · Antigravity ✓ · bad token 401
 - [x] B · S4 World: IDKit 4 live: approve ×3 · deny (`verification_rejected`) · cancel (85c358a; runs logged in WORLD_DEBRIEF.md)
 - [x] B · S5 Vault: `forge test` green (mock registry) · 47 passed · V1 review done (0 crit/high/med; L-2/L-3/L-4 fixed) · 34f9228
@@ -117,6 +117,15 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane A (Brain)
 <!-- newest first; format in CLAUDE.md §3.4 -->
+
+### 2026-11-06 09:19 IST · A · S1 Arkiv spike (all pass criteria)
+- did: new `packages/arkiv` (6 `sb.*` schemas, guarded writer, per-signer queue, body codec; 34 tests written first); `scripts/arkiv/spike.ts` (dry run by default, `--yes` to broadcast, `--only sN`), `query.ts`, `revert-probe.ts`; Rabdi spike under the separate app `supabrain-mumbai26-spike`
+- proof (Rabdi 7794095): **one tx create + handover** `$creator` gem-research ≠ `$owner` team https://rabdi.explorer.arkiv.network/tx/0xbb26837a9202ef13184f19dd96e54d84ea5fd7353979723dafa51a0ebc023626 · lineage: evidence ×2 + taint ×2 (8 ops, 670k gas) https://rabdi.explorer.arkiv.network/tx/0x377cc7c1b00297829f90026c9e6d3cba8cf134015b56b8990ab651d263e0304e, then memory + 2 edges + 2 taints (10 ops, 742k gas) https://rabdi.explorer.arkiv.network/tx/0x2eebd1878ee1b2076b20e8fec0b49559fcc2b4238c71d0c998f1294fe8c8ee34 · **owner extends a READONLY entity** https://rabdi.explorer.arkiv.network/tx/0x43923a1001afe178a39f2511e4d4ce1f26f826d3efb845266e6d7457724f23bb (expiry block 361622 → 577802) · **Keep** (memory + 2 edges + 2 taints, one batch) https://rabdi.explorer.arkiv.network/tx/0x3853419d2c1adc070e93d22b373402e5764291557e6790c4a70bd77ef3f81224 · watcher target https://rabdi.explorer.arkiv.network/tx/0x51ec0cefa28d7811b4ce21d81e3be035300de59d9b48b66ed11710f09b8ead62 · 60 s memory https://rabdi.explorer.arkiv.network/tx/0x73c0ea659ab06f5bd2130b04c2d8859fd517ca00a0f72600a18e9fd35b58df98 · all keys and metrics in `config/deployments/arkiv.rabdi.json`; cross-checked with the Arkiv MCP `verify_tx` / `verify_entity` (creator, owner, `readonly:true`, expiry)
+- result: PASS. Answers: (1) `changeOwnership` works in the SAME batch as the create, so no second tx; (2) the owner CAN extend a `readonly` entity (Arkiv's question), so no fallback: memories stay readonly; (3) negative controls refused by the live chain and named: creator extends after handover `NotOwner`, owner patches `ReadOnlyEntity`, owner shortens `ExpiryNotExtended`, creator reclaims `NotOwner`; (4) queries (340 to 810 ms): `app+team+folder`, `taint.root = X` (exactly the revoke set), `edge.parent = X`, `createdBy`/`ownedBy`, typed `trust = 1`; (5) watcher fires, ~11 s after submit, and is chain-wide; (6) expiry is exact (60 s memory gone at its expiry block, no event emitted, so the server emits `expired`); (7) cost ~75 to 110k gas/op, ~0.0007 tGLM per remember at 1 gwei, write 4.5 to 7.7 s (receipt polling 4 s → 1 s fixed)
+- findings: SDK reserves attribute names (`by`, `key`, …), so `sb.revocation.by` is `revokedBy`; the SDK's public-client type hides viem actions (two clients); registry `eth_getCode` is empty (verify by simulating); a catch-all SDK error hid our guard's message (fixed with `findCause`); full list in `arkiv/friction.md`
+- commit: see git log (`feat(arkiv): …`)
+- next: S1 MCP spike (public host). Server wiring of Arkiv (startup rebuild, watcher, writers) is S2
+- asks/blockers: S1 MCP needs a public host: Render (likely) or ngrok static domain, then `PUBLIC_BASE_URL`
 
 ### 2026-11-06 08:28 IST · A · S1 ENS / steps 3–7 (register → registry → agents → proofs → kill → reads)
 - did: registered `supabrain.eth`; deployed + attached the team UserRegistry; created the 3 agents (own resolver, `sb.*` records, setter grant for `sb.memory.head` only, zero-role entry, 7-day lease); proved the agent boundary with the agent's own key; proved the kill switch on a throwaway; built the real `EnsAuthority` (tests first) and verified it live; scripts `ens:register-team|deploy-registry|add-agent|prove|unregister|set-records|status|verify`

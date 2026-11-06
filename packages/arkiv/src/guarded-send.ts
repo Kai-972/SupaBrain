@@ -1,5 +1,5 @@
 import { decodeFunctionData, getAddress, keccak256, parseAbi, type Hex } from "viem";
-import { ArkivWriteError, describeError } from "./errors";
+import { ArkivWriteError, describeError, revertDataOf } from "./errors";
 import { arkivGas } from "./gas";
 
 const EXECUTE_ABI = parseAbi(["function execute((uint8 operation, bytes operationData)[] ops) external returns (bytes32[] keys)"]);
@@ -11,6 +11,8 @@ export interface ArkivChainPort {
   blockGasLimit(): Promise<bigint>;
   balance(address: Hex): Promise<bigint>;
   estimateGas(call: { from: Hex; to: Hex; data: Hex }): Promise<bigint>; // throws if the batch would revert
+  /** eth_call: used only to recover revert data, because Rabdi's eth_estimateGas reports "Execution error without revert data". */
+  call(call: { from: Hex; to: Hex; data: Hex }): Promise<unknown>;
   sendRaw(serialized: Hex): Promise<Hex>;
 }
 
@@ -20,8 +22,18 @@ export interface TxSigner { address: Hex; signTransaction(tx: LegacyTx): Promise
 /** What the SDK asks the wallet to send (nonce and gasPrice were set explicitly by the writer). */
 export interface TxRequest { from: Hex; to: Hex; data: Hex; nonce: number; gasPrice: bigint }
 
-export interface GuardedSendDeps { port: ArkivChainPort; signer: TxSigner; expectedChainId: number; registry: Hex }
-export interface SendReport { hash: Hex; gas: bigint; estimate: bigint; ops: number; nonce: number; gasPrice: bigint; estimateMs: number }
+/** `dryRun`: run every check and the estimate, then stop (DryRunStop) without signing or sending. */
+export interface GuardedSendDeps { port: ArkivChainPort; signer: TxSigner; expectedChainId: number; registry: Hex; dryRun?: boolean }
+export interface GasPlan { gas: bigint; estimate: bigint; ops: number; nonce: number; gasPrice: bigint; estimateMs: number }
+export interface SendReport extends GasPlan { hash: Hex }
+
+/** Thrown by a dry run instead of signing. Carries what the real run would have used. */
+export class DryRunStop extends Error {
+  constructor(readonly plan: GasPlan) {
+    super("dry run: nothing was signed or sent");
+    this.name = "DryRunStop";
+  }
+}
 
 /**
  * Every Arkiv write passes through here before it is signed (MCP guides/quickstart, CLAUDE.md §5 write rules):
@@ -53,7 +65,13 @@ export async function guardedSend(deps: GuardedSendDeps, req: TxRequest): Promis
   try {
     estimate = await port.estimateGas({ from: req.from, to: req.to, data: req.data });
   } catch (e) {
-    throw new ArkivWriteError("ESTIMATE_FAILED", `batch would revert: ${describeError(e)} (nothing was signed)`);
+    let reason = describeError(e);
+    if (!revertDataOf(e)) {
+      // Rabdi's estimate carries no revert data; the same call through eth_call usually does.
+      try { await port.call({ from: req.from, to: req.to, data: req.data }); }
+      catch (c) { if (revertDataOf(c)) reason = describeError(c); }
+    }
+    throw new ArkivWriteError("ESTIMATE_FAILED", `batch would revert: ${reason} (nothing was signed)`);
   }
   const estimateMs = Date.now() - started;
 
@@ -65,6 +83,9 @@ export async function guardedSend(deps: GuardedSendDeps, req: TxRequest): Promis
   if (latestNonce !== req.nonce) {
     throw new ArkivWriteError("NONCE_CHANGED", `signer nonce moved ${req.nonce} -> ${latestNonce} since the request was built; not signing`);
   }
+
+  const plan: GasPlan = { gas, estimate, ops, nonce: req.nonce, gasPrice: req.gasPrice, estimateMs };
+  if (deps.dryRun) throw new DryRunStop(plan);
 
   const serialized = await signer.signTransaction({
     type: "legacy", chainId, to: req.to, data: req.data, value: 0n, gas, gasPrice: req.gasPrice, nonce: req.nonce,
@@ -80,5 +101,5 @@ export async function guardedSend(deps: GuardedSendDeps, req: TxRequest): Promis
   if (hash.toLowerCase() !== expectedHash.toLowerCase()) {
     throw new ArkivWriteError("HASH_MISMATCH", "the node returned a different transaction hash than the one signed; investigate before any new write");
   }
-  return { hash, gas, estimate, ops, nonce: req.nonce, gasPrice: req.gasPrice, estimateMs };
+  return { ...plan, hash };
 }

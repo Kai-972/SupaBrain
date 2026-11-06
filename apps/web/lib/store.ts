@@ -199,6 +199,7 @@ export function applyEvent(e: StreamEvent | { t: string; [k: string]: unknown },
 let booted = false;
 let es: EventSource | undefined;
 let lastSeq = 0;
+let lastOpenAt = 0;
 
 function openStream() {
   es?.close();
@@ -212,7 +213,7 @@ function openStream() {
     if (Date.now() - beat > 35_000) { clearInterval(watchdog); src.close(); setState({ conn: "reconnecting" }); openStream(); } // pings stopped: a dead socket
   }, 5_000);
   src.addEventListener("ping", () => { beat = Date.now(); });
-  src.onopen = () => { beat = Date.now(); setState({ conn: "open" }); };
+  src.onopen = () => { beat = Date.now(); lastOpenAt = beat; setState({ conn: "open" }); };
   src.onmessage = (m) => {
     beat = Date.now();
     const id = Number(m.lastEventId); if (id) lastSeq = Math.max(lastSeq, id);
@@ -223,8 +224,16 @@ function openStream() {
     clearInterval(watchdog);
     src.close();
     if (es !== src) return;
-    setState({ conn: "reconnecting" });
-    setTimeout(() => { if (es === src) openStream(); }, 2000);
+    // Hosts close long-lived responses every minute or two. Reopen at once from lastSeq (nothing is lost) and only
+    // say "reconnecting" if the new stream has not opened within a few seconds.
+    const wasOpen = state.conn === "open";
+    setTimeout(() => {
+      if (es !== src) return;
+      const at = Date.now();
+      openStream();
+      const next = es;
+      setTimeout(() => { if (es === next && lastOpenAt < at) setState({ conn: "reconnecting" }); }, wasOpen ? 4000 : 0);
+    }, wasOpen ? 0 : 2000);
   };
 }
 

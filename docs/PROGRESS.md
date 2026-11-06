@@ -185,7 +185,8 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - local clients: `~/.claude.json` (user `supabrain-claude`) and Antigravity's `~/.gemini/config/mcp_config.json` (`supabrain-gemini`) now point at the hosted MCP with fresh tokens (7-day); the old localhost entries are backed up next to each file as `*.bak-supabrain-localhost`
 - not verified by me: the Claude Code and Gemini CLIs on this Mac are not signed in, so a real app chat needs Srijit (reconnect `supabrain-claude`, open Antigravity, say "continue")
 - known limit: ENS refusals (SCOPE/DENIED/RATE_LIMIT) live in the server's refusal log on Render's ephemeral disk, so a server redeploy empties that list; injection stops are Arkiv revocations and always rebuild
-- commit: aba99bb
+- live stream: hosts close long responses (Vercel's proxy after ~75–93 s, Render's edge after ~150 s). The website now opens the stream straight on Render (`NEXT_PUBLIC_STREAM_URL`, public data, CORS allows the site) and reconnects at once from the last event, showing "Reconnecting" only if the new stream hasn't opened within 4 s; watched 203 s on the hosted page, no banner
+- commit: aba99bb, then the stream fix
 
 ### 2026-11-07 02:45 IST · A (Srijit's Claude) · v2 Step 6 hosted judge scene
 - did: ran `pnpm demo:injection --base https://supabrain-otter.onrender.com` (token secret = the host's, read from Render, never printed) on otter; Gemini's scope restored to `*` (it was `*` before). Website: under 360px the top bar drops the logo icon so "Sign in" stays on screen at 320px

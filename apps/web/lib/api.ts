@@ -7,6 +7,9 @@ const RAW_SERVER = process.env.NEXT_PUBLIC_SERVER_URL ?? "";
 /** "/" means same origin: next.config.ts proxies /api and /healthz to SUPABRAIN_API_ORIGIN, so the owner cookie is first-party. */
 export const SERVER_URL = RAW_SERVER === "/" ? "" : RAW_SERVER.replace(/\/+$/, "");
 export const HAS_SERVER = RAW_SERVER !== "";
+/** Optional: open the live stream straight on the API server (public data, no cookie needed), so a proxy's response
+ *  time limit never cuts it. The server must list this website's origin in server.allowedOrigins. */
+const STREAM_URL = (process.env.NEXT_PUBLIC_STREAM_URL ?? "").replace(/\/+$/, "") || SERVER_URL;
 
 export interface Health { ok: boolean; app: string; team: string; mode: "brain" | "team"; ens: string; payments: "enabled" | "disabled" }
 
@@ -95,7 +98,7 @@ export const api = {
   logout: () => call<unknown>("/api/admin/logout", { method: "POST" }),
   pair: (label: string, client?: string) => call<PairResult>("/api/pair", { json: { label, client } }),
   pairCode: (code: string) => call<PairResult>(`/api/pair/${encodeURIComponent(code)}`),
-  streamUrl: (since: number) => `${SERVER_URL}/api/stream?since=${since}`,
+  streamUrl: (since: number) => `${STREAM_URL}/api/stream?since=${since}`,
 };
 
 /** Explorer base derived from a tx link the API gave us (never hard-coded), e.g. for resolver address links. */

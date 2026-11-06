@@ -13,6 +13,7 @@
     "world:oidc-spike": "tsx scripts/oidc-spike.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@supabrain/shared": "workspace:*",
     "@worldcoin/idkit-core": "4.6.0",
     "jose": "^6.2.15",

@@ -1,6 +1,6 @@
 # Supabrain
 
-> A shared memory for your team's AIs that remembers where every fact came from. When a fact turns out wrong, you take it back from every AI at once, and no money moves on a lie.
+> **GitHub for your AIs' memory.** Connect Claude, Gemini or any AI tool in a minute or two. Say "continue" and it picks up where the last one stopped. Every change is a commit signed by that AI's own wallet on Arkiv. ENS decides who may do what. When the project is over, the whole workspace expires on its own.
 
 <!-- Skeleton (Lane A, S0). Lane C owns structure and visuals; Lane A generates the address table. -->
 

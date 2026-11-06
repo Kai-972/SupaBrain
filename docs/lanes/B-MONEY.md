@@ -1,5 +1,7 @@
 # Lane B: Money & Security (Srijit, Claude #3)
 
+> **v2:** current plan: [`docs/PLAN.md`](../PLAN.md). Lane B in v2: brains on ENS and their funding, the ENS rules writer, demo-brain payments, Codex/ChatGPT tests, SECURITY.md (PLAN §4, PROGRESS Requests A → B).
+
 **You own:** `packages/payments`, `contracts/` (Foundry), `scripts/vault`, `scripts/demo/step-kill.ts`, `config/world.json`, `SECURITY.md`, `WORLD_DEBRIEF.md`.
 
 **You consume from Lane A (Kai):**

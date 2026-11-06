@@ -1,5 +1,7 @@
 # CLAUDE.md: Supabrain build brief (ETHGlobal Mumbai, Nov 5–7, 2026)
 
+> **v2 (Nov 6, 2026, 19:30 IST):** the current plan is [`docs/PLAN.md`](docs/PLAN.md) ("GitHub for your AIs' memory") and the website contract is [`docs/API_V2.md`](docs/API_V2.md). Where they differ from this file, they win. The rules in §2, §3.3–3.5 and §12 below still apply.
+
 > **Every Claude session in this repo:**
 > 1. Read this whole file once. It is the shared context, rules, contracts and stage plan.
 > 2. Then read **only your lane file**:

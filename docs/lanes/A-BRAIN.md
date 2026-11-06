@@ -1,5 +1,7 @@
 # Lane A: Brain (Kai, Claude #1)
 
+> **v2:** current plan: [`docs/PLAN.md`](../PLAN.md). Lane A in v2: the server, the three tools, brains, sign-in, rules enforcement, Stop, private brains, hosting (PLAN §4).
+
 **You own:**
 - `apps/server`
 - `packages/shared` (types, config, interfaces, test fakes)

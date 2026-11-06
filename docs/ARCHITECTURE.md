@@ -1,5 +1,7 @@
 # Architecture
 
+> **v2:** current plan: [`docs/PLAN.md`](PLAN.md). v2 architecture is in `docs/PLAN.md` §3; this page describes the v1 engine, which v2 reuses.
+
 Source of truth for the plan: [CLAUDE.md](../CLAUDE.md). This page describes how the pieces fit at runtime. Items marked ⏳ are designed but not built yet; everything else is running code with proof in `docs/PROGRESS.md`.
 
 ## Components

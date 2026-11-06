@@ -1,5 +1,7 @@
 # Lane C: Face (Kai, Claude #2): dashboard, onboarding, demo visuals
 
+> **v2:** current plan: [`docs/PLAN.md`](../PLAN.md). Lane C in v2: a simple website built from `docs/API_V2.md`; a richer UI comes later.
+
 **You own:** `apps/web`, `docs/DEMO_SCRIPT.md`, the `README.md` structure and visuals, and the video.
 **You consume:** the dashboard API + SSE (CLAUDE.md §6.4) and the shared types from `packages/shared` (import them; never redefine them).
 **Rule:** build everything against `apps/web/fixtures/demo.json` first. Switch to the real API per screen only when Lane A marks the endpoint done in `PROGRESS.md`.

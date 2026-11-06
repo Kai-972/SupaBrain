@@ -16,15 +16,51 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
-| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S2 ✅ S3 ✅ S4 ✅ S5 mounted (live run waits for keys) | 🔨 | B's 5 env values on Kai's laptop; a dedicated Sepolia RPC key |
-| C: Face (dashboard, onboarding, demo) | Kai | #2 | Pivot (DECISIONS 2026-11-06 18:00): fresh UI for brains, commits, tasks, files, rules; e2f08b9 reverted | ⏳ | A: new API contract (continue/checkpoint/tasks/files) |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | **S5/S6 ✅ live**: P1 BLOCKED, revoke → vault revokeRoot + on-chain RootRevoked, P3 World-approved PAID, deny + cancel → nothing moved. QA cycle ✅ (graph.walk, payment history, per-namespace seed fixed; docs/QA_PLAN.md) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | **v2** (docs/PLAN.md): step 1 continuity (continue/checkpoint/checkout, tasks, files) in progress | 🔨 | – |
+| C: Face (website) | Kai | #2 | **v2**: simple website from docs/API_V2.md (fixtures first) | ⏳ | A: step 1 endpoints |
+| B: Money & Security (policy, vault, World) + v2 brains on ENS | Srijit | #3 | S5/S6 ✅ live. **v2**: B1 brains on ENS, B2 funding, B3 rules writer, B4 demo payments, B5 Codex/ChatGPT tests, B6 SECURITY.md | ⏳ | – |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
 ---
 
-## Stage checklist (tick with a proof link or commit hash)
+## v2 checklist (docs/PLAN.md §4; tick with a proof link or commit hash)
+
+### Step 1: continuity in the demo brain (A)
+- [ ] shared types: kinds task/checkpoint/file, TaskView/FileView/CheckpointView
+- [ ] engine: task done rule, current file versions, heads, summary with focus (unit tests)
+- [ ] Arkiv: one write per checkpoint (tasks + files, keys predicted, checkpoint last)
+- [ ] MCP: continue / checkpoint / checkout, server instructions, `continue` prompt; v1 tools hidden
+- [ ] website API: summary, checkpoints, tasks (+ add), files (+ content), notes
+- [ ] live: Claude Code → Antigravity in an empty folder, "continue" finishes a task
+
+### Step 2: app check (Kai, B, A)
+- [ ] Antigravity: write + continue
+- [ ] Claude phone app (connector from claude.ai)
+- [ ] Codex · [ ] ChatGPT developer mode · [ ] Gemini app "Custom apps" (availability)
+
+### Step 3: brains and people
+- [ ] B: brains on ENS (registries, claude/gemini/openai names, rules) + brains.sepolia.json + `ens:brains-status`
+- [ ] B: AI wallets funded with tGLM (cost per write measured)
+- [ ] A: wallet sign-in (SIWE), create brain, active brain, per-family links, brain by name
+- [ ] live: someone outside the team creates a brain, connects two apps, works
+
+### Step 4: rules and Stop
+- [ ] B: ENS rules writer (`packages/ens/src/rules.ts`)
+- [ ] A: rules form API → ENS; paused / paths / writes per day enforced with the reason
+- [ ] A: malicious-content flag → stopped + review notice; Stop / resume a brain
+- [ ] live: paused AI refused; poisoned README stopped with a notice
+
+### Step 5: private brains (A)
+- [ ] contents encrypted on Arkiv; the brain's AIs and owner read them; live check on the explorer
+
+### Step 6: hosting + simple website (A, C)
+- [ ] server on api.supabrain.blackslate.me · [ ] website on supabrain.blackslate.me · [ ] full demo from the hosted version
+
+### Step 7: ship
+- [ ] README · [ ] SPONSORS · [ ] arkiv/* · [ ] DEMO_SCRIPT · [ ] SECURITY · [ ] video · [ ] rehearsals · [ ] submitted
+
+## Stage checklist v1 (tick with a proof link or commit hash)
 
 ### S0: Scaffold
 - [x] A: monorepo, config + zod, types + interfaces, fakes, guards, `.env.example`, MIT, first push (1f0390c)
@@ -82,6 +118,8 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] A → B: **v2 tasks B1–B6** (docs/PLAN.md §4, DECISIONS 2026-11-06 19:30): brains on ENS + `config/deployments/brains.sepolia.json` + `ens:brains-status`; tGLM funding from a separate FUNDER key (cost per write measured first); `packages/ens/src/rules.ts` rules writer; demo-brain payments re-check after step 1; Codex/ChatGPT tests; SECURITY.md MVP update. Wallet derivation: `mnemonicToAccount(BRAIN_AGENT_MNEMONIC, { accountIndex: brainIndex, addressIndex: familyIndex })`, families [claude, gemini, openai] (2026-11-06 19:30 IST)
+- [ ] A → C: **v2 website contract is `docs/API_V2.md`** (sign-in, brains, connect, summary, checkpoints, tasks, files, notes, rules, Stop, review). Build on fixtures with the MOCK DATA banner until each step lands; simple pages first (2026-11-06 19:30 IST)
 - [ ] C → A: `/healthz` is outside the `/api` CORS scope (`app.use("/api", cors(...))`), so the browser on :3000 gets a CORS error and can't read `payments: enabled|disabled`. Ask: mount `cors()` on `/healthz` too (or add `GET /api/health`). Until then the web app skips health and always shows the Payments nav (2026-11-06 16:00 IST)
 - [ ] B → C: **read `docs/PROJECT_REFERENCE.md` first**: one file with the whole current picture for the UI build (story beats → API/SSE → what to render, the `dispute` field, payments reasons and approval card, every live endpoint, namespaces, proof links, rules). Pitch story page (plain English, 8 pictures): https://claude.ai/artifact/Y97gb3sEWrZegkKAgfEYU5 (2026-11-06)
 - [ ] B → C: **new `dispute` field** on nodes in `GET /api/graph` and on `GET /api/memory/:key`: `{state:"disputed", subject, ensAddress, claimed[]}` or `{state:"unverified", subject, reason}`. Please show an amber "Disputed by ENS" chip (text label, not only colour) on those memories; QUARANTINED styling wins when both apply. Narrative for DEMO_SCRIPT: *"Gemini saves the email and is told at once it disagrees with Acme's ENS (machines flag in milliseconds); the AIs build on it anyway; pay is BLOCKED; one revoke cleans it (humans decide in minutes)."* README: add `pnpm verify:memory <key>` as the "verify without trusting us" command next to `pnpm arkiv:query` (2026-11-06)
@@ -135,6 +173,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Log: Lane A (Brain)
+
+### 2026-11-06 19:30 IST · A · v2 plan
+- did: after the mentor/judge talks, rewrote the plan as "GitHub for your AIs' memory" (docs/PLAN.md) with Kai; wrote the website contract (docs/API_V2.md); logged the decisions; reverted the old UI (f10e981, Kai's call); started step 1 groundwork (types, continuity engine, one-write checkpoints)
+- proof: docs/PLAN.md, docs/API_V2.md, docs/DECISIONS.md 2026-11-06 18:00–19:30
+- result: PASS (plan agreed)
+- commit: (this commit)
+- next: step 1 (tools + API), then the Antigravity and phone tests with Kai
+- asks/blockers: B starts B1–B6
 <!-- newest first; format in CLAUDE.md §3.4 -->
 
 ### 2026-11-06 12:56 IST · A · S5 money mount + S4 pairing + demo seed

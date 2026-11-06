@@ -1,5 +1,7 @@
 # Supabrain: what we're building, in plain words
 
+> **v2:** current plan: [`docs/PLAN.md`](PLAN.md). The product is now "GitHub for your AIs' memory"; this page describes the v1 idea, which lives on as the safety layer.
+
 ETHGlobal Mumbai · Nov 5–7, 2026 · Kai + Srijit
 This merges Kai's memory/undo plan with Srijit's `PROJECT.md` and `CLAUDE.md`.
 

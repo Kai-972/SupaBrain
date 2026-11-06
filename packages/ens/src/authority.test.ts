@@ -155,3 +155,38 @@ describe("names and vendors", () => {
     expect(() => make(fakeChain().chain).agentRegistryRef("mallory")).toThrow(/unknown agent/);
   });
 });
+
+describe("v2 rules: paused and writes per day", () => {
+  const appV2 = { ...(app as object), ens: { ...(app as { ens: object }).ens, textKeys: { ...((app as { ens: { textKeys: object } }).ens.textKeys), writeDaily: "sb.write.daily" } } } as never;
+  const texts = (status: string, extra: Record<string, string> = {}) => ({ "gem-research.supabrain.eth": { "sb.role": "worker", "sb.scope": "research", "sb.pay.cap": "0", "sb.pay.daily": "0", "sb.status": status, "sb.vendor": "gemini", ...extra } });
+
+  it("sb.status paused → status paused, records still valid (the website's Pause), so requireActive refuses with that word", async () => {
+    const { chain } = fakeChain({ texts: texts("paused") });
+    const a = await createEnsAuthority({ app: appV2, deployments, chain, now: () => NOW }).getAgentAuthority("gem-research");
+    expect(a).toMatchObject({ status: "paused", recordsOk: true, registered: true });
+  });
+
+  it("an unknown sb.status value is not a valid record (fail closed)", async () => {
+    const { chain } = fakeChain({ texts: texts("sleepy") });
+    expect((await createEnsAuthority({ app: appV2, deployments, chain, now: () => NOW }).getAgentAuthority("gem-research")).recordsOk).toBe(false);
+  });
+
+  it("sb.write.daily is read live when configured; a malformed value means none allowed", async () => {
+    const ok = await createEnsAuthority({ app: appV2, deployments, chain: fakeChain({ texts: texts("active", { "sb.write.daily": "200" }) }).chain, now: () => NOW }).getAgentAuthority("gem-research");
+    expect(ok.writeDaily).toBe("200");
+    const bad = await createEnsAuthority({ app: appV2, deployments, chain: fakeChain({ texts: texts("active", { "sb.write.daily": "lots" }) }).chain, now: () => NOW }).getAgentAuthority("gem-research");
+    expect(bad.writeDaily).toBe("0");
+    const none = await createEnsAuthority({ app: appV2, deployments, chain: fakeChain({ texts: texts("active") }).chain, now: () => NOW }).getAgentAuthority("gem-research");
+    expect(none.writeDaily).toBeUndefined();
+  });
+
+  it("invalidate(label) drops the cached answer so a rule change applies on the next call", async () => {
+    const { chain, st } = fakeChain({ texts: texts("active") });
+    const auth = createEnsAuthority({ app: appV2, deployments, chain, now: () => NOW });
+    await auth.getAgentAuthority("gem-research");
+    st.texts["gem-research.supabrain.eth"]!["sb.status"] = "paused";
+    expect((await auth.getAgentAuthority("gem-research")).status).toBe("active"); // cached
+    auth.invalidate?.("gem-research");
+    expect((await auth.getAgentAuthority("gem-research")).status).toBe("paused");
+  });
+});

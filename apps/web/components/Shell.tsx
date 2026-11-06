@@ -33,9 +33,9 @@ function Pref() {
   const save = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
   return (
     <>
-      <button className="iconbtn hide-sm" aria-pressed={big} title="Projector size (bigger text)" onClick={() => {
+      <button className="btn g sm hide-sm" aria-pressed={big} title="Present: everything larger for a projector" onClick={() => {
         const n = !big; setBig(n); if (n) document.documentElement.dataset.big = "1"; else delete document.documentElement.dataset.big; save("sb-big", n ? "1" : "0");
-      }}>Aa</button>
+      }}>{big ? "Presenting" : "Present"}</button>
       <button className="iconbtn" title={theme === "dark" ? "Light theme" : "Dark theme"} aria-label="Toggle theme" onClick={() => {
         const n = theme === "dark" ? "light" : "dark"; setTheme(n); if (n === "dark") document.documentElement.dataset.theme = "dark"; else delete document.documentElement.dataset.theme; save("sb-theme", n);
       }}>{theme === "dark" ? "☀" : "☾"}</button>
@@ -52,7 +52,7 @@ export function OwnerButton() {
     <>
       {admin
         ? <button className="btn g sm" title="Signed in as the brain owner" onClick={async () => { await api.logout().catch(() => {}); await refreshAdmin(); toast("Signed out"); }}><span className="dot ok" /> Owner</button>
-        : <button className="btn g sm" onClick={() => setOpen(true)}>Owner sign-in</button>}
+        : <button className="btn g sm" title="Owner sign-in: drive the lab, change ENS rules" onClick={() => setOpen(true)}>Sign in</button>}
       {open && <OwnerLogin onClose={() => setOpen(false)} />}
     </>
   );
@@ -98,6 +98,36 @@ export function Toasts() {
   return <div className={`toast ${shown.tone}`} role="status">{shown.text}<button className="iconbtn" style={{ width: 26, height: 26 }} onClick={() => setShown(undefined)} aria-label="Dismiss">×</button></div>;
 }
 
+/** Utilities that used to be top-level tabs (UI_REDESIGN_PROMPT.md §5.2): one menu. */
+function MoreMenu({ id, href, path }: { id: string; href: (p: string) => string; path: string }) {
+  const [open, setOpen] = useState(false);
+  const review = useStore((s) => s.review.length);
+  useEffect(() => { setOpen(false); }, [path]);
+  const items: [string, string, string][] = [
+    [id ? `/b/${id}/rules` : "/brains", "Rules", "Each AI's ENS rules"],
+    [id ? `/b/${id}/history` : "/brains", "History", "Every commit, newest first"],
+    [id ? `/b/${id}/files` : "/brains", "Files", "Project files and who wrote them"],
+    [id ? `/b/${id}/tasks` : "/brains", "Tasks", "Open and done"],
+    [id ? `/b/${id}/review` : "/brains", `Review${review ? ` · ${review}` : ""}`, "Stopped items for the owner"],
+    ["/brains", "Registry", "The 10 brains on ENS"],
+    ["/verify", "Verify", "Check everything without us"],
+    ["/connect", "Connect", "Add Supabrain to your AI app"],
+  ];
+  return (
+    <div className="more4">
+      <button className="navlink" aria-expanded={open} onClick={() => setOpen(!open)}>More ▾</button>
+      {open && (
+        <>
+          <div className="scrim4 clear" onClick={() => setOpen(false)} />
+          <div className="menu4" role="menu">
+            {items.map(([p, l, d]) => <Link key={l} role="menuitem" href={href(p)} aria-current={path === p ? "page" : undefined}><b>{l}</b><span>{d}</span></Link>)}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function Shell({ children, right, wide }: { children: ReactNode; right?: ReactNode; wide?: boolean }) {
   const mock = useBoot();
   const href = useHref();
@@ -107,36 +137,29 @@ export function Shell({ children, right, wide }: { children: ReactNode; right?: 
   const error = useStore((s) => s.error);
   const id = useBrainId();
   const nav = [
-    { p: id ? `/b/${id}` : "/", l: "Live brain", match: (x: string) => /^\/b\/[^/]+$/.test(x) || /\/(history|files|tasks|review)$/.test(x) },
-    { p: id ? `/b/${id}/lab` : "/", l: "Attack lab", match: (x: string) => x.endsWith("/lab") },
-    { p: id ? `/b/${id}/rules` : "/", l: "Rules", match: (x: string) => x.endsWith("/rules") },
-    { p: "/brains", l: "Registry", match: (x: string) => x === "/brains" },
-    { p: "/verify", l: "Verify", match: (x: string) => x === "/verify" },
-    { p: "/connect", l: "Connect", match: (x: string) => x === "/connect" },
+    { p: "/", l: "Story", match: (x: string) => x === "/" },
+    { p: id ? `/b/${id}` : "/brains", l: "Live", match: (x: string) => /^\/b\/[^/]+$/.test(x) },
+    { p: id ? `/b/${id}/lab` : "/brains", l: "Try it", match: (x: string) => x.endsWith("/lab") },
   ];
   return (
     <div className={`app${wide ? " wide" : ""}`}>
       {mock && <div className="banner mock" role="alert">MOCK DATA · a saved snapshot is replaying · nothing here is live · remove ?mock=1 for the real system</div>}
       {!mock && conn === "noserver" && <div className="banner off" role="alert">SERVER OFFLINE · {error} · retrying</div>}
       {!mock && conn === "reconnecting" && <div className="banner warn" role="status">Reconnecting to the live stream…</div>}
-      <header className="topbar">
+      <header className="topbar4">
         <div className="in">
           <Link className="logo" href={href("/")}><Logo /> <span>Supabrain</span></Link>
-          {health && <span className="teamname hide-sm"><b className="mono">{health.ens}</b><span>{health.mode === "brain" ? "brain" : "team"} · {brainId() || health.team}</span></span>}
-          <nav className="tabs hide-sm" aria-label="Sections">
-            {nav.map((n) => <Link key={n.l} href={href(n.p)} aria-current={n.match(path) ? "page" : undefined}>{n.l}</Link>)}
+          {health && <span className="brainchip hide-sm mono" title={health.mode === "brain" ? "The brain this server serves" : "The demo team"}>{health.ens}</span>}
+          <nav className="nav4" aria-label="Main">
+            {nav.map((n) => <Link key={n.l} className="navlink" href={href(n.p)} aria-current={n.match(path) ? "page" : undefined}>{n.l}</Link>)}
+            <MoreMenu id={id} href={href} path={path} />
           </nav>
           <span className="spacer" />
           {right}
-          <button className="btn ink sm hide-sm" onClick={startTour} title="A guided 4-minute walk-through with what to say and click">Take the tour</button>
+          <button className="btn ink sm hide-sm" onClick={startTour} title="A guided 4-minute walk-through with what to say and click">Tour</button>
           <LiveDot />
           <Pref />
           <OwnerButton />
-        </div>
-        <div className="mnav">
-          <nav className="tabs" aria-label="Sections">
-            {nav.map((n) => <Link key={n.l} href={href(n.p)} aria-current={n.match(path) ? "page" : undefined}>{n.l}</Link>)}
-          </nav>
         </div>
       </header>
       {children}

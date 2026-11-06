@@ -41,11 +41,20 @@ export interface State {
   pulse?: { agent: string; at: number };
   toast?: { id: number; tone: Tone; text: string };
   lastEvent: number;
+  /** key → when it last changed (memory / confirmed / stop), so the graph animates only what just changed */
+  recent: Record<string, number>;
 }
 
 let state: State = {
   mode: "live", conn: "connecting", loaded: false, nodes: {}, checkpoints: [], tasks: [], files: [], blocked: [], heads: [], review: [],
-  headEvents: {}, connected: {}, notices: {}, feed: [], lab: [], admin: false, lastEvent: 0,
+  headEvents: {}, connected: {}, notices: {}, feed: [], lab: [], admin: false, lastEvent: 0, recent: {},
+};
+const touch = (s: State, ...keys: string[]) => {
+  const now = Date.now();
+  const recent: Record<string, number> = {};
+  for (const [k, t] of Object.entries(s.recent)) if (now - t < 8000) recent[k] = t; // keep it small
+  for (const k of keys) recent[k] = now;
+  return recent;
 };
 const listeners = new Set<() => void>();
 export const getState = () => state;
@@ -135,13 +144,13 @@ export function applyEvent(e: StreamEvent | { t: string; [k: string]: unknown },
   const now = Date.now();
   switch (ev.t) {
     case "memory": {
-      setState((s) => ({ nodes: { ...s.nodes, [ev.node.key]: { ...s.nodes[ev.node.key], ...ev.node } } }));
+      setState((s) => ({ nodes: { ...s.nodes, [ev.node.key]: { ...s.nodes[ev.node.key], ...ev.node } }, ...(animate ? { recent: touch(s, ev.node.key) } : {}) }));
       const f = nodeFeed(ev.node); if (f) pushFeed([f]);
       soon("graph", refreshGraph, 900); soon("work", refreshWork); soon("brain", refreshBrain, 1200);
       break;
     }
     case "confirmed":
-      setState((s) => (s.nodes[ev.key] ? { nodes: { ...s.nodes, [ev.key]: { ...s.nodes[ev.key], pending: false, proofUrl: ev.proofUrl } } } : {}));
+      setState((s) => (s.nodes[ev.key] ? { nodes: { ...s.nodes, [ev.key]: { ...s.nodes[ev.key], pending: false, proofUrl: ev.proofUrl } }, ...(animate ? { recent: touch(s, ev.key) } : {}) } : {}));
       pushFeed([{ id: `c:${ev.key}`, at: now, tone: "ok", label: "ON ARKIV", key: ev.key, text: `Signed and stored on Arkiv · ${short(ev.key)}`, href: ev.proofUrl }]);
       soon("work", refreshWork);
       break;
@@ -197,13 +206,21 @@ function openStream() {
   const src = new EventSource(api.streamUrl(lastSeq), { withCredentials: true });
   es = src;
   let quiet = setTimeout(() => (replaying = false), 900);
-  src.onopen = () => setState({ conn: "open" });
+  let beat = Date.now();
+  const watchdog = setInterval(() => {
+    if (es !== src) return clearInterval(watchdog);
+    if (Date.now() - beat > 35_000) { clearInterval(watchdog); src.close(); setState({ conn: "reconnecting" }); openStream(); } // pings stopped: a dead socket
+  }, 5_000);
+  src.addEventListener("ping", () => { beat = Date.now(); });
+  src.onopen = () => { beat = Date.now(); setState({ conn: "open" }); };
   src.onmessage = (m) => {
+    beat = Date.now();
     const id = Number(m.lastEventId); if (id) lastSeq = Math.max(lastSeq, id);
     clearTimeout(quiet); if (replaying) quiet = setTimeout(() => (replaying = false), 400);
     try { applyEvent(JSON.parse(m.data)); setState({ lastEvent: Date.now() }); } catch { /* skip a bad frame */ }
   };
   src.onerror = () => {
+    clearInterval(watchdog);
     src.close();
     if (es !== src) return;
     setState({ conn: "reconnecting" });

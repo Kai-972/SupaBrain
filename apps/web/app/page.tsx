@@ -3,7 +3,6 @@ import { Suspense, useEffect, useRef } from "react";
 import Link from "next/link";
 import story from "@/fixtures/story-v2.json";
 import evidence from "@/content/evidence.json";
-import faq from "@/content/faq.json";
 import { mountLanding } from "@/components/landing/engine";
 import { HandoffHero } from "@/components/landing/HandoffHero";
 import { Intro } from "@/components/Intro";
@@ -39,7 +38,7 @@ function Landing() {
         <Link className="logo" href={href("/")}><Logo />Supabrain</Link>
         <div className="links">
           <a className="hide" href="#problem">Problem</a>
-          <a className="hide" href="#layers">Why ENS + Arkiv</a>
+          <a className="hide" href="#layers">Why not just MCP</a>
           <Link className="hide" href={brainHref}>Live brain</Link>
           <Link className="hide" href={href("/verify")}>Verify</Link>
           <LiveDot />
@@ -93,6 +92,24 @@ function Landing() {
           </div>
         </div></section>
 
+        <section className="story dark" id="sb-story">
+          <div className="pin">
+            <div className="left">
+              <span className="eyebrow"><i />See it work · example</span>
+              <h2>Three AIs, one project, one poisoned file.</h2>
+              <ol id="sb-list">{story.steps.map(([b, s], i) => <li key={b}><button data-s={i}><b>{b}</b><span>{s}</span></button></li>)}</ol>
+              <div className="prog" id="sb-prog">Scroll, or pick a step</div>
+            </div>
+            <div className="cap" id="sb-cap" />
+            <div className="tree" id="sb-tree"><svg id="sb-g" role="img" aria-label="Example: commits by three AIs, and a stopped injection" /><div id="sb-tipc" /></div>
+            <div className="log">
+              <div className="hd"><b>Brain log</b><span className="mono dim" style={{ fontSize: 11 }}>example</span></div>
+              <div className="meter"><div>Commits<b id="sb-cM">0</b></div><div>Clean<b id="sb-cC">0</b></div><div className="q">Stopped<b id="sb-cQ">0</b></div><div>Blocked<b id="sb-cP">0</b></div></div>
+              <div className="bar"><i id="sb-bC" style={{ width: 0 }} /><i id="sb-bQ" className="q" style={{ width: 0 }} /></div>
+              <div className="feed" id="sb-feed" />
+            </div>
+          </div>
+        </section>
         <section className="layers dark" id="layers" data-tour="layers"><div className="wrap sect">
           <div className="num">02</div>
           <div>
@@ -117,62 +134,9 @@ function Landing() {
           </div>
         </div></section>
 
-        <section className="story dark" id="sb-story">
-          <div className="pin">
-            <div className="left">
-              <span className="eyebrow"><i />See it work · example</span>
-              <h2>Three AIs, one project, one poisoned file.</h2>
-              <ol id="sb-list">{story.steps.map(([b, s], i) => <li key={b}><button data-s={i}><b>{b}</b><span>{s}</span></button></li>)}</ol>
-              <div className="prog" id="sb-prog">Scroll, or pick a step</div>
-            </div>
-            <div className="cap" id="sb-cap" />
-            <div className="tree" id="sb-tree"><svg id="sb-g" role="img" aria-label="Example: commits by three AIs, and a stopped injection" /><div id="sb-tipc" /></div>
-            <div className="log">
-              <div className="hd"><b>Brain log</b><span className="mono dim" style={{ fontSize: 11 }}>example</span></div>
-              <div className="meter"><div>Commits<b id="sb-cM">0</b></div><div>Clean<b id="sb-cC">0</b></div><div className="q">Stopped<b id="sb-cQ">0</b></div><div>Blocked<b id="sb-cP">0</b></div></div>
-              <div className="bar"><i id="sb-bC" style={{ width: 0 }} /><i id="sb-bQ" className="q" style={{ width: 0 }} /></div>
-              <div className="feed" id="sb-feed" />
-            </div>
-          </div>
-        </section>
 
-        <section className="blk"><div className="wrap sect">
-          <div className="num">04</div>
-          <div>
-            <span className="eyebrow"><i />Why ENS</span>
-            <h2>Rules that live outside the AI, the vendor and our server.</h2>
-            <div className="three">
-              <div className="beige"><span className="k">A registry per project</span><h3>Each brain is its own ENSv2 registry</h3><p>Ten projects, thirty AI names, each with its own resolver and expiry. End the project and its identities end.</p></div>
-              <div className="beige"><span className="k">Rules as records</span><h3>Status, scope, writes per day</h3><p><span className="mono">sb.status · sb.scope · sb.write.daily</span> are read live and enforced on every call. Changing one is a public Sepolia transaction.</p></div>
-              <div className="beige"><span className="k">A head per AI</span><h3>ENS points at the latest commit</h3><p><span className="mono">sb.memory.head</span> on <span className="mono">claude.{health?.ens ?? "brain.supabrain.eth"}</span> points at its newest commit on Arkiv.</p></div>
-            </div>
-            <div className="cta"><Link className="btn g sm" href={href("/brains")}>See the registry</Link><Link className="btn g sm" href={href(id ? `/b/${id}/rules` : "/brains")}>See the live rules</Link></div>
-          </div>
-        </div></section>
 
-        <section className="blk"><div className="wrap sect">
-          <div className="num">05</div>
-          <div>
-            <span className="eyebrow"><i />Why Arkiv</span>
-            <h2>The handoff log nobody can edit. Not even us.</h2>
-            <div className="tiles">
-              <div className="tile"><canvas data-m="grow" /><div className="tx"><h3>Signed by the writer</h3><p>Every commit is created by the AI&apos;s own wallet. Authorship is a signature, not a database column.</p></div></div>
-              <div className="tile"><canvas data-m="blast" /><div className="tx"><h3>Revoked, not deleted</h3><p>A stopped item gets a public revocation. No AI receives it, and history stays readable.</p></div></div>
-              <div className="tile"><canvas data-m="expire" /><div className="tx"><h3>Expires with the project</h3><p>Data has a lifetime on Arkiv, so a finished project doesn&apos;t leave a permanent pile of context.</p></div></div>
-            </div>
-            <div className="term"><span className="s">$</span>pnpm verify:memory &lt;key&gt;<span style={{ opacity: .6 }}>· Arkiv + ENS only</span></div>
-          </div>
-        </div></section>
 
-        <section className="blk"><div className="wrap sect">
-          <div className="num">06</div>
-          <div>
-            <span className="eyebrow"><i />Who it&apos;s for</span>
-            <h2>Teams that run more than one AI agent on the same work.</h2>
-            <p className="lead"><b>Engineering teams</b> using Claude Code, Gemini and Codex on one codebase, and the <b>AI platform and security leads</b> who must answer: which agent did this, what was it allowed to do, and what did it pass on? Regulated teams (fintech, health) get an audit trail they can show.</p>
-            <div className="faqgrid">{faq.faq.slice(0, 4).map((q) => <div key={q.q} className="beige"><h3 style={{ fontSize: "1.25rem" }}>{q.q}</h3><p>{q.a}</p></div>)}</div>
-          </div>
-        </div></section>
 
         <section className="end dark" data-tour="cta"><canvas data-field="2" aria-hidden="true" /><div className="wrap">
           <span className="eyebrow"><i />Try it</span>

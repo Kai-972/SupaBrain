@@ -1,14 +1,53 @@
 "use client";
+// Live (UI_REDESIGN_PROMPT.md §5.3): one sentence and three numbers, then the graph is the whole screen. AI details
+// live in the lane headers (click), commit details in the side panel, the log in a bottom drawer, charts in Insights.
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Vendor } from "@supabrain/shared";
 import { BrainFrame } from "@/components/BrainFrame";
-import { CommitGraph, type Lane } from "@/components/CommitGraph";
-import { AgentCard, Drawer, LiveLog, Meters, useHeadMap, writesToday } from "@/components/BrainParts";
+import { LiveGraph, type Lane } from "@/components/LiveGraph";
+import { SidePanel } from "@/components/SidePanel";
+import { LiveLog, Meters, useCounts, useHeadMap, writesToday } from "@/components/BrainParts";
 import { Funnel, OutcomesPerAI, RuleHits, Timeline } from "@/components/Charts";
-import { useHref, useBrainId } from "@/components/Shell";
-import { Empty, Fig, useNow } from "@/components/ui";
+import { useBrainId, useHref } from "@/components/Shell";
+import { Copy, Ext, useNow } from "@/components/ui";
 import { useStore } from "@/lib/store";
+import { vendorOf } from "@/lib/format";
+
+function LanePopover({ lane, rect, onClose }: { lane: Lane; rect: DOMRect; onClose: () => void }) {
+  const href = useHref();
+  const id = useBrainId();
+  const checkpoints = useStore((s) => s.checkpoints);
+  const heads = useStore((s) => s.heads);
+  const a = lane.agent;
+  const r = lane.rule;
+  const head = heads.find((h) => h.agent === lane.id);
+  const daily = Number(r?.writeDaily ?? a?.writeDaily ?? 0);
+  const used = writesToday(checkpoints, lane.id);
+  const left = Math.min(Math.max(12, rect.left), (typeof window !== "undefined" ? innerWidth : 1200) - 392);
+  return (
+    <>
+      <div className="scrim4 clear" onClick={onClose} />
+      <div className="pop4" style={{ top: rect.bottom + 10, left }} role="dialog" aria-label={`${lane.ens} rules`}>
+        <div className="row"><span className={`dot4 big ${vendorOf(lane.vendor).cls}`} /><div className="grow"><b className="mono">{lane.ens}</b><div className="small muted">{a?.connectedClient ? `Connected via ${a.connectedClient}` : "Not connected right now"}</div></div><Copy text={lane.ens} /></div>
+        {a ? (
+          <dl className="rules4">
+            <dt>Status</dt><dd>{a.status === "active" ? "Active" : a.status === "paused" ? "Paused: every call is refused" : a.status}</dd>
+            <dt>May write</dt><dd>{(r?.scope ?? a.scope) === "*" ? "Everywhere in the project" : `Only ${r?.scope ?? a.scope}`}</dd>
+            <dt>Writes today</dt><dd>{used} of {daily || "no limit"}</dd>
+            <dt>Role</dt><dd>{r?.role ?? a.role}</dd>
+            <dt>HEAD on ENS</dt><dd>{head?.match ? <>✓ points at its newest commit {head.txUrl && <Ext href={head.txUrl}>tx</Ext>}</> : head?.ensHead ? "points at an older commit" : "not set yet"}</dd>
+          </dl>
+        ) : <p className="muted">The brain owner, through the website.</p>}
+        <p className="small muted" style={{ margin: 0 }}>These are ENS text records on {lane.ens}. The server reads them on every call.</p>
+        <div className="row">
+          <Link className="btn p sm" href={href(`/b/${id}/lab?rules=${lane.id}`)}>Change rules</Link>
+          <Link className="btn g sm" href={href("/connect")}>Connect an app</Link>
+        </div>
+      </div>
+    </>
+  );
+}
 
 function BrainPage() {
   const id = useBrainId();
@@ -18,16 +57,22 @@ function BrainPage() {
   const blocked = useStore((s) => s.blocked);
   const rules = useStore((s) => s.rules);
   const heads = useStore((s) => s.heads);
-  const checkpoints = useStore((s) => s.checkpoints);
   const cascade = useStore((s) => s.cascade);
   const connected = useStore((s) => s.connected);
   const pulse = useStore((s) => s.pulse);
   const loaded = useStore((s) => s.loaded);
+  const recent = useStore((s) => s.recent);
+  const feedCount = useStore((s) => s.feed.length);
   const headMap = useHeadMap();
+  const c = useCounts();
   const now = useNow(1000);
   const [sel, setSel] = useState<string>();
   const [hot, setHot] = useState<Set<string>>();
-  const [tab, setTab] = useState<"graph" | "ais" | "log">("graph");
+  const [pop, setPop] = useState<{ lane: string; rect: DOMRect }>();
+  const [details, setDetails] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [newestFirst, setNewestFirst] = useState(false);
+  const [fit, setFit] = useState(false);
   const all = useMemo(() => Object.values(nodes), [nodes]);
 
   const lanes: Lane[] = useMemo(() => {
@@ -38,77 +83,68 @@ function BrainPage() {
       const a = brain?.agents.find((x) => x.label === l);
       return {
         id: l, ens: a?.ens ?? l, vendor: (a?.vendor ?? (l === "owner" ? "human" : all.find((n) => n.agent === l)?.vendor ?? "human")) as Vendor,
-        count: all.filter((n) => n.agent === l && n.kind === "checkpoint").length,
+        count: all.filter((n) => n.agent === l && n.kind === "checkpoint").length, agent: a, rule: rules?.agents.find((r) => r.agent === l),
         on: !!(connected[l] ?? a?.connectedClient), pulse: !!pulse && pulse.agent === l && now - pulse.at < 2500,
+        headOk: heads.find((h) => h.agent === l)?.match,
       };
     });
-  }, [brain, all, connected, pulse, now]);
+  }, [brain, all, connected, pulse, now, rules, heads]);
+  const popLane = pop && lanes.find((l) => l.id === pop.lane);
 
   return (
-    <BrainFrame lede={<>Several AIs from different companies work on this project. Every commit is signed on Arkiv by the AI that made it; every AI&apos;s rules are public ENS records the server enforces on every call. Click any commit for its proof and lineage.</>}>
-      <div className="wrapx"><Meters /></div>
-      <div className="mtabs" role="group" aria-label="Panels">
-        {(["graph", "ais", "log"] as const).map((t) => <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>{t === "graph" ? "Commits" : t === "ais" ? "AIs" : "Live log"}</button>)}
-      </div>
-      <div className="bgrid">
-        <aside className={`rail${tab !== "ais" ? " mhide" : ""}`} aria-label="The AIs" data-tour="rail">
-          <div className="row" style={{ justifyContent: "space-between" }}><span className="eyebrow"><i />AIs · {brain?.agents.length ?? 0}</span><Link className="btn g xs" href={href("/connect")}>+ Connect</Link></div>
-          {!brain && [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 180 }} />)}
-          {brain?.agents.map((a) => <AgentCard key={a.label} a={a} rule={rules?.agents.find((r) => r.agent === a.label)} head={heads.find((h) => h.agent === a.label)} />)}
-          <Link className="btn g sm wide" href={href(`/b/${id}/rules`)}>Rules on ENS →</Link>
-        </aside>
-        <section className={`stage${tab !== "graph" ? " mhide" : ""}`} aria-label="Commit graph" data-tour="graph">
-          <div className="stagebar">
-            <span className="mono tiny dim">FIG. 1</span><b>Commit graph</b>
-            <span className="small muted hide-sm">one lane per AI · newest at the bottom</span>
-            <span className="spacer" />
-            {hot && <button className="btn g xs" onClick={() => setHot(undefined)}>Clear highlight</button>}
-            <Link className="btn p xs" href={href(`/b/${id}/lab`)}>Open the attack lab →</Link>
-          </div>
-          <div className="canvas">
-            {!loaded && <div className="empty"><span className="spinner" /><div>Rebuilding this brain from Arkiv…</div></div>}
-            {loaded && all.length === 0 && blocked.length === 0 && (
-              <Empty title="No checkpoints yet"><p>Connect an AI and ask it to build something, or open the attack lab.</p><div className="row"><Link className="btn p sm" href={href("/connect")}>Connect an AI</Link><Link className="btn g sm" href={href(`/b/${id}/lab`)}>Attack lab</Link></div></Empty>
-            )}
-            {(all.length > 0 || blocked.length > 0) && <CommitGraph nodes={all} blocked={blocked} lanes={lanes} heads={headMap} selected={sel} hot={hot} cascade={cascade} onSelect={(k) => { setSel(k); setTab("graph"); }} />}
-          </div>
-          <div className="legend" aria-label="Legend">
-            <span><i style={{ background: "var(--vc)" }} />checkpoint (fill = AI)</span>
-            <span><i style={{ border: "1.5px dashed var(--muted)" }} />SAVING / outside content</span>
-            <span><i style={{ border: "1.5px solid var(--lie)" }} />STOPPED ✕</span>
-            <span><i style={{ background: "var(--lie)", borderRadius: 2 }} />BLOCKED (nothing written)</span>
-            <span><i style={{ border: "2px solid var(--amber)" }} />HEAD on ENS</span>
-            <span className="mono">T1/T2/T3 trust</span>
-          </div>
-          {sel && nodes[sel] && <Drawer k={sel} onClose={() => setSel(undefined)} onSelect={setSel} onHot={setHot} />}
-        </section>
-        <section className={`logcol${tab !== "log" ? " mhide" : ""}`} aria-label="Live log"><LiveLog onSelect={(k) => { setSel(k); setTab("graph"); }} /></section>
-      </div>
-      <section className="analysis wrapx" aria-label="Analysis">
-        <div className="row" style={{ margin: "26px 0 12px" }}><span className="eyebrow"><i />Analysis · live</span></div>
-        <div className="figgrid">
-          <Funnel id={id} />
-          <OutcomesPerAI id={id} />
-          <RuleHits id={id} />
-          <Timeline id={id} />
+    <BrainFrame>
+      <section className="live4-head wrapx" data-tour="graph-head">
+        <h1 className="headline4">
+          <span className="n">{c.saved}</span> commit{c.saved === 1 ? "" : "s"} signed <span className="sep">·</span>{" "}
+          <span className="n bad">{c.stopped}</span> injection{c.stopped === 1 ? "" : "s"} stopped <span className="sep">·</span>{" "}
+          <span className="n bad">{c.ens}</span> blocked by ENS
+        </h1>
+        <p className="lede4">Each column is one AI with its own ENS name. Each dot is a commit signed by that AI on Arkiv. Click a dot for its proof, or a column header for that AI&apos;s rules.</p>
+        <div className="row wrapr">
+          <Link className="btn p" href={href(`/b/${id}/lab`)} data-tour="try">Try to break it →</Link>
+          <button className="btn g" aria-expanded={details} onClick={() => setDetails(!details)}>{details ? "Hide details" : "Details"}</button>
         </div>
-        <Fig n={7} title="Where each AI stands against its ENS write limit" how="Bars fill as an AI checkpoints today; at 100% the next write is BLOCKED BY ENS · sb.write.daily." source={`GET /api/brains/${id}/checkpoints + /rules`}>
-          <div className="bars">
-            {brain?.agents.map((a) => {
-              const daily = Number(rules?.agents.find((r) => r.agent === a.label)?.writeDaily ?? a.writeDaily ?? 0);
-              const n = writesToday(checkpoints, a.label);
-              const pct = daily ? Math.min(100, (n / daily) * 100) : 0;
-              return (
-                <div key={a.label} className="brow">
-                  <span className="mono small ell" style={{ width: 220 }}>{a.ens}</span>
-                  <div className="stack"><i style={{ width: `${pct}%`, background: pct >= 100 ? "var(--lie)" : pct >= 80 ? "var(--amber)" : "var(--flow)" }} /></div>
-                  <span className="mono tiny" style={{ width: 120, textAlign: "right" }}>{n} / {daily || "—"}{pct >= 100 ? " · AT LIMIT" : ""}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Fig>
+        {details && <div className="details4"><Meters /></div>}
       </section>
+
+      <section className="lg4-wrap" aria-label="Commit graph" data-tour="graph">
+        <div className="lg4-tools wrapx">
+          <span className="small muted">{newestFirst ? "Newest at the top" : "Newest at the bottom"}</span>
+          <span className="spacer" />
+          {hot && <button className="btn g sm" onClick={() => setHot(undefined)}>Clear highlight</button>}
+          <button className="btn g sm" aria-pressed={newestFirst} onClick={() => setNewestFirst(!newestFirst)}>{newestFirst ? "Newest last" : "Newest first"}</button>
+          <button className="btn g sm" aria-pressed={fit} onClick={() => setFit(!fit)}>{fit ? "Full size" : "Fit to screen"}</button>
+        </div>
+        <div className="lg4-scroll">
+          {!loaded && <div className="empty4"><span className="spinner" /><p>Rebuilding this brain from Arkiv…</p></div>}
+          {loaded && all.length === 0 && blocked.length === 0 && (
+            <div className="empty4"><h2>No commits yet</h2><p>Connect an AI and ask it to build something, or try the attack lab.</p><div className="row"><Link className="btn p" href={href("/connect")}>Connect an AI</Link><Link className="btn g" href={href(`/b/${id}/lab`)}>Try it</Link></div></div>
+          )}
+          {(all.length > 0 || blocked.length > 0) && (
+            <LiveGraph nodes={all} blocked={blocked} lanes={lanes} heads={headMap} selected={sel} hot={hot} recent={recent} cascade={cascade} newestFirst={newestFirst} fit={fit}
+              onSelect={setSel} onLane={(lane, rect) => setPop({ lane, rect })} />
+          )}
+        </div>
+      </section>
+
+      <section className="insights4 wrapx" id="insights" aria-label="Insights">
+        <h2 className="h2-4">Insights</h2>
+        <p className="lede4">Live numbers from the same API. One question per chart.</p>
+        <Funnel id={id} />
+        <OutcomesPerAI id={id} />
+        <RuleHits id={id} />
+        <Timeline id={id} />
+      </section>
+
+      <div className={`logdrawer4${logOpen ? " open" : ""}`}>
+        <button className="ld-tab" aria-expanded={logOpen} onClick={() => setLogOpen(!logOpen)}>
+          <span className="dot ok pulse" /> Live log · {feedCount} event{feedCount === 1 ? "" : "s"} <span className="muted">{logOpen ? "Hide ↓" : "Show ↑"}</span>
+        </button>
+        {logOpen && <div className="ld-body"><LiveLog onSelect={(k) => setSel(k)} limit={80} /></div>}
+      </div>
+
+      {popLane && pop && <LanePopover lane={popLane} rect={pop.rect} onClose={() => setPop(undefined)} />}
+      {sel && nodes[sel] && <SidePanel k={sel} onClose={() => setSel(undefined)} onSelect={setSel} onHot={setHot} />}
     </BrainFrame>
   );
 }

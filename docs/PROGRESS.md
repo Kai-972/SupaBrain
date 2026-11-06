@@ -212,6 +212,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
 
+### 2026-11-06 IST · B · S6 live / deny, cancel, revoke-vs-vault on chain
+- did: (a) deny (go): pending `pay(acme, 5)` → Srijit rejected in World App → DENIED. (b) cancel (go): pending `pay(acme, 5)` → owner `POST /api/approvals/:id/cancel` (204) → CANCELLED. (c) revoke vs vault (go): `pnpm vault:pay-proof lead-claude <acme> 1 --root email:acme-0611 --expect-revert RootRevoked --yes`: a VALID policy-signed attestation carrying the revoked root, sent by lead-claude with fixed gas
+- proof: deny: sb.payment pending https://rabdi.explorer.arkiv.network/tx/0x3ddae41b347072fd56d87283b5090d096e1478de2ba02e99075829f26cbc2172 → denied https://rabdi.explorer.arkiv.network/tx/0xc272dd7fa0e51ad5ea40c64a06cb1255bc70ad7f4546c2a8dc0c8e8708a8aa39. Cancel: pending https://rabdi.explorer.arkiv.network/tx/0xcc479fb6226e36efbe57a939401e7d943524837db276d7bbfa7bffee49b1c17e → cancelled https://rabdi.explorer.arkiv.network/tx/0x926cd6ffe99f47e3efc53db12ad2debf94e39cb32864ad5d2cc46afa8eba1128. **On-chain refusal: mined revert `RootRevoked(0xcc13…f7fc)`** https://sepolia.etherscan.io/tx/0x7e589a3ce39efbf3bb0f964c6f13a1cfc3d852a29e7b0a337c9521e77a70ddd4. Vault stayed at 4 USDC through all three; `/api/payments`: cancelled, denied, paid
+- result: PASS (expired path: unit tests only; a live expiry was not waited out)
+- commit: a7bd503 (pay-proof flags) + this entry
+- next: PROTECTED_PAYEE switch (test first), docs with live evidence
+- asks/blockers: none
+
 ### 2026-11-06 IST · B · S5/S6 live / revoke → P3 World-approved → PAID
 - did: owner login; `POST /api/dryrun` email:acme-0611 → E1 M1 M2 M3 E2 M5 · 3 agents · 3 vendors · readers gem-research, lead-claude. `POST /api/revoke` (go) → cascade exactly those 6 (H1 H2 M4 stay active), notices to all 3 agents, vault `revokedRoot(keccak("email:acme-0611")) = true`. `pnpm demo:step approve` (go): lead-claude got the retraction notice, `pay(acme.supabrain.eth, 5)` → PENDING HUMAN (OVER_CAP) → Srijit approved in World App → PAID
 - proof: Arkiv revocation https://rabdi.explorer.arkiv.network/tx/0x6933acedc8f959aa3cde69e9620e8bdb26e039389e05315524990b7305bd78ae · vault revokeRoot https://sepolia.etherscan.io/tx/0x7083d77c6266ac8afb64021d1899eb1ac7f6dd94298fafcff8153659fd983137 · **P3 PAID** https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528 (Paid event: agent lead-claude, payee 0xf15f…B5A5 = acme ENS, 5 USDC, humanApproved=true, roots=[H1] only, email root absent) · sb.payment pending https://rabdi.explorer.arkiv.network/tx/0xa7e41fc8a50ad59bc0dec851cc3b78ff0bff75a5f8ec5180a60bcc5d2caca152 → paid https://rabdi.explorer.arkiv.network/tx/0xa16166ae16892e3ea2bea0ffb1a18f34e756e4ef20e30c43120aeb72290adb12 · 85 s pending → paid · vault 9 → 4 USDC · `payment` memory by lead-claude in /api/graph

@@ -75,7 +75,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S8: Ship
 - [ ] A: `seed.ts` on a fresh team · Arkiv docs · README addresses · V5 + V6
-- [ ] B: SECURITY.md · WORLD_DEBRIEF.md · V3 red team
+- [ ] B: SECURITY.md ✓ cbb5549 · WORLD_DEBRIEF.md · V3 red team
 - [ ] C: DEMO_SCRIPT.md · video · README · Vercel · V2 sponsor audit
 - [ ] Rehearsal 1 · Rehearsal 2 · Rehearsal 3 · **Submitted** (link: ___)
 
@@ -162,6 +162,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S8 / SECURITY.md
+- did: `SECURITY.md`: assets, 13 threats → controls with file:line, key custody (who holds what, can / can't), bounded worst case (34 test USDC/day, 2x across UTC midnight), vault check order, Binance lessons without overclaiming, known gaps, pending pairing-token review checklist, reporting
+- proof: every cited line spot-checked against the code at this commit
+- result: PASS
+- commit: cbb5549
+- next: World + Vault rows in SPONSORS.md
+- asks/blockers: none (guardian funded: 0.01 ETH ✓)
 
 ### 2026-11-06 IST · B · S2 / on-chain kill proven (step-kill)
 - did: `pnpm demo:step-kill gem-research --yes --revive` after the ASK go. Signed a valid 1-USDC attestation while registered (simulated ok) → Lane A's `ens:unregister` → the same pay sent from gem-research's own wallet with fixed gas → mined revert → `ens:add-agent` revive

@@ -192,7 +192,10 @@ async function decide(ctx: PolicyContext, req: PolicyRequest, amountUnits: bigin
   const rootSet = new Set<string>();
   for (const n of payeeNodes) if (supports(n) && !quarantined(n.key)) for (const r of n.roots) rootSet.add(r);
   const cites = (req.cites ?? []).filter((c) => !quarantined(c));
-  for (const c of cites) for (const m of graph.ancestors(c)) if (!quarantined(m.key)) for (const r of m.roots) rootSet.add(r);
+  for (const c of cites) {
+    for (const r of graph.get(c)?.roots ?? []) rootSet.add(r); // the cite itself (it may be a root: evidence / human memory)
+    for (const m of graph.ancestors(c)) if (!quarantined(m.key)) for (const r of m.roots) rootSet.add(r);
+  }
   const rootIds = [...rootSet].sort();
   if (rootIds.length > ctx.maxRoots) {
     return { outcome: "error", error: `payment has ${rootIds.length} lineage roots, max ${ctx.maxRoots} per attestation` };

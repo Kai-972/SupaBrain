@@ -294,6 +294,13 @@ describe("decidePayment: red team (V3)", () => {
     expect(d.rootIds).toEqual(["0xH1"]); // not email:acme-0611 (E1/M1 claim 0xBAD)
   });
 
+  it("a cited memory that is itself a root contributes its own root", async () => {
+    // H2 (owner budget) has no ancestors; before GraphView.get it added nothing
+    const d = await decidePayment(f.ctx, { agent: "lead-claude", payee: ACME, amount: "1", cites: ["0xH2"] });
+    if (d.outcome === "error") throw new Error();
+    expect(d.rootIds).toEqual(["0xH1", "0xH2"]);
+  });
+
   it("roots come from the cited lineage too, deduplicated and without quarantined parts", async () => {
     for (const k of REVOKED) f.graph.setStatus(k, "quarantined");
     const d = await decidePayment(f.ctx, { agent: "lead-claude", payee: ACME, amount: "1", cites: ["0xM4", "0xH1"] });

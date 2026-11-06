@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS: steps 1–2 ✅ → step 3 register team | 🔨 in progress | – (all wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World live · S5 `decidePayment` ✅ (39 table tests). Next: intents + attestation + pending-human (`createPayments`) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World live · S5 policy ✅ · attestation + vault client ✅ (anvil). Next: `createPayments` + pending-human | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -59,7 +59,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S5: Money
 - [ ] A: acme vendor ENS (own resolver) · `EnsAuthority` vendor fns · `GraphView`/`ArkivWriter` · `pay`/`pay_status` mounted
-- [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · intents · attestation · vault client · pending-human)
+- [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · attestation ✓ f59b6b9 · vault client ✓ 1973e38 · createPayments · pending-human)
 - [ ] C: payments page
 - [ ] **Gate:** P1 BLOCKED (ENS mismatch) from a real client · paid tx on Etherscan
 
@@ -132,6 +132,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S5 / attestation + vault client
+- did: EIP-712 policy-signer attestation + `intentHash` (`packages/payments/src/vault/attestation.ts`); generated ABI (`scripts/vault/gen-abi.sh`); typed `createVaultClient` (simulate-then-write, revert names, per-signer serialisation)
+- proof: TS signer reproduces the cast-signed vector from `BrainVaultReview.t.sol` byte for byte; anvil integration deploys the real compiled vault (throwaway keys): pay ✓, Replay, BadAttestation, RootRevoked, cancelIntent, AgentNotRegistered after unregister ✓; 163 workspace tests green
+- result: PASS
+- commit: 874ca18 (tests), f59b6b9, 1973e38
+- next: `createPayments` (intent snapshot → World approval → live hard re-check → attestation → vault pay → Arkiv decision + SSE), `onRevoke`, `pauseAgent`
+- asks/blockers: none yet (Sepolia deploy needs A's `ens.sepolia.json` + an ASK "go")
 
 ### 2026-11-06 IST · B · S5 / decidePayment policy
 - did: `packages/payments/src/policy.ts`: agent authority from live ENS (fail closed), payee resolution, ENS-mismatch hard block (also for ENS-named payees, stricter than spec), quarantined lineage, outside-content/new/unknown payee, cap + daily from ENS records, attestation roots (sorted, deduped, quarantined excluded, only memories supporting this exact address), root overflow → error, offending `path`

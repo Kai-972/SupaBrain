@@ -47,6 +47,8 @@ export interface MemoryStore {
   writeRevocation(r: RevocationRecord): Promise<{ key: Hex } & WriteReceipt>;
   /** Team wallet records a payment decision (sb.payment): pending intents live 15 min, decisions 30 days. */
   writePayment(p: Payment): Promise<{ key: string } & WriteReceipt>;
+  /** Payment decisions recorded on Arkiv for this app + team by the team wallet: one per intent, its latest status. */
+  loadPayments(): Promise<Payment[]>;
   /** Team wallet writes retraction notices in one batch. */
   writeNotices(notices: NoticeRecord[]): Promise<WriteReceipt>;
   /** Keep: the team (owner) extends a memory AND its edges and taint rows to `seconds` from now, in one batch. */

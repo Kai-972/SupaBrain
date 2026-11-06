@@ -6,7 +6,7 @@ import { and, eq } from "@arkiv-network/sdk/query";
 import type { Hex } from "viem";
 import type { PrivateKeyAccount } from "viem/accounts";
 import { createArkivWriter, decodeBody, Edge, encodeBody, Memory, Notice, Payment as PaymentSchema, Revocation, SignerQueue, Taint, type ArkivConnection } from "@supabrain/arkiv";
-import { explorerLink, redactUrls, type MemoryKind, type MemoryNode, type Payment, type PrivateRef, type RevocationTarget, type SourceRef, type Trust, type Vendor } from "@supabrain/shared";
+import { explorerLink, redactUrls, type MemoryKind, type MemoryNode, type PayDecision, type Payment, type PrivateRef, type RevocationTarget, type SourceRef, type Trust, type Vendor } from "@supabrain/shared";
 import { SELF_ROOT } from "../engine/lineage";
 import type { MemoryDraft, MemoryStore, NoticeRecord, RevocationRecord, StoreWatchHandlers, WriteReceipt } from "../memory/store";
 
@@ -248,6 +248,45 @@ export function createArkivMemoryStore(d: ArkivStoreDeps): MemoryStore {
       committed.catch((e: Error) => log(`arkiv: write by ${signer} failed: ${redactUrls(e.message)}`));
       const { key, roots } = await keyKnown;
       return { key, roots, committed };
+    },
+
+    async loadPayments() {
+      type Row = Record<string, unknown>;
+      type Body = { amount: string; memo: string; payeeEns?: string; lineage?: string[]; reasons?: unknown[]; path?: string[]; txHash?: string; txUrl?: string; error?: string; approval?: { id: string; expiresAt: number }; at: number };
+      const rows: { p: Payment; final: boolean; order: number }[] = [];
+      let order = 0;
+      for (let offset = 0; ; ) {
+        const page = await d.conn.arkiv.select({ $key: true, agent: true, payee: true, status: true, intent: true, seq: true, body: true }).from(PaymentSchema)
+          .where(and(eq("app", d.app), eq("team", d.team))).createdBy(team.address).limit(PAGE).offset(offset).fetch();
+        for (const row of page.entities as unknown as Row[]) {
+          let b: Body;
+          try { b = decodeBody<Body>(val(row.body) as Uint8Array); } catch { continue; } // not ours
+          const status = String(val(row.status)) as PayDecision["status"];
+          const intentId = String(val(row.intent));
+          const decision = (
+            status === "paid" ? { status, txHash: b.txHash as Hex, txUrl: b.txUrl ?? "", intentId }
+            : status === "blocked" ? { status, reasons: b.reasons ?? [], path: b.path ?? [], intentId }
+            : status === "failed" ? { status, error: b.error ?? "", intentId }
+            : status === "pending_human" ? { status, reasons: b.reasons ?? [], intentId, approval: { id: b.approval?.id ?? "", intentId, agent: String(val(row.agent)), payee: String(val(row.payee)) as Hex, amount: b.amount, reasons: b.reasons ?? [], userCode: "", verificationUri: "", expiresAt: b.approval?.expiresAt ?? 0 } }
+            : { status, intentId }
+          ) as PayDecision;
+          rows.push({
+            final: status !== "pending_human", order: order++,
+            p: { intentId, agent: String(val(row.agent)), payee: String(val(row.payee)) as Hex, payeeEns: b.payeeEns, amount: b.amount, memo: b.memo, decision, createdAt: b.at ?? Number(val(row.seq)), lineage: b.lineage ?? [] },
+          });
+        }
+        const covered = page.entities.length + page.skipped;
+        if (covered < PAGE) break;
+        offset += covered;
+      }
+      // one per intent: a final decision beats its pending row, whatever order the query returned them in
+      const best = new Map<string, { p: Payment; final: boolean; order: number }>();
+      for (const r of rows) {
+        const have = best.get(r.p.intentId);
+        if (!have || (r.final && !have.final) || (r.final === have.final && r.order > have.order)) best.set(r.p.intentId, r);
+      }
+      log(`arkiv: loaded ${best.size} payment decisions`);
+      return [...best.values()].map((r) => r.p);
     },
 
     async loadAll() {

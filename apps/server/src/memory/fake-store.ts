@@ -66,6 +66,16 @@ export class FakeMemoryStore implements MemoryStore {
     return { txHash: keccak256(toHex(`keep-${key}`)), proofUrl: `https://explorer.test/tx/keep-${key}`, expiresAt: Date.now() + seconds * 1000, extended: 1 }; // hardcode-ok: test fake proof link
   }
 
+  /** set to make loadPayments fail */
+  failLoadPayments?: string;
+
+  async loadPayments(): Promise<Payment[]> {
+    if (this.failLoadPayments) throw new Error(this.failLoadPayments);
+    const latest = new Map<string, Payment>();
+    for (const p of this.payments) latest.set(p.intentId, p); // rows in write order: the last one is the latest status
+    return [...latest.values()];
+  }
+
   async loadAll(): Promise<{ memories: MemoryNode[]; revocations: RevocationTarget[]; notices: NoticeRecord[] }> {
     return { memories: this.preload, revocations: [], notices: [] };
   }

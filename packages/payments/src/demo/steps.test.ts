@@ -160,5 +160,7 @@ describe("MCP pay tools", () => {
     })).toMatch(/human.*World App.*AB12-CD34/is);
     expect(describeDecision({ status: "paid", intentId: "i", txHash: "0x01", txUrl: "test://tx" })).toMatch(/PAID.*test:\/\/tx/);
     expect(describeDecision({ status: "denied", intentId: "i" })).toMatch(/DENIED.*nothing/i);
+    expect(describeDecision({ status: "blocked", intentId: "i", path: [], reasons: [{ code: "PROTECTED_PAYEE", label: "agent wallet lead-claude" }] }))
+      .toMatch(/BLOCKED.*team-controlled.*agent wallet lead-claude/s);
   });
 });

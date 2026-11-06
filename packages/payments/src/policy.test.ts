@@ -333,7 +333,7 @@ describe("decidePayment: V3 red team round 2 (each was ALLOWED before the fix)",
     const d = await decidePayment(f.ctx, { agent: "lead-claude", payee: addr, amount: "1" });
     expect(d.outcome).toBe("blocked");
     if (d.outcome === "error") throw new Error();
-    expect(d.hard).toEqual([{ code: "AGENT_NOT_AUTHORIZED", detail: expect.stringMatching(/team-controlled/) }]);
+    expect(d.hard).toEqual([{ code: "PROTECTED_PAYEE", label: expect.stringMatching(/agent wallet lead-claude|BrainVault|USDC token/) }]);
   });
 
   it("R1: an agent's ENS name (which resolves to its wallet) can't be paid either", async () => {
@@ -343,6 +343,8 @@ describe("decidePayment: V3 red team round 2 (each was ALLOWED before the fix)",
     f.graph.add(node("0xR2", { trust: 2, kind: "address", subject: `lead-claude.${TEAM}`, address: AGENT_W, roots: [] }));
     const d = await decidePayment(f.ctx, { agent: "gem-research", payee: `lead-claude.${TEAM}`, amount: "1" });
     expect(d.outcome).toBe("blocked");
+    if (d.outcome === "error") throw new Error();
+    expect(d.hard).toEqual([{ code: "PROTECTED_PAYEE", label: "agent wallet lead-claude" }]);
   });
 
   it("R2: the zero address is never a payee", async () => {
@@ -350,6 +352,8 @@ describe("decidePayment: V3 red team round 2 (each was ALLOWED before the fix)",
     f.graph.add(node("0xR3", { trust: 2, kind: "address", address: ZERO, roots: [] }));
     const d = await decidePayment(f.ctx, { agent: "lead-claude", payee: ZERO, amount: "1" });
     expect(d.outcome).toBe("blocked");
+    if (d.outcome === "error") throw new Error();
+    expect(d.hard).toEqual([{ code: "PROTECTED_PAYEE", label: "zero address" }]);
   });
 
   it("control: the owner/refund address is still payable (not team-controlled by the server)", async () => {

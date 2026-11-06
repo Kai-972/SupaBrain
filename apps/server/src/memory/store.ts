@@ -1,6 +1,6 @@
 // The boundary between the memory service and Arkiv. Real implementation: ../arkiv/store.ts. Test fake: ./fake-store.ts.
 import type { Hex } from "viem";
-import type { DryRun, MemoryKind, MemoryNode, PrivateRef, RevocationTarget, SourceRef, Trust, Vendor } from "@supabrain/shared";
+import type { DryRun, MemoryKind, MemoryNode, Payment, PrivateRef, RevocationTarget, SourceRef, Trust, Vendor } from "@supabrain/shared";
 
 /** A memory about to be written. `roots` may contain SELF_ROOT (human memories), replaced by the store with the key. */
 export interface MemoryDraft {
@@ -45,6 +45,8 @@ export interface MemoryStore {
   writeMemory(signer: string, draft: MemoryDraft): Promise<{ key: Hex; roots: string[]; committed: Promise<WriteReceipt> }>;
   /** Team wallet writes a revocation (max lifetime: it must outlive whatever it revokes). Resolves after the receipt. */
   writeRevocation(r: RevocationRecord): Promise<{ key: Hex } & WriteReceipt>;
+  /** Team wallet records a payment decision (sb.payment): pending intents live 15 min, decisions 30 days. */
+  writePayment(p: Payment): Promise<{ key: string } & WriteReceipt>;
   /** Team wallet writes retraction notices in one batch. */
   writeNotices(notices: NoticeRecord[]): Promise<WriteReceipt>;
   /** Keep: the team (owner) extends a memory AND its edges and taint rows to `seconds` from now, in one batch. */

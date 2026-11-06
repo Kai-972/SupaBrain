@@ -1,7 +1,7 @@
 // Dashboard API part 1 (CLAUDE.md §6.4, A-BRAIN S2 step 6). Read endpoints are public demo data; owner actions (S3)
 // go behind admin.require.
 import type { Express, NextFunction, Request, Response } from "express";
-import type { AppConfig, EnsAuthority, RevocationTarget } from "@supabrain/shared";
+import type { AppConfig, EnsAuthority, Payments, RevocationTarget } from "@supabrain/shared";
 import type { Runtime } from "../runtime";
 import type { adminAuth } from "../auth/admin";
 import { ToolError } from "../memory/service";
@@ -49,7 +49,7 @@ function targetOf(body: unknown): RevocationTarget {
   return { type: t.type as RevocationTarget["type"], id: t.id };
 }
 
-export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority; runtime: Runtime; admin: ReturnType<typeof adminAuth>; undo: Undo }) {
+export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority; runtime: Runtime; admin: ReturnType<typeof adminAuth>; undo: Undo; payments: Payments }) {
   const { config, ens, runtime } = p;
   const { graph, bus, service } = runtime;
   const teamEns = `${config.app.ens.teamLabel}.eth`;
@@ -113,6 +113,17 @@ export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority
   }));
   app.post("/api/memory/:key/keep", owner, action((req) => p.undo.keep(String(req.params.key), typeof req.body?.days === "number" ? req.body.days : undefined)));
   app.post("/api/memory/:key/correct", owner, action((req) => p.undo.correct(String(req.params.key), str(req.body?.text))));
+
+  // Payments (S5). Approvals carry the World connector URI, which holds a bridge key: only the owner sees it.
+  app.get("/api/payments", (_req, res) => void res.json(p.payments.list()));
+  app.get("/api/approvals", (req, res) => {
+    const owner = p.admin.isAdmin(req);
+    res.json(p.payments.approvals().map((a) => (owner ? a : { ...a, verificationUri: "", verificationUriComplete: undefined })));
+  });
+  app.post("/api/approvals/:id/cancel", owner, async (req, res) => {
+    try { await p.payments.cancel(String(req.params.id)); res.status(204).end(); }
+    catch { res.status(404).json({ error: "NOT_FOUND", message: "no such approval" }); }
+  });
 
   app.post("/api/admin/login", p.admin.login);
   app.post("/api/admin/logout", p.admin.logout);

@@ -1,7 +1,7 @@
 // The memory service behind the MCP tools and the dashboard API (A-BRAIN S2). Every agent action re-checks ENS live
 // (CLAUDE.md §7 rule 8), then works on the in-memory graph and writes to Arkiv through the MemoryStore.
 import { isAddress, type Hex } from "viem";
-import type { AgentView, AppConfig, EnsAuthority, MemoryKind, MemoryNode, PrivateRef, SourceRef, Trust } from "@supabrain/shared";
+import type { AgentView, AppConfig, EnsAuthority, MemoryKind, MemoryNode, Payment, PrivateRef, SourceRef, Trust } from "@supabrain/shared";
 import type { MemoryGraph } from "../engine/graph";
 import { computeLineage, scopeAllows, validateFolder, validateRef, validateSource } from "../engine/lineage";
 import { searchMemories } from "../engine/search";
@@ -112,6 +112,30 @@ export function createMemoryService(d: ServiceDeps) {
     if (i.subject && (i.subject.length > 128 || !/^[a-z0-9.-]+$/.test(i.subject))) bad("subject must be an ENS name like acme.supabrain.eth");
   }
 
+  /** Optimistic write shared by remember and recordPayment: the graph and the dashboard see it at once (pending). */
+  async function commit(signer: string, draft: MemoryDraft, creator: `0x${string}`): Promise<MemoryNode> {
+    let written;
+    try { written = await d.store.writeMemory(signer, draft); }
+    catch (e) { throw new ToolError("WRITE_FAILED", `the memory was not written: ${(e as Error).message}`); }
+    const lifetime = (draft.kind === "evidence" ? d.config.app.arkivExpirySec.evidence : d.config.app.arkivExpirySec.memory) * 1000;
+    const node: MemoryNode = { ...draft, key: written.key, roots: written.roots, expiresAt: draft.createdAt + lifetime, status: "active", pending: true, creator };
+    d.graph.upsert(node);
+    lastWriteAt.set(signer, draft.createdAt);
+    d.bus.emit({ t: "memory", node: d.graph.get(node.key)!, edges: node.parents.map((parent) => ({ parent, child: node.key })) });
+    written.committed.then(
+      (r) => {
+        d.graph.patch(node.key, { pending: false, proofUrl: r.proofUrl, expiresAt: r.expiresAt });
+        d.bus.emit({ t: "confirmed", key: node.key, proofUrl: r.proofUrl });
+      },
+      (e: Error) => {
+        d.graph.remove(node.key);
+        d.bus.emit({ t: "write_failed", key: node.key, error: e.message });
+        log(`write failed for ${signer} ${node.key}: ${e.message}`);
+      },
+    );
+    return node;
+  }
+
   return {
     notices: d.notices,
 
@@ -163,29 +187,29 @@ export function createMemoryService(d: ServiceDeps) {
         ...(input.subject ? { subject: input.subject } : {}), ...(input.address ? { address: input.address } : {}),
         ...(input.source ? { source: input.source } : {}), ...(input.ref ? { ref: input.ref } : {}),
       };
-      let written;
-      try { written = await d.store.writeMemory(agent, draft); }
-      catch (e) { throw new ToolError("WRITE_FAILED", `the memory was not written: ${(e as Error).message}`); }
-
-      const lifetime = (input.kind === "evidence" ? d.config.app.arkivExpirySec.evidence : d.config.app.arkivExpirySec.memory) * 1000;
-      const node: MemoryNode = { ...draft, key: written.key, roots: written.roots, expiresAt: createdAt + lifetime, status: "active", pending: true, creator: a.wallet };
-      d.graph.upsert(node);
+      const node = await commit(agent, draft, a.wallet);
       d.readSets.reset(agent);
-      lastWriteAt.set(agent, createdAt);
-      d.bus.emit({ t: "memory", node: d.graph.get(node.key)!, edges: node.parents.map((parent) => ({ parent, child: node.key })) });
-
-      written.committed.then(
-        (r) => {
-          d.graph.patch(node.key, { pending: false, proofUrl: r.proofUrl, expiresAt: r.expiresAt });
-          d.bus.emit({ t: "confirmed", key: node.key, proofUrl: r.proofUrl });
-        },
-        (e: Error) => {
-          d.graph.remove(node.key);
-          d.bus.emit({ t: "write_failed", key: node.key, error: e.message });
-          log(`write failed for ${agent} ${node.key}: ${e.message}`);
-        },
-      );
       return { key: node.key, trust: node.trust, parents: node.parents, roots: node.roots, folder: node.folder, pending: true as const, notices: d.notices.unread(agent) };
+    },
+
+    /**
+     * After a PAID decision (A-BRAIN S5 step 4): the paying agent's own wallet records the payment as a memory built on
+     * the lineage it relied on (trust = min). Called by the payments mount, not by agents, so no read-set or scope dance:
+     * the folder is the agent's own scope ("finance" for a lead with "*").
+     */
+    async recordPayment(p: Payment) {
+      if (p.decision.status !== "paid") return undefined;
+      const a = await authority(p.agent);
+      const parents = [...new Set(p.lineage)].map((k) => d.graph.get(k)).filter((n): n is MemoryNode => !!n && n.status === "active").slice(0, d.config.app.readSet.maxParents);
+      const lineage = computeLineage({ kind: "payment", author: "agent", parents });
+      const to = p.payeeEns ?? p.payee;
+      const draft: MemoryDraft = {
+        text: `Paid ${p.amount} USDC to ${to} for "${p.memo}" (intent ${p.intentId}, tx ${p.decision.txUrl})`,
+        kind: "payment", folder: a.scope === "*" || !a.scope ? "finance" : a.scope, trust: lineage.trust, agent: p.agent, vendor: a.vendor,
+        seq: d.graph.nextSeq(), createdAt: now(), parents: parents.map((n) => n.key), roots: lineage.roots,
+        ...(p.payeeEns ? { subject: p.payeeEns } : {}), address: p.payee,
+      };
+      return commit(p.agent, draft, a.wallet);
     },
 
     async explain(agent: string, key: string) {

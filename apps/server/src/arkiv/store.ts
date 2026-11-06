@@ -5,8 +5,8 @@ import { addr, i32, key as keyValue, u64 } from "@arkiv-network/sdk/schema";
 import { and, eq } from "@arkiv-network/sdk/query";
 import type { Hex } from "viem";
 import type { PrivateKeyAccount } from "viem/accounts";
-import { createArkivWriter, decodeBody, Edge, encodeBody, Memory, Notice, Revocation, SignerQueue, Taint, type ArkivConnection } from "@supabrain/arkiv";
-import { explorerLink, redactUrls, type MemoryKind, type MemoryNode, type PrivateRef, type RevocationTarget, type SourceRef, type Trust, type Vendor } from "@supabrain/shared";
+import { createArkivWriter, decodeBody, Edge, encodeBody, Memory, Notice, Payment as PaymentSchema, Revocation, SignerQueue, Taint, type ArkivConnection } from "@supabrain/arkiv";
+import { explorerLink, redactUrls, type MemoryKind, type MemoryNode, type Payment, type PrivateRef, type RevocationTarget, type SourceRef, type Trust, type Vendor } from "@supabrain/shared";
 import { SELF_ROOT } from "../engine/lineage";
 import type { MemoryDraft, MemoryStore, NoticeRecord, RevocationRecord, StoreWatchHandlers, WriteReceipt } from "../memory/store";
 
@@ -26,7 +26,7 @@ export interface ArkivStoreDeps {
   /** agent label → vendor, for memories loaded from Arkiv */
   vendors: Record<string, Vendor>;
   explorer: { tx: string; entity: string };
-  lifetimeSec: { memory: number; evidence: number; notice: number };
+  lifetimeSec: { memory: number; evidence: number; notice: number; paymentIntent: number; paymentDecision: number };
   log?: (line: string) => void;
 }
 
@@ -128,6 +128,29 @@ export function createArkivMemoryStore(d: ArkivStoreDeps): MemoryStore {
         } as unknown as ExecuteBatchParameters);
         log(`arkiv: team wrote revocation ${r.target.type}:${r.target.id} (gas ${res.gasUsed}) tx ${res.txHash}`);
         return { key: res.createdEntities[0]! as Hex, txHash: res.txHash, proofUrl: txUrl(res.txHash), expiresAt: r.at + Number(MAX_LIFETIME) * (await secondsPerBlock()) * 1000 };
+      }),
+
+    writePayment: (p: Payment) =>
+      planQueue.run("team", async () => {
+        const pending = p.decision.status === "pending_human";
+        const sec = pending ? d.lifetimeSec.paymentIntent : d.lifetimeSec.paymentDecision;
+        const decision = p.decision as Record<string, unknown>;
+        const res = await teamWriter.executeBatch({
+          creates: [{
+            schema: PaymentSchema,
+            values: {
+              app: d.app, team: d.team, agent: p.agent, payee: addr(p.payee), status: p.decision.status, intent: p.intentId, seq: u64(p.createdAt),
+              body: encodeBody({
+                amount: p.amount, memo: p.memo, payeeEns: p.payeeEns, lineage: p.lineage, reasons: decision.reasons ?? [], path: decision.path ?? [],
+                txHash: decision.txHash, txUrl: decision.txUrl, error: decision.error,
+                approval: decision.approval ? { id: (decision.approval as { id: string }).id, expiresAt: (decision.approval as { expiresAt: number }).expiresAt } : undefined, at: p.createdAt,
+              }),
+            },
+            expiration: ExpirationTime.fromSeconds(sec), flags: { readonly: true },
+          }],
+        } as unknown as ExecuteBatchParameters);
+        log(`arkiv: team recorded payment ${p.intentId} (${p.decision.status}) tx ${res.txHash}`);
+        return { key: res.createdEntities[0]!, txHash: res.txHash, proofUrl: txUrl(res.txHash), expiresAt: Date.now() + sec * 1000 };
       }),
 
     writeNotices: (notices: NoticeRecord[]) =>

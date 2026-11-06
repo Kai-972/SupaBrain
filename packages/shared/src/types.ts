@@ -42,7 +42,8 @@ export type PayReason =
   | { code: "OUTSIDE_CONTENT_PAYEE"; sources: string[] }
   | { code: "UNKNOWN_PAYEE" } | { code: "NEW_PAYEE" }
   | { code: "OVER_CAP"; cap: string; amount: string } | { code: "OVER_DAILY"; daily: string; spentToday: string }
-  | { code: "AGENT_NOT_AUTHORIZED"; detail: string };
+  | { code: "AGENT_NOT_AUTHORIZED"; detail: string }
+  | { code: "PROTECTED_PAYEE"; label: string };                       // a team-controlled wallet/contract (agent wallet, BrainVault, USDC token, zero address): never a payee
 
 export type PayDecision =
   | { status: "paid"; txHash: `0x${string}`; txUrl: string; intentId: string }

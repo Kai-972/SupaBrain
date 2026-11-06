@@ -1,6 +1,6 @@
 // In-memory MemoryStore for tests only (CLAUDE.md §2.1: mocks only in unit tests).
 import { keccak256, toHex, type Hex } from "viem";
-import type { MemoryNode, RevocationTarget } from "@supabrain/shared";
+import type { MemoryNode, Payment, RevocationTarget } from "@supabrain/shared";
 import { SELF_ROOT } from "../engine/lineage";
 import type { MemoryDraft, MemoryStore, NoticeRecord, RevocationRecord, StoreWatchHandlers, WriteReceipt } from "./store";
 
@@ -9,6 +9,7 @@ export class FakeMemoryStore implements MemoryStore {
   readonly revocations: RevocationRecord[] = [];
   readonly noticesWritten: NoticeRecord[] = [];
   readonly extended: { key: string; seconds: number }[] = [];
+  readonly payments: Payment[] = [];
   /** set to make the next commit fail (after the key was handed out) */
   failNextCommit?: string;
   /** set to make the next write fail before a key exists */
@@ -47,6 +48,12 @@ export class FakeMemoryStore implements MemoryStore {
     this.revocations.push(r);
     const key = keccak256(toHex(`rev-${this.revocations.length}`));
     return { key, txHash: keccak256(toHex(`tx-${key}`)), proofUrl: `https://explorer.test/tx/${key}`, expiresAt: r.at + 182 * 86_400_000 }; // hardcode-ok: test fake proof link
+  }
+
+  async writePayment(p: Payment) {
+    this.payments.push(p);
+    const key = keccak256(toHex(`pay-${this.payments.length}`));
+    return { key, txHash: keccak256(toHex(`tx-${key}`)), proofUrl: `https://explorer.test/tx/${key}`, expiresAt: Date.now() + 30 * 86_400_000 }; // hardcode-ok: test fake proof link
   }
 
   async writeNotices(notices: NoticeRecord[]) {

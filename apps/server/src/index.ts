@@ -6,7 +6,7 @@ import { loadConfig, readEnv, requireEnv } from "@supabrain/shared/config";
 import { createApp } from "./app";
 import { createArkivMemoryStore } from "./arkiv/store";
 import { startSync } from "./memory/sync";
-import { createPaymentsDisabled } from "./payments-disabled";
+import { mountPayments } from "./payments/mount";
 import { createRuntime } from "./runtime";
 
 const log = (line: string) => console.log(`${new Date().toISOString().slice(11, 19)} ${line}`);
@@ -44,7 +44,7 @@ async function main() {
     app: config.app.appNamespace, team: config.app.team.id, signers,
     vendors: Object.fromEntries(config.app.agents.map((a) => [a.label, a.vendor])),
     explorer: { tx: rabdi.explorer.tx, entity: rabdi.explorer.entity },
-    lifetimeSec: { memory: config.app.arkivExpirySec.memory, evidence: config.app.arkivExpirySec.evidence, notice: config.app.arkivExpirySec.notice },
+    lifetimeSec: { memory: config.app.arkivExpirySec.memory, evidence: config.app.arkivExpirySec.evidence, notice: config.app.arkivExpirySec.notice, paymentIntent: config.app.arkivExpirySec.paymentIntent, paymentDecision: config.app.arkivExpirySec.paymentDecision },
     log,
   });
   const runtime = createRuntime({ config, ens, store, log });
@@ -54,8 +54,9 @@ async function main() {
   log(`rebuilt from Arkiv (${config.app.appNamespace}/${config.app.team.id}): ${rebuilt.memories} memories, ${rebuilt.revocations} revocations in ${Date.now() - t0} ms`);
 
   const publicBaseUrl = env.PUBLIC_BASE_URL;
+  const payments = mountPayments({ config, ens, runtime, log });
   const app = createApp({
-    config, payments: createPaymentsDisabled(), ens, runtime,
+    config, payments, ens, runtime,
     tokenSecret: requireEnv("TOKEN_SIGNING_SECRET"), publicBaseUrl, adminPassphrase: env.DASHBOARD_ADMIN_PASSPHRASE, log,
   });
   const server = app.listen(port, () => {

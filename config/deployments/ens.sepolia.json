@@ -228,5 +228,43 @@
       "unregisteredAt": "2026-11-06T02:57:15.603Z"
     }
   },
-  "vendors": {}
+  "vendors": {
+    "acme": {
+      "label": "acme",
+      "ens": "acme.supabrain.eth",
+      "displayName": "Acme Studio",
+      "labelhash": "0xe29dae06ef4c3e336b7538b6d4f52ca1ecec009b1df6fb501320e11b223aeeaf",
+      "wallet": "0xf15ff64150Aa01391B6C831DBE6e14df445dB5A5",
+      "resolver": "0xedBCE3130D43420b0B3C9117b680Bc6226880125",
+      "resolverSalt": "100819744167451832164536899582779342847724548613050361841351039545235927574697",
+      "resolverOwner": "0xf15ff64150Aa01391B6C831DBE6e14df445dB5A5",
+      "expiry": 1796351784,
+      "txs": {
+        "deployResolver": {
+          "hash": "0xefc515bb376d9fbfde9b0a957be5d5aa23476e5cfdbc6551c0c5f82de82cda5b",
+          "url": "https://sepolia.etherscan.io/tx/0xefc515bb376d9fbfde9b0a957be5d5aa23476e5cfdbc6551c0c5f82de82cda5b",
+          "at": "2026-11-06T05:36:05.696Z"
+        },
+        "register": {
+          "hash": "0x25a8962d747350b84d65529cf1c40bd27095552c88285dd17aa5ce939f3659d3",
+          "url": "https://sepolia.etherscan.io/tx/0x25a8962d747350b84d65529cf1c40bd27095552c88285dd17aa5ce939f3659d3",
+          "at": "2026-11-06T05:36:35.177Z"
+        },
+        "setAddr": {
+          "hash": "0x11fd62aef5ba892bd74dbc866ed9f094aa1ec1808693f7e26bc2410b3b533ee4",
+          "url": "https://sepolia.etherscan.io/tx/0x11fd62aef5ba892bd74dbc866ed9f094aa1ec1808693f7e26bc2410b3b533ee4",
+          "at": "2026-11-06T05:37:02.481Z"
+        },
+        "setVendor": {
+          "hash": "0xf87bd4678c1487e502b1b9b23dbdfadf73b82b591de9b79a64fa061fe8130104",
+          "url": "https://sepolia.etherscan.io/tx/0xf87bd4678c1487e502b1b9b23dbdfadf73b82b591de9b79a64fa061fe8130104",
+          "at": "2026-11-06T05:37:27.320Z"
+        }
+      },
+      "records": {
+        "addr60": "0xf15ff64150Aa01391B6C831DBE6e14df445dB5A5",
+        "sb.vendor": "Acme Studio"
+      }
+    }
+  }
 }

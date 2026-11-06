@@ -4,7 +4,8 @@ import { createHash } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import type { AppConfig } from "@supabrain/shared";
+import { registerPaymentTools } from "@supabrain/payments";
+import type { AppConfig, Payments } from "@supabrain/shared";
 import type { Notice } from "../engine/session";
 import type { MemoryService, RecallItem } from "../memory/service";
 import { ToolError } from "../memory/service";
@@ -15,6 +16,8 @@ export interface McpDeps {
   config: AppConfig;
   service: MemoryService;
   clients: Map<string, ClientSeen>;
+  /** Lane B's payments (or the disabled stub): exposed as the `pay` / `pay_status` tools */
+  payments: Payments;
 }
 
 export const INSTRUCTIONS = [
@@ -177,6 +180,9 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       } catch (e) { return fail(e); }
     },
   );
+
+  // S5: Lane B's tools. The agent comes ONLY from the authenticated token.
+  registerPaymentTools(server, { payments: deps.payments, agentOf });
 
   return server;
 }

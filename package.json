@@ -25,7 +25,13 @@
     "ens:prove": "tsx scripts/ens/prove-roles.ts",
     "ens:unregister": "tsx scripts/ens/unregister.ts",
     "ens:set-records": "tsx scripts/ens/set-records.ts",
-    "ens:status": "tsx scripts/ens/status.ts"
+    "ens:status": "tsx scripts/ens/status.ts",
+    "vault:deploy": "tsx scripts/vault/deploy.ts",
+    "vault:set-agents": "tsx scripts/vault/set-agents.ts",
+    "vault:fund": "tsx scripts/vault/fund.ts",
+    "vault:status": "tsx scripts/vault/status.ts",
+    "vault:pay-proof": "tsx scripts/vault/pay-proof.ts",
+    "vault:abi": "bash scripts/vault/gen-abi.sh"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

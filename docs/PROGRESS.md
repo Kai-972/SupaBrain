@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅ → S1 Arkiv spike | 🔨 in progress | – (wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), 3 agents set, funded 10 USDC. Next: 1-USDC pay → step-kill | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), 3 agents set, funded, **first real pay ✓**. Next: step-kill (gem-research) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -41,7 +41,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S2: Memory core
 - [ ] A: whoami/recall/remember/explain · lineage + trust tests · Arkiv batch writes · startup rebuild · ENS check per call · SSE · `/api/team` `/api/graph` `/api/memory/:key`
-- [ ] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ✓ [0x2da7…0ec8](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8) · 1-USDC pay tx ☐ · `step-kill` revert tx ☐ · `decidePayment` table tests ✓ 202d16e
+- [ ] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ✓ [0x2da7…0ec8](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8) · 1-USDC pay tx ✓ [0x9ab2…06ae](https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae) · `step-kill` revert tx ☐ · `decidePayment` table tests ✓ 202d16e
 - [ ] C: drawer · agents rail · feed · **switched to real graph + SSE**
 - [ ] **Gate:** Claude Code + Antigravity write to one graph, live in the UI
 
@@ -153,6 +153,13 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S2 / first real vault payment
+- did: `pnpm vault:pay-proof lead-claude <owner> 1 --yes` after the ASK go: policy-signer attestation + lead-claude's own key → `BrainVault.pay`
+- proof: https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae · vault 10 → 9 USDC · lead-claude spentToday 1 · live ENS getOwner = wallet ✓
+- result: PASS
+- next: `scripts/demo/step-kill.ts` (gem-research: pay ok → owner unregisters → pay reverts AgentNotRegistered on chain)
+- asks/blockers: guardian 0 ETH
 
 ### 2026-11-06 IST · B · S2 / vault funded
 - did: `pnpm vault:fund 10 --yes` after the ASK go (owner → vault, Circle test USDC from the faucet)

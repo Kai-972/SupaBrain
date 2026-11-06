@@ -273,6 +273,17 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 
+### 2026-11-06 21:20 IST · B · v2 attack lab API + handoff to the UI Claude
+- did:
+  - `POST /api/brains/:id/lab/act` lets judges drive continue / checkpoint / checkout **as a brain AI** from the website, through the same code path as MCP (ENS rules, injection guard, Arkiv writes). It's owner-only and capped at 40 checkpoints per 10 minutes per brain. It returns `ok` / `stopped` / `refused` with the rule.
+  - Repo audit: nothing to delete. `docs/FRONTEND_V2.md` §12 lists the files the UI Claude must ignore (the 1.8 MB `docs/llms_full.txt`, the v1 briefs and lane plans, chain code).
+- proof:
+  - 5 lab tests; **523 tests**; typecheck clean (commits ff2b02c, c101a0a, 07e9a6f).
+  - Live, read-only, on `maple`: lab `continue` as gemini → `ok` ("you are gemini.maple.supabrain.eth"); `/rules` live from ENS (3 AIs active, scope `*`, 200 a day); `/registry` 10 brains; `/graph` 10 nodes / 8 edges from Arkiv.
+- result: PASS. The backend is ready for the frontend build
+- next: the UI Claude builds from `docs/FRONTEND_V2.md`. For judging, run `SUPABRAIN_APP_NAMESPACE=supabrain-mumbai26 SUPABRAIN_BRAIN=otter`
+- asks/blockers: hosting (a public URL) is needed before judges can connect their own AIs
+
 ### 2026-11-06 21:09 IST · B · v2 live: the two-AI injection scene on `maple.supabrain.eth` (`pnpm demo:injection`)
 - did: brain-mode server for `maple`. Two real MCP clients act as `claude.maple` (claude-code) and `gemini.maple` (antigravity). **10/10 checks:**
   1. Claude commits.

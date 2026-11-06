@@ -1,0 +1,283 @@
+{
+ "_note": "Example story for the landing page only (labelled 'example team' on the page). The live dashboard at /t never reads this file.",
+ "teamSuffix": ".example.eth",
+ "lanes": [
+  {
+   "id": "H",
+   "n": "owner",
+   "s": "You",
+   "v": "H"
+  },
+  {
+   "id": "G",
+   "n": "gem-research",
+   "s": "Gemini",
+   "v": "G"
+  },
+  {
+   "id": "C",
+   "n": "lead-claude",
+   "s": "Claude",
+   "v": "C"
+  },
+  {
+   "id": "O",
+   "n": "gpt-writer",
+   "s": "ChatGPT",
+   "v": "O"
+  }
+ ],
+ "events": [
+  {
+   "id": "h1",
+   "ln": "H",
+   "y": 110,
+   "l": "Budget 10 USDC a week",
+   "k": "h",
+   "ta": 0.08,
+   "tr": 3,
+   "q": "A person set this. Nothing below can change it."
+  },
+  {
+   "id": "m4",
+   "ln": "C",
+   "y": 165,
+   "l": "Stay in budget",
+   "k": "a",
+   "p": [
+    "h1"
+   ],
+   "ta": 0.26,
+   "tr": 2,
+   "q": "Claude's spending rule, built only on your budget."
+  },
+  {
+   "id": "r1",
+   "ln": "C",
+   "y": 220,
+   "l": "Brand guide v3 · private",
+   "k": "e",
+   "ta": 0.42,
+   "tr": 1,
+   "q": "Lives in your GitHub. Supabrain keeps a pointer."
+  },
+  {
+   "id": "g0",
+   "ln": "G",
+   "y": 275,
+   "l": "Invoice #12 due Friday",
+   "k": "a",
+   "ta": 0.58,
+   "tr": 2,
+   "q": "Gemini read the invoice from Acme."
+  },
+  {
+   "id": "h2",
+   "ln": "H",
+   "y": 330,
+   "l": "Approved: pay Acme 5 USDC",
+   "k": "h",
+   "p": [
+    "g0"
+   ],
+   "ta": 0.76,
+   "tr": 3,
+   "q": "You approved paying the invoice."
+  },
+  {
+   "id": "e1",
+   "ln": "G",
+   "y": 395,
+   "l": "Email: “new wallet 0xBAD…”",
+   "k": "e",
+   "bad": 1,
+   "ta": 1.05,
+   "tr": 1,
+   "q": "From billing@acme-pay.co, not Acme. Flagged at once: DISPUTED BY ENS."
+  },
+  {
+   "id": "m1",
+   "ln": "G",
+   "y": 450,
+   "l": "Acme pays to 0xBAD",
+   "k": "a",
+   "bad": 1,
+   "p": [
+    "e1"
+   ],
+   "ta": 1.22,
+   "tr": 1,
+   "q": "Gemini saved the address from the email."
+  },
+  {
+   "id": "m2",
+   "ln": "C",
+   "y": 505,
+   "l": "Pay 0xBAD 5 USDC",
+   "k": "a",
+   "bad": 1,
+   "p": [
+    "h2",
+    "m1"
+   ],
+   "ta": 1.4,
+   "tr": 1,
+   "q": "Built on your approval and the email. It gets the lower trust: 1 of 3."
+  },
+  {
+   "id": "py",
+   "ln": "C",
+   "y": 560,
+   "l": "Payment queued",
+   "k": "pay",
+   "bad": 1,
+   "p": [
+    "m2"
+   ],
+   "ta": 1.56,
+   "tr": 1,
+   "q": "5 USDC to 0xBAD, waiting to send."
+  },
+  {
+   "id": "m3",
+   "ln": "O",
+   "y": 615,
+   "l": "Draft: “Paid 0xBAD”",
+   "k": "a",
+   "bad": 1,
+   "p": [
+    "m2"
+   ],
+   "ta": 1.72,
+   "tr": 1,
+   "q": "ChatGPT drafted a confirmation to Acme."
+  },
+  {
+   "id": "m5",
+   "ln": "C",
+   "y": 670,
+   "l": "Pixel invoice to 0xBAD",
+   "k": "a",
+   "bad": 1,
+   "p": [
+    "m1"
+   ],
+   "ta": 1.88,
+   "tr": 1,
+   "q": "Claude reused the address for another invoice."
+  }
+ ],
+ "log": [
+  [
+   0.08,
+   "H",
+   "<b>owner</b> set a budget of 10 USDC a week"
+  ],
+  [
+   0.26,
+   "C",
+   "<b>lead-claude</b> saved a rule: stay in budget"
+  ],
+  [
+   0.42,
+   "C",
+   "<b>lead-claude</b> linked brand guide v3, kept private"
+  ],
+  [
+   0.58,
+   "G",
+   "<b>gem-research</b> noted invoice #12 is due Friday"
+  ],
+  [
+   0.76,
+   "H",
+   "<b>owner</b> approved paying Acme 5 USDC"
+  ],
+  [
+   1.05,
+   "G",
+   "<b>gem-research</b> read an email from billing@acme-pay.co",
+   "bad"
+  ],
+  [
+   1.22,
+   "G",
+   "<b>gem-research</b> saved “Acme pays to 0xBAD”",
+   "bad"
+  ],
+  [
+   1.4,
+   "C",
+   "<b>lead-claude</b> planned a 5 USDC payment to 0xBAD",
+   "bad"
+  ],
+  [
+   1.56,
+   "C",
+   "<b>Payment queued:</b> 5 USDC to 0xBAD",
+   "bad"
+  ],
+  [
+   1.72,
+   "O",
+   "<b>gpt-writer</b> drafted “Paid 0xBAD” to Acme",
+   "bad"
+  ],
+  [
+   1.88,
+   "C",
+   "<b>lead-claude</b> reused 0xBAD for the Pixel invoice",
+   "bad"
+  ],
+  [
+   2.05,
+   "card",
+   "<div><b>Dry run</b> <span class=\"mono dim\" style=\"font-size:11px\">email:acme-0611</span></div><div class=\"r\"><div>Memories<b>5</b></div><div>AIs<b>3</b></div><div>Payments<b>1</b></div></div><div style=\"font-size:12.5px;color:var(--muted)\">Nothing has changed yet.</div><button class=\"btn r sm\" data-s=\"3\">Revoke</button>"
+  ],
+  [
+   3.05,
+   "H",
+   "<b>owner</b> revoked email:acme-0611",
+   "ok"
+  ],
+  [
+   3.2,
+   "C",
+   "<b>5 memories</b> quarantined in Claude, Gemini and ChatGPT",
+   "ok"
+  ],
+  [
+   4.05,
+   "C",
+   "<b>Payment blocked.</b> 0xBAD is not acme’s ENS address. 0 USDC moved.",
+   "ok"
+  ],
+  [
+   4.25,
+   "card",
+   "<div style=\"font-size:13px\">To pay the real Acme, a person approves the new payment.</div><a class=\"btn g sm\" href=\"/t/payments\">Approve with World ID</a>"
+  ]
+ ],
+ "steps": [
+  [
+   "The memory grows",
+   "Every AI writes to one shared memory, and each fact keeps a line back to where it came from."
+  ],
+  [
+   "A lie gets in",
+   "One email with fake bank details reaches three AIs in seconds. A payment gets queued."
+  ],
+  [
+   "See the blast radius",
+   "Before anything changes, see every memory and payment built on that email."
+  ],
+  [
+   "Revoke once",
+   "Gone from every AI at the same moment. What a person decided stays."
+  ],
+  [
+   "No money moves",
+   "The queued payment was built on the lie, so it never leaves."
+  ]
+ ]
+}

@@ -275,6 +275,18 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 
+### 2026-11-07 01:17 IST · B · ENS rulebook: sb.guard and sb.deny on chain for otter and maple
+- did:
+  - Added two ENS rules, enforced on every call:
+    - **`sb.guard`:** the attacks an AI may not pass on (instruction-override, remote-code, payment-redirect, secret-exfiltration, rule-tampering, agent-to-agent-command). Absent or `*` means all of them (fail closed). A check the owner removes is saved but flagged "allowed by sb.guard".
+    - **`sb.deny`:** paths it may never write, even inside its scope.
+  - Wrote `sb.guard = *` and `sb.deny = .github/,scripts/` to the six AIs on `otter` and `maple`: one multicall each from the team wallet, read back from ENS.
+  - Live check: gemini.maple (scope `*`) writing `.github/workflows/deploy.yml` → refused **DENIED · sb.deny** (nothing written).
+- proof: claude.otter https://sepolia.etherscan.io/tx/0x7f08861ce280636c26625dd8658898bbe33afd746e67a3f68c3327b6223f7397 · gemini.otter https://sepolia.etherscan.io/tx/0xd342ba0d5795a6844d99481c77db0a402b60c4b70ecb99bea687ea56976fbe52 · openai.otter https://sepolia.etherscan.io/tx/0xf85c17fc503d6eb0c3d28f02dc4ace3b81e8af3891a1d2248455faabc25d4c8c · claude.maple https://sepolia.etherscan.io/tx/0x98920502f950d934cc8d3c0ae1435479335377e377a302cd411c40c5f0ad1ec9 · gemini.maple https://sepolia.etherscan.io/tx/0xbbaf0734d5f559ccbb7fad683c7dcbc449bc5bb0058501924e5d6917a8e1851f · openai.maple https://sepolia.etherscan.io/tx/0xde1153beb70cacff2d18f23f31f2f922f07892d0f1d1ee0d37f056b8d7aa3f2c
+- result: PASS · commits 77bcf1f, 865f6ef, 007664d, 4325ce5 · 535 tests
+- next: rehearse the tour on `otter`
+- asks/blockers: none
+
 ### 2026-11-06 21:20 IST · B · v2 attack lab API + handoff to the UI Claude
 - did:
   - `POST /api/brains/:id/lab/act` lets judges drive continue / checkpoint / checkout **as a brain AI** from the website, through the same code path as MCP (ENS rules, injection guard, Arkiv writes). It's owner-only and capped at 40 checkpoints per 10 minutes per brain. It returns `ok` / `stopped` / `refused` with the rule.

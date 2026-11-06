@@ -3,12 +3,15 @@
 // The token is a credential for that agent: share it only with the person connecting that AI.
 import { issueAgentToken } from "@supabrain/server/tokens";
 import { snippets, type Client } from "@supabrain/server/pairing";
-import { loadConfig, readEnv, requireEnv } from "@supabrain/shared/config";
+import { brainMode } from "@supabrain/server/brain-mode";
+import { findRootDir, loadConfig, readEnv, requireEnv } from "@supabrain/shared/config";
 
 const arg = (n: string) => { const i = process.argv.indexOf(`--${n}`); return i >= 0 ? process.argv[i + 1] : undefined; };
 
 function main() {
-  const config = loadConfig();
+  // v2: with SUPABRAIN_BRAIN=<label> the agents are that brain's AIs (claude / gemini / openai)
+  const brain = process.env.SUPABRAIN_BRAIN?.trim();
+  const config = brain ? brainMode(loadConfig(), findRootDir(), brain).config : loadConfig();
   const label = process.argv.slice(2).find((a, i, all) => !a.startsWith("--") && !(all[i - 1] ?? "").startsWith("--"));
   const labels = config.app.agents.map((a) => a.label);
   if (!label || !labels.includes(label)) throw new Error(`usage: pnpm mcp:token <agent> [--days N] [--client ...]; agents: ${labels.join(", ")}`);

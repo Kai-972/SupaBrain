@@ -19,7 +19,7 @@ export type Rules = Record<RuleName, string | null>;
 export interface SetRulesResult {
   txHash: Hex | null;
   txUrl: string | null;
-  changed: Partial<Record<RuleName, { from: string | null; to: string }>>;
+  changed: Partial<Record<RuleName | "head", { from: string | null; to: string }>>;
 }
 
 export class RulesError extends Error {
@@ -42,6 +42,8 @@ export interface RulesChainIO {
 
 export interface RulesWriterOptions {
   keys: RuleKeys;
+  /** The text key that holds an AI's newest checkpoint (app.json textKeys.memoryHead), for setHead. */
+  headKey?: string;
   /** Only names strictly under this one may be changed, e.g. "supabrain.eth". */
   parentName: string;
   txUrl: (hash: Hex) => string;
@@ -140,16 +142,24 @@ export function createRulesWriter(o: RulesWriterOptions) {
   }
 
   async function write(name: string, want: Partial<Record<RuleName, string>>): Promise<SetRulesResult> {
+    const rules = Object.keys(want) as RuleName[];
+    return writeRecords(name, rules.map((r) => ({ id: r, key: o.keys[r], value: want[r]! })));
+  }
+
+  /** Set some text records on `name`'s live resolver: only the ones that differ, in one multicall. */
+  async function writeRecords(name: string, records: { id: RuleName | "head"; key: string; value: string }[]): Promise<SetRulesResult> {
     const resolver = await io!.findResolver(name);
     if (!resolver || resolver.toLowerCase() === zeroAddress) throw new RulesError("NO_RESOLVER", `${name} has no resolver on ENS; nothing changed`);
-    const rules = Object.keys(want) as RuleName[];
-    const now = await current(name, rules);
+    const values = await Promise.all(records.map((r) => io!.getText(name, r.key, seenBlock)));
     const changed: SetRulesResult["changed"] = {};
-    for (const r of rules) if (now[r] !== want[r]) changed[r] = { from: now[r] ?? null, to: want[r]! };
-    const keys = Object.keys(changed) as RuleName[];
-    if (!keys.length) return { txHash: null, txUrl: null, changed: {} };
+    const todo: typeof records = [];
+    records.forEach((r, i) => {
+      const from = values[i] ? values[i]! : null;
+      if (from !== r.value) { changed[r.id] = { from, to: r.value }; todo.push(r); }
+    });
+    if (!todo.length) return { txHash: null, txUrl: null, changed: {} };
     const dns = dnsEncode(name);
-    const calls = keys.map((r) => encodeFunctionData({ abi: permissionedResolverAbi, functionName: "setText", args: [dns, o.keys[r], changed[r]!.to] }));
+    const calls = todo.map((r) => encodeFunctionData({ abi: permissionedResolverAbi, functionName: "setText", args: [dns, r.key, r.value] }));
     const hash = await io!.send(resolver, calls);
     const receipt = await io!.waitForReceipt(hash);
     const url = o.txUrl(hash);
@@ -167,6 +177,21 @@ export function createRulesWriter(o: RulesWriterOptions) {
       const run = queue.then(() => write(agentEns, want));
       queue = run.catch(() => undefined);
       return run;
+    },
+    /** Publish an AI's newest checkpoint key to its ENS name (sb.memory.head): refs on ENS, objects on Arkiv. */
+    async setHead(agentEns: string, key: Hex): Promise<SetRulesResult> {
+      checkName(agentEns, o.parentName);
+      if (!o.headKey) throw new RulesError("INVALID", "headKey is not configured for this writer");
+      if (!/^0x[0-9a-fA-F]{64}$/.test(key)) throw new RulesError("INVALID", `"${key}" is not an Arkiv entity key (0x + 64 hex)`);
+      const run = queue.then(() => writeRecords(agentEns, [{ id: "head", key: o.headKey!, value: key }]));
+      queue = run.catch(() => undefined);
+      return run;
+    },
+    /** An AI's published head (sb.memory.head) as ENS shows it now; null when unset or headKey is not configured. */
+    async readHead(agentEns: string): Promise<string | null> {
+      checkName(agentEns, o.parentName);
+      if (!o.headKey) return null;
+      return (await io!.getText(agentEns, o.headKey, seenBlock)) || null;
     },
     /** The four rules as ENS shows them now (null when a record is unset). */
     async readRules(agentEns: string): Promise<Rules> {

@@ -1,8 +1,12 @@
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { connectArkiv } from "@supabrain/arkiv";
-import { connectSepolia, createEnsAuthority, createViemEnsChain } from "@supabrain/ens";
+import { http } from "viem";
+import { connectSepolia, createEnsAuthority, createRulesWriter, createViemEnsChain, readBrainsConfig, readBrainsDeployment, ruleKeys, sepoliaChain } from "@supabrain/ens";
 import { agentKeyEnvName } from "@supabrain/shared";
-import { loadConfig, readEnv, requireEnv } from "@supabrain/shared/config";
+import { findRootDir, loadConfig, readEnv, requireEnv } from "@supabrain/shared/config";
+import { brainMode } from "./brain-mode";
+import { createHeadPublisher } from "./ens-heads";
+import { createPaymentsDisabled } from "./payments-disabled";
 import { createApp } from "./app";
 import { createArkivMemoryStore } from "./arkiv/store";
 import { startSync } from "./memory/sync";
@@ -15,11 +19,17 @@ async function main() {
   const loaded = loadConfig();
   const env = readEnv();
   // SUPABRAIN_APP_NAMESPACE lets dev runs write to their own Arkiv namespace, never the demo's.
-  const config = { ...loaded, app: { ...loaded.app, appNamespace: env.SUPABRAIN_APP_NAMESPACE ?? loaded.app.appNamespace } };
+  const base = { ...loaded, app: { ...loaded.app, appNamespace: env.SUPABRAIN_APP_NAMESPACE ?? loaded.app.appNamespace } };
+  // v2 brain mode: SUPABRAIN_BRAIN=<label> serves one pre-made brain (its own ENS registry, derived AI wallets).
+  const root = findRootDir();
+  const brainLabel = process.env.SUPABRAIN_BRAIN?.trim();
+  const bm = brainLabel ? brainMode(base, root, brainLabel, process.env.BRAIN_AGENT_MNEMONIC?.trim()) : undefined;
+  const config = bm ? bm.config : base;
   const port = env.PORT ?? config.app.server.port;
 
   // Fail closed at startup: wrong chain or missing deployment means no server, not a guess.
-  const sepolia = await connectSepolia(config, requireEnv(config.networks.sepolia.rpcEnv));
+  const rpcUrl = requireEnv(config.networks.sepolia.rpcEnv);
+  const sepolia = await connectSepolia(config, rpcUrl);
   const deployments = config.deployments.ens;
   if (!deployments?.teamRegistry) throw new Error("config/deployments/ens.sepolia.json has no team registry: run the S1 ENS scripts first");
   const ens = createEnsAuthority({ app: config.app, deployments, chain: createViemEnsChain(sepolia) });
@@ -31,7 +41,11 @@ async function main() {
 
   // The server holds the team key and each agent's key (never the owner key). Each must match ENS.
   const signers: Record<string, PrivateKeyAccount> = { team: privateKeyToAccount(requireEnv("TEAM_PRIVATE_KEY") as `0x${string}`) };
-  for (const a of config.app.agents) {
+  if (bm) {
+    Object.assign(signers, bm.signers);
+    if (!Object.keys(bm.signers).length) log(`no BRAIN_AGENT_MNEMONIC: ${bm.brain.ens}'s AIs can connect but not write`);
+    else log(`brain ${bm.brain.ens} (#${bm.brain.index}): ${Object.values(bm.brain.agents).map((a) => a.ens).join(", ")}`);
+  } else for (const a of config.app.agents) {
     const k = process.env[agentKeyEnvName(a.label)];
     if (!k) { log(`no key for ${a.label}: it can connect but not write`); continue; }
     signers[a.label] = privateKeyToAccount(k as `0x${string}`);
@@ -54,11 +68,21 @@ async function main() {
   log(`rebuilt from Arkiv (${config.app.appNamespace}/${config.app.team.id}): ${rebuilt.memories} memories, ${rebuilt.revocations} revocations in ${Date.now() - t0} ms`);
 
   const publicBaseUrl = env.PUBLIC_BASE_URL;
-  const payments = mountPayments({ config, ens, runtime, log });
+  // Payments stay in the demo team (PLAN §2.2); brains are for continuity and carry pay caps of 0.
+  const payments = bm ? createPaymentsDisabled() : mountPayments({ config, ens, runtime, log });
+  // ENS rules (read everywhere; written for brains, where the team wallet holds set-text) and head refs.
+  const rules = createRulesWriter({
+    keys: ruleKeys(config.app.ens.textKeys, readBrainsConfig(root)), headKey: config.app.ens.textKeys.memoryHead,
+    parentName: bm?.parentName ?? `${config.app.ens.teamLabel}.eth`,
+    txUrl: (h) => config.networks.sepolia.explorer.tx.replace("{hash}", h),
+    account: signers.team, chain: sepoliaChain(config, rpcUrl), transport: http(rpcUrl),
+  });
+  const heads = bm ? createHeadPublisher({ writer: rules, bus: runtime.bus, graph: runtime.graph, ensOf: (a) => deployments.agents[a]?.ens, log }) : undefined;
   const app = createApp({
     config, payments, ens, runtime,
     tokenSecret: requireEnv("TOKEN_SIGNING_SECRET"), publicBaseUrl, webBaseUrl: env.PUBLIC_WEB_URL, adminPassphrase: env.DASHBOARD_ADMIN_PASSPHRASE, log,
     legacyTools: process.env.SUPABRAIN_LEGACY_TOOLS === "1" || config.app.mcp.legacyTools, // AIs see continue/checkpoint/checkout
+    rules, heads, registry: readBrainsDeployment(root), brainMode: !!bm,
   });
   const server = app.listen(port, () => {
     log(`supabrain server on :${port} (app=${config.app.appNamespace}, team=${config.app.team.id})`);

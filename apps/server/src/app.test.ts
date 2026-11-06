@@ -11,7 +11,7 @@ describe("server shell", () => {
     try {
       const { port } = server.address() as AddressInfo;
       const res = await fetch(`http://127.0.0.1:${port}/healthz`);
-      expect(await res.json()).toEqual({ ok: true, app: "supabrain-mumbai26", team: "team1", payments: "disabled" });
+      expect(await res.json()).toEqual({ ok: true, app: "supabrain-mumbai26", team: "team1", mode: "team", ens: "supabrain.eth", payments: "disabled" });
     } finally {
       server.close();
     }

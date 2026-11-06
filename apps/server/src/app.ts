@@ -5,6 +5,9 @@ import { adminAuth } from "./auth/admin";
 import { mountMcp } from "./mcp/routes";
 import { mountPairing } from "./api/pair";
 import { mountBrainApi } from "./api/brains";
+import { mountRulesApi } from "./api/brain-rules";
+import type { BrainsDeployment, RulesWriter } from "@supabrain/ens";
+import type { HeadPublisher } from "./ens-heads";
 import { createUndo } from "./memory/undo";
 import type { Runtime } from "./runtime";
 
@@ -25,10 +28,18 @@ export interface AppDeps {
   adminPassphrase?: string;
   /** expose the v1 MCP tools too; index.ts passes config mcp.legacyTools (false in production), tests default to true */
   legacyTools?: boolean;
+  /** v2: ENS rules reader/writer (team key) for the Rules page and head refs */
+  rules?: RulesWriter;
+  /** v2: publishes each AI's newest checkpoint to its ENS name */
+  heads?: HeadPublisher;
+  /** v2: the pre-made brains (config/deployments/brains.sepolia.json) for GET /api/registry */
+  registry?: BrainsDeployment;
+  /** v2: this server serves one pre-made brain (SUPABRAIN_BRAIN) */
+  brainMode?: boolean;
   log?: (line: string) => void;
 }
 
-export function createApp({ config, payments, ens, runtime, tokenSecret, publicBaseUrl, webBaseUrl, adminPassphrase, legacyTools, log }: AppDeps): Express {
+export function createApp({ config, payments, ens, runtime, tokenSecret, publicBaseUrl, webBaseUrl, adminPassphrase, legacyTools, rules, heads, registry, brainMode, log }: AppDeps): Express {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1); // behind ngrok / Render: req.ip and req.secure come from the proxy
@@ -40,6 +51,8 @@ export function createApp({ config, payments, ens, runtime, tokenSecret, publicB
       ok: true,
       app: config.app.appNamespace,
       team: config.app.team.id,
+      mode: brainMode ? "brain" : "team", // v2: one pre-made brain (SUPABRAIN_BRAIN) or the v1 demo team
+      ens: `${config.app.ens.teamLabel}.eth`,
       payments: payments.enabled === false ? "disabled" : "enabled",
     });
   });
@@ -52,6 +65,7 @@ export function createApp({ config, payments, ens, runtime, tokenSecret, publicB
     runtime.continuity.onStop(async (key, reason) => ({ arkivUrl: (await undo.revoke({ type: "memory", id: key }, reason)).arkivUrl }));
     mountApi(app, { config, ens, runtime, admin, payments, undo });
     mountBrainApi(app, { config, ens, runtime, undo, owner: admin.require });
+    mountRulesApi(app, { config, ens, runtime, owner: admin.require, rules, heads, registry, brainMode: !!brainMode });
     mountPairing(app, { config, tokenSecret, publicBaseUrl, webBaseUrl: webBaseUrl ?? config.app.web.baseUrl, owner: admin.require });
   } else {
     app.all(["/mcp", "/mcp/t/:token", "/api/{*rest}"], (_req, res) => {

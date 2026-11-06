@@ -26,6 +26,7 @@
   },
   "exports": {
     "./tokens": "./src/auth/tokens.ts",
-    "./pairing": "./src/auth/pairing.ts"
+    "./pairing": "./src/auth/pairing.ts",
+    "./brain-mode": "./src/brain-mode.ts"
   }
 }

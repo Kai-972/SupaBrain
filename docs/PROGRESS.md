@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S2 ✅ S3 ✅ S4 ✅ S5 mounted (live run waits for keys) | 🔨 | B's 5 env values on Kai's laptop; a dedicated Sepolia RPC key |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), S2 ✅ Sepolia · S8 docs ✅ (SECURITY, SPONSORS World/Vault, WORLD_DEBRIEF) · V3 red team ✅ (3 holes fixed). Waiting on A S5 mount for live P1/P3 | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | **S5/S6 ✅ live**: P1 BLOCKED, revoke → vault revokeRoot + on-chain RootRevoked, P3 World-approved PAID, deny + cancel → nothing moved. Open: A's graph.walk fix | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -28,7 +28,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S0: Scaffold
 - [x] A: monorepo, config + zod, types + interfaces, fakes, guards, `.env.example`, MIT, first push (1f0390c)
-- [ ] B: pulled; Foundry init; `packages/payments` skeleton builds
+- [x] B: pulled; Foundry init; `packages/payments` skeleton builds
 - [ ] C: pulled; Next app, tokens, fixture loader, `?mock=1` banner
 
 ### S1: Spikes
@@ -41,32 +41,32 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S2: Memory core
 - [x] A: whoami/recall/remember/explain ✓ · lineage + trust tests ✓ · Arkiv batch writes ✓ · startup rebuild ✓ · ENS check per call ✓ · SSE ✓ · `/api/team` `/api/graph` `/api/memory/:key` ✓ (live: `pnpm e2e:memory` 11/11, real Claude Code session; Antigravity write still to run by Kai) (b5d0d05, 6a9234f)
-- [ ] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ✓ [0x2da7…0ec8](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8) · 1-USDC pay tx ✓ [0x9ab2…06ae](https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae) · `step-kill` revert tx ✓ [0x516b…4579](https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579) · `decidePayment` table tests ✓ 202d16e
+- [x] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ✓ [0x2da7…0ec8](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8) · 1-USDC pay tx ✓ [0x9ab2…06ae](https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae) · `step-kill` revert tx ✓ [0x516b…4579](https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579) · `decidePayment` table tests ✓ 202d16e
 - [ ] C: drawer · agents rail · feed · **switched to real graph + SSE**
 - [ ] **Gate:** Claude Code + Antigravity write to one graph, live in the UI
 
 ### S3: Undo ⭐ (memory-first checkpoint)
 - [x] A: dry run (+ readers) ✓ · revoke ✓ · quarantine ✓ · notices ✓ · Keep ✓ · Correct this ✓ · Add context ✓ · refs ✓ · recall log ✓ (live: `pnpm e2e:undo` 14/14; restart keeps revocations, corrections, Keep and notices)
-- [ ] B: `onRevoke` (`revokeRoot`, cancel intents) · `pauseAgent`
+- [x] B: `onRevoke` (`revokeRoot`, cancel intents) · `pauseAgent`. Live: revoke email → [vault revokeRoot](https://sepolia.etherscan.io/tx/0x7083d77c6266ac8afb64021d1899eb1ac7f6dd94298fafcff8153659fd983137) → [on-chain `RootRevoked` refusal](https://sepolia.etherscan.io/tx/0x7e589a3ce39efbf3bb0f964c6f13a1cfc3d852a29e7b0a337c9521e77a70ddd4)
 - [ ] C: dry-run modal · cascade · Keep/Correct/Add context · ref card · before/after
 - [ ] **Gate:** one full rehearsal without money (connect → write → dry run → revoke → re-ask)
 
 ### S4: Onboarding
 - [x] A: `/api/pair` ✓ · snippets ✓ · copy prompt ✓ · `/connect?code` QR (short code, never the token) ✓ · `connected` event ✓ · path-token route ✓ (7759e82; live: pair → code swap → whoami → `connected` on SSE)
-- [ ] B: token design security review
+- [x] B: token design security review ✓ 1cc1296 (F1–F3 fixed by A)
 - [ ] C: `/t/connect` with QR → green on connect
 - [ ] **Gate:** a stranger's AI connects from the QR
 
 ### S5: Money
 - [x] A: acme vendor ENS (own resolver, vendor-owned records) ✓ · `EnsAuthority` vendor fns ✓ · `GraphView` (live graph) / `ArkivWriter` (team writes `sb.payment`) ✓ · `pay`/`pay_status` mounted ✓ · `/api/payments` `/api/approvals` (World link owner-only) ✓ · payment memories after PAID ✓ · `PROTECTED_PAYEE` ✓ · `demo:seed` ✓ (32246da, 4ff34c4). **Live P1/P3 waits for B's five env values on Kai's laptop**
-- [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · attestation ✓ f59b6b9 · vault client ✓ 1973e38 · engine + pending-human ✓ 26d47f0 · createPayments ✓ 30a54e6 · Sepolia deploy ✓ 7c1429e)
+- [x] B: `createPayments` end to end (policy ✓ 30f99b8 · attestation ✓ f59b6b9 · vault client ✓ 1973e38 · engine + pending-human ✓ 26d47f0 · createPayments ✓ 30a54e6 · Sepolia deploy ✓ 7c1429e · mounted by A · live)
 - [ ] C: payments page
-- [ ] **Gate:** P1 BLOCKED (ENS mismatch) from a real client · paid tx on Etherscan
+- [x] **Gate:** P1 BLOCKED (ENS mismatch) from a real MCP client (`demo:step blocked` through the server's pay tool) · paid tx on Etherscan: [P3](https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528)
 
 ### S6: Human
-- [ ] B: World approve → paid · deny/expire → nothing moved
+- [x] B: World approve → [paid](https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528) · deny → nothing moved · owner cancel → nothing moved (expire: unit tests)
 - [ ] C: approval card
-- [ ] **Gate:** both paths live
+- [x] **Gate:** both paths live (approve → paid, deny → nothing moved; 2026-11-06, Srijit's World App)
 
 ### S7: Extras (cut order applies)
 - [ ] A: ENS watcher · Notion import · public "ETHMumbai brain" · `/api/advisories`
@@ -75,15 +75,17 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S8: Ship
 - [ ] A: `seed.ts` on a fresh team · Arkiv docs · README addresses · V5 + V6
-- [ ] B: SECURITY.md ✓ cbb5549 · WORLD_DEBRIEF.md ✓ 7540d6e · SPONSORS World/Vault ✓ fdf684b · V3 red team ✓ 1c8ae65
+- [x] B: SECURITY.md ✓ cbb5549 · WORLD_DEBRIEF.md ✓ 7540d6e · SPONSORS World/Vault ✓ fdf684b · V3 red team ✓ 1c8ae65 · live evidence + PROTECTED_PAYEE c7f6f5e
 - [ ] C: DEMO_SCRIPT.md · video · README · Vercel · V2 sponsor audit
 - [ ] Rehearsal 1 · Rehearsal 2 · Rehearsal 3 · **Submitted** (link: ___)
 
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → A: **/api/payments forgets decisions across a server restart.** Live: P1 (blocked) disappeared from \`GET /api/payments\` after I restarted the server; it is on Arkiv as \`sb.payment\`. The engine keeps intents in memory and \`ArkivWriter\` is write-only. Ask: add \`loadPayments(): Promise<Payment[]>\` to the adapter (read this namespace's \`sb.payment\` rows by the team wallet, newest per intentId); B will seed \`list()\` and the "paid before" set from it at startup (shared interface change, so A's call) (2026-11-06)
+- [ ] B → A (FYI): \`demo:seed\` rewrites \`config/deployments/demo-seed.json\` for whichever namespace it seeds; B did NOT commit B's \`supabrain-mumbai26-b\` copy so A's committed one stays. Consider a per-namespace file name (2026-11-06)
 - [ ] B → A: **URGENT (demo): `MemoryGraph.walk` destroys lineage.** `apps/server/src/engine/graph.ts` `walk()`: `const queue = next(start)` is the start node's live `parents` array; `queue.shift()` drains it, so every `ancestors(key)` (called by `pay` through GraphView) leaves that node with `parents: []` in memory. Live repro: `demo:seed` → `demo:step blocked` → `/api/graph` edges 6 → 3 (Arkiv unaffected; restart heals). Fix: `const queue = [...next(start)]`. Tests: `src/engine/graph-walk.repro.test.ts` + `src/payments/lineage-repro.test.ts` (`it.fails`; flip to `it` after the fix). Until then the dashboard loses edges after each payment and memory-target revokes cascade short; source revokes and money decisions are unaffected (roots) (2026-11-06)
-- [ ] B → A (minor): `scripts/doctor.ts` reads a top-level `issuer` from `config/world.json` ("no issuer … yet"); World now lives under `world.json.idkit` (+ `oidc` fallback). Report `idkit.environment` + the WORLD_* env names instead (2026-11-06)
+- [x] B → A (minor, fixed by A 8fc1499): `scripts/doctor.ts` reads a top-level `issuer` from `config/world.json` ("no issuer … yet"); World now lives under `world.json.idkit` (+ `oidc` fallback). Report `idkit.environment` + the WORLD_* env names instead (2026-11-06)
 - [ ] A → B: S5 is mounted (32246da). To run P1/P3 live on Kai's laptop, send Kai privately your `POLICY_SIGNER_PRIVATE_KEY`, `GUARDIAN_PRIVATE_KEY`, `WORLD_APP_ID`, `WORLD_RP_ID`, `WORLD_SIGNING_KEY` (until then the server logs "payments disabled: missing env POLICY_SIGNER_PRIVATE_KEY" and `pay` fails honestly). `PROTECTED_PAYEE` is in `PayReason` now. Your `demo:step blocked` already reaches the mounted `pay` tool with the seeded M2 and attacker address (2026-11-06 12:56 IST)
 - [ ] A → C: **pairing + payments endpoints are live**: `POST /api/pair {label, client?}` (owner) → `{agent, ens, client, token, snippets: Record<Client,string>, prompt, qrPayload, code, expiresAt}`; the QR points at `<web>/connect?code=XXXXXXXX` (10-minute code); the `/connect` page calls public `GET /api/pair/:code` → `{agent, ens, token, snippets, prompt, expiresAt}` (404 when expired) and then watches SSE for `connected {agent, client}`. `GET /api/payments` → `Payment[]`; `GET /api/approvals` → `ApprovalView[]` (`verificationUri` is empty unless the owner cookie is sent: show the World QR only on the owner dashboard); `POST /api/approvals/:id/cancel` (owner) → 204. SSE carries `payment` and `approval`. `/healthz` says `payments: enabled|disabled` (hide the payments nav when disabled) (2026-11-06 12:56 IST)
 - [ ] A → C: **owner actions are live (S3)**, all need the `sb_admin` cookie (401 otherwise): `POST /api/dryrun {target}` → `DryRun`; `POST /api/revoke {target, reason?}` → `{revocationKey, arkivUrl, affected, notified, dryRun, vaultTxUrl?, cancelled, ensNote?}` (takes ~5 s: the revocation is written to Arkiv first; show "writing to Arkiv…"); `POST /api/memory/human {text, kind, folder, subject?, ref?}` (Add context, trust 3); `POST /api/memory/:key/keep {days?}` → `{expiresAt, days, txUrl, extended}` (409 `KEEP_REFUSED` when quarantined); `POST /api/memory/:key/correct {text}` → `{revocationKey, arkivUrl, newKey, affected}`. Errors are `{error: CODE, message}` with 400/404/409/502. SSE adds `revocation`, `notice {toAgent, count}`, `kept`. A memory's `why` explains its quarantine (2026-11-06 10:59 IST)
@@ -211,6 +213,13 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S5/S6 / PROTECTED_PAYEE + docs with live evidence
+- did: tests first (6 failing), then `policy.ts` blocks team-controlled payees + the zero address with `{ code: "PROTECTED_PAYEE", label }` (A's S5 type), `mcp-tools.ts` explains it; mutation-checked (guard off → 5 fail). SECURITY.md (T14 code, live-proof block, restart gap), SPONSORS.md (World checklist: Sepolia protected action ✓, deny/cancel live; Vault rows: revokeRoot + on-chain RootRevoked + P3 PAID), WORLD_DEBRIEF.md (live status, paths table, timeline); all policy.ts refs recomputed from anchors. Ticked S2/S3/S4/S5/S6 Lane B items and both S5/S6 gates
+- proof: 372 workspace tests + 2 expected-fail (A's graph.walk repro); commits 6773eee (tests), c7f6f5e (fix), this commit (docs)
+- result: PASS
+- next: A fixes `MemoryGraph.walk` (flip the two it.fails); `loadPayments` request
+- asks/blockers: Requests to A above
 
 ### 2026-11-06 IST · B · S6 live / deny, cancel, revoke-vs-vault on chain
 - did: (a) deny (go): pending `pay(acme, 5)` → Srijit rejected in World App → DENIED. (b) cancel (go): pending `pay(acme, 5)` → owner `POST /api/approvals/:id/cancel` (204) → CANCELLED. (c) revoke vs vault (go): `pnpm vault:pay-proof lead-claude <acme> 1 --root email:acme-0611 --expect-revert RootRevoked --yes`: a VALID policy-signed attestation carrying the revoked root, sent by lead-claude with fixed gas

@@ -15,7 +15,7 @@ The policy (`packages/payments/src/policy.ts`) asks for a human when:
 
 The agent can't skip the check or trigger it itself. An ENS mismatch or a revoked source is a hard block that no approval can override.
 
-Status of the protected action: approve → **paid** runs end to end against the real compiled BrainVault on anvil (`packages/payments/src/vault/vault.anvil.test.ts`; the `Paid` event carries `humanApproved=true`). The live Sepolia run happens once the server mounts payments (Lane A, S5). The vault is already on Sepolia and has made a real payment.
+Status of the protected action: **live on Sepolia through the server's `pay` MCP tool** (2026-11-06). P3 `pay(acme.supabrain.eth, 5 USDC)` was over the 4 USDC ENS cap → PENDING HUMAN → approved in World App → [PAID](https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528). The on-chain `Paid` event carries `humanApproved=true`, and its only root is the owner's invoice. It took 85 s from pending to paid. Also proven on anvil (`packages/payments/src/vault/vault.anvil.test.ts`).
 
 ## How we integrate (flow)
 1. The policy returns `pending_human` and the engine snapshots the payee, amount and lineage roots (`engine.ts:225–236`).
@@ -41,9 +41,9 @@ Tests: 46 in `humanApproval.test.ts`. Deliberately disabling the action, signal 
 ## Where the denied, expired and cancelled paths are
 | Path | Trigger | Code | Proof |
 |---|---|---|---|
-| **Denied** | Human rejects in World App (`user_rejected` / `verification_rejected`) | `humanApproval.ts:282` → `engine.ts:173–179` | Live 2026-11-06 08:00 (`verification_rejected`) · tests |
+| **Denied** | Human rejects in World App (`user_rejected` / `verification_rejected`) | `humanApproval.ts:282` → `engine.ts:173–179` | Live: spike 2026-11-06 08:00, and through the server (P3 deny → vault unchanged, [Arkiv](https://rabdi.explorer.arkiv.network/tx/0xc272dd7fa0e51ad5ea40c64a06cb1255bc70ad7f4546c2a8dc0c8e8708a8aa39)) · tests |
 | **Expired** | Bridge `timeout`, the RP signature window passing, or an approval arriving after the intent's expiry | `humanApproval.ts:283`, `:259` · `engine.ts:180` | Unit tests (`waitForHumanApproval`, engine "approval after expiry") |
-| **Cancelled** | Owner cancels on the dashboard, a revoke cancels intents in its blast radius, or app-side abort | `engine.ts` `cancel` / `onRevoke`; `humanApproval.ts:258` | Live (`--cancel-after`) · tests |
+| **Cancelled** | Owner cancels on the dashboard, a revoke cancels intents in its blast radius, or app-side abort | `engine.ts` `cancel` / `onRevoke`; `humanApproval.ts:258` | Live: spike (`--cancel-after`), and owner `POST /api/approvals/:id/cancel` through the server ([Arkiv](https://rabdi.explorer.arkiv.network/tx/0x926cd6ffe99f47e3efc53db12ad2debf94e39cb32864ad5d2cc46afa8eba1128)) · tests |
 | **Failed** | Any other World error, a failed verify, a replayed proof | `humanApproval.ts:285`, `:165–235` | Tests |
 
 In every one of these the decision is recorded (Arkiv + dashboard event) and **no attestation is signed, so nothing can move.** Video: _timestamp to add_ (booth/video version shows approve and deny).
@@ -57,6 +57,7 @@ In every one of these the decision is recorded (Arkiv + dashboard event) and **n
 | 2026-11-06 07:52 | Registered the relying party. First live run with `proof_of_human` **or** `selfie` → `feature_unavailable` |
 | 2026-11-06 07:54 | **First verified approval** (Orb only, legacy allowed) |
 | 2026-11-06 08:00 | Deny live (`verification_rejected`); app-side cancel live |
+| 2026-11-06 (S5 live run) | Through the server's `pay` tool: P3 approved in World App → [PAID on Sepolia](https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528) (85 s); deny → nothing moved; owner cancel → nothing moved |
 
 ## Friction (as it happened)
 **Finding the right product**

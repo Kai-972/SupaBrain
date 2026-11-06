@@ -17,7 +17,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S2 ✅ S3 ✅ S4 ✅ S5 mounted (live run waits for keys) | 🔨 | B's 5 env values on Kai's laptop; a dedicated Sepolia RPC key |
-| C: Face (dashboard, onboarding, demo) | Kai (UI built by Srijit's session) | #2 | S1–S6 screens on the **real** API (e2f08b9): `/t` live graph + drawer + dry run/revoke cascade + pitch guide, `/t/payments` + World approval card, `/connect`, `/t/rules`, `/how`, landing. Next: DEMO_SCRIPT, video, owner-flow rehearsal on real data | 🔨 | A: `/healthz` CORS (Requests) |
+| C: Face (dashboard, onboarding, demo) | Kai | #2 | Pivot (DECISIONS 2026-11-06 18:00): fresh UI for brains, commits, tasks, files, rules; e2f08b9 reverted | ⏳ | A: new API contract (continue/checkpoint/tasks/files) |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | **S5/S6 ✅ live**: P1 BLOCKED, revoke → vault revokeRoot + on-chain RootRevoked, P3 World-approved PAID, deny + cancel → nothing moved. QA cycle ✅ (graph.walk, payment history, per-namespace seed fixed; docs/QA_PLAN.md) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken

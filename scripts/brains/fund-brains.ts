@@ -41,7 +41,10 @@ async function main() {
   const floor = (target * BigInt(Math.round(cfg.funding.topUpBelowFraction * 1000))) / 1000n;
   const dep = readBrainsDeployment(root);
   const gasPrice = await rpc.getGasPrice();
-  const txCost = 21_000n * gasPrice;
+  // Never assume 21k: on Sepolia a value transfer that creates an account used 204,600 gas (2026-11-06); estimate per transfer.
+  const transferGas = async (to: Hex, value: bigint) => ((await rpc.estimateGas({ account: funder.address, to, value })) * 12n) / 10n;
+  const sampleGas = await transferGas(brainAgentAccount(mnemonic, cfg.brains[0]!.index, "claude").address, 1n).catch(() => 300_000n); // an empty funder cannot estimate yet
+  const txCost = sampleGas * gasPrice;
 
   console.log(`${broadcast ? "BROADCAST" : "DRY RUN"} · ${net.name} (chain ${net.chainId}) · funder ${funder.address} · target ${cfg.funding.perWalletGlm} tGLM per AI wallet (top up below ${formatEther(floor)})`);
   const plan: { label: string; family: (typeof BRAIN_FAMILIES)[number]; address: Hex; send: bigint }[] = [];
@@ -64,7 +67,7 @@ async function main() {
   const wallet = createWalletClient({ account: funder, chain: rabdi({ accessKey }), transport: http(undefined, { timeout: 20_000, retryCount: 0 }) });
   let nonce = await rpc.getTransactionCount({ address: funder.address, blockTag: "latest" });
   for (const p of plan) {
-    const hash = await wallet.sendTransaction({ to: p.address, value: p.send, gas: 21_000n, gasPrice, nonce, chain: wallet.chain });
+    const hash = await wallet.sendTransaction({ to: p.address, value: p.send, gas: await transferGas(p.address, p.send), gasPrice, nonce, chain: wallet.chain });
     nonce++;
     const r = await rpc.waitForTransactionReceipt({ hash, timeout: 120_000 });
     const url = net.explorer.tx.replace("{hash}", hash);

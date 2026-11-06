@@ -1,0 +1,154 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "teamRegistry": "0xd5bC492deE1A41873Fa382fF17017F6D5506c41c",
+  "factory": "0xda70306c98e97ece36f997a21368e53298572991",
+  "updatedAt": "2026-11-06T14:10:40.974Z",
+  "brains": {
+    "otter": {
+      "label": "otter",
+      "ens": "otter.supabrain.eth",
+      "index": 1,
+      "registry": "0x8158BC6a0005950b942B33303930823Cb25d1866",
+      "registrySalt": "78643568506451650488696519257711930068188633497747104267571293973656101720931",
+      "tokenOwner": "0x4eA717986244B28B8af633f698FdDf8308D35A56",
+      "expiry": 1795183692,
+      "txs": [
+        {
+          "id": "deployRegistry",
+          "hash": "0x885287f91ba748ecee1c37eac9987598ea25afc829bf9804d9d8aa09789a3eee",
+          "url": "https://sepolia.etherscan.io/tx/0x885287f91ba748ecee1c37eac9987598ea25afc829bf9804d9d8aa09789a3eee",
+          "at": "2026-11-06T14:08:37.179Z"
+        },
+        {
+          "id": "registerBrain",
+          "hash": "0x5eb44da8f63ab4bc1cfaa7398ba1862c19402fbc4d99712a7c6486feea4f5a03",
+          "url": "https://sepolia.etherscan.io/tx/0x5eb44da8f63ab4bc1cfaa7398ba1862c19402fbc4d99712a7c6486feea4f5a03",
+          "at": "2026-11-06T14:08:52.157Z"
+        }
+      ],
+      "agents": {
+        "claude": {
+          "ens": "claude.otter.supabrain.eth",
+          "labelhash": "0x5f1c28741ee74be2a828fd337283ca47e477a0cd56bf5ad31c61e1ce3ce1d22f",
+          "wallet": "0xBBCc4a88A2603Cc6F9848D6411ad7B88FE38DA34",
+          "resolver": "0xd9cFb3A77AE50BC090Cd8986d7b90137e3d714e9",
+          "resolverSalt": "81815556615988043533256262581959996404034759257047690079338599250204610174039",
+          "accountIndex": 1,
+          "addressIndex": 0,
+          "expiry": 1795183692,
+          "records": {
+            "sb.role": "lead",
+            "sb.scope": "*",
+            "sb.write.daily": "200",
+            "sb.status": "active",
+            "sb.vendor": "claude",
+            "sb.pay.cap": "0",
+            "sb.pay.daily": "0",
+            "agent-context": "Supabrain AI claude.otter.supabrain.eth: the claude AI of the brain otter (lead). Its checkpoints are signed by its own wallet on Arkiv; its rules are these ENS records, set by the Supabrain server for the brain's owner."
+          },
+          "txs": [
+            {
+              "id": "deployResolver",
+              "hash": "0x0eb637156f311b2b125042d655e65286df0c1547e78be9ca8b7fbf7a96aec91f",
+              "url": "https://sepolia.etherscan.io/tx/0x0eb637156f311b2b125042d655e65286df0c1547e78be9ca8b7fbf7a96aec91f",
+              "at": "2026-11-06T14:09:02.649Z"
+            },
+            {
+              "id": "grantMemoryHead",
+              "hash": "0xb578844c2a1766ba4734bd07cf7c2a5c3a8fb646ff75a74bb5c990c5d97829d4",
+              "url": "https://sepolia.etherscan.io/tx/0xb578844c2a1766ba4734bd07cf7c2a5c3a8fb646ff75a74bb5c990c5d97829d4",
+              "at": "2026-11-06T14:09:16.734Z"
+            },
+            {
+              "id": "registerAgent",
+              "hash": "0xa4bb48ad2c34edfcfb4e555704f2d3bd2a78100db35c389573002ef268055cbd",
+              "url": "https://sepolia.etherscan.io/tx/0xa4bb48ad2c34edfcfb4e555704f2d3bd2a78100db35c389573002ef268055cbd",
+              "at": "2026-11-06T14:09:28.178Z"
+            }
+          ]
+        },
+        "gemini": {
+          "ens": "gemini.otter.supabrain.eth",
+          "labelhash": "0x704db32081100dd74545f1a7597df9f7a92c207e699d6d04c58f7346952184e1",
+          "wallet": "0xA109Da4214220d9253Ef7d9A8cf902EE2952D085",
+          "resolver": "0x45dcbD9755d51747416aB52287aA7Eb6520e69Ca",
+          "resolverSalt": "31475900459423658012147647341894186577986810883842076051013338694154835857127",
+          "accountIndex": 1,
+          "addressIndex": 1,
+          "expiry": 1795183692,
+          "records": {
+            "sb.role": "worker",
+            "sb.scope": "*",
+            "sb.write.daily": "200",
+            "sb.status": "active",
+            "sb.vendor": "gemini",
+            "sb.pay.cap": "0",
+            "sb.pay.daily": "0",
+            "agent-context": "Supabrain AI gemini.otter.supabrain.eth: the gemini AI of the brain otter (worker). Its checkpoints are signed by its own wallet on Arkiv; its rules are these ENS records, set by the Supabrain server for the brain's owner."
+          },
+          "txs": [
+            {
+              "id": "deployResolver",
+              "hash": "0xe6fb0acda861d3836422cd7e5d9366ed9b84ff146748acb88cc62722e73c61c9",
+              "url": "https://sepolia.etherscan.io/tx/0xe6fb0acda861d3836422cd7e5d9366ed9b84ff146748acb88cc62722e73c61c9",
+              "at": "2026-11-06T14:09:41.264Z"
+            },
+            {
+              "id": "grantMemoryHead",
+              "hash": "0x1495781619efd60566cc2760a907ac8d4e196417ef0231355959bae295988a40",
+              "url": "https://sepolia.etherscan.io/tx/0x1495781619efd60566cc2760a907ac8d4e196417ef0231355959bae295988a40",
+              "at": "2026-11-06T14:09:51.839Z"
+            },
+            {
+              "id": "registerAgent",
+              "hash": "0x538f304c9b046579d22ab4435ebcf61add9994740e079ce77f5465f6572015ce",
+              "url": "https://sepolia.etherscan.io/tx/0x538f304c9b046579d22ab4435ebcf61add9994740e079ce77f5465f6572015ce",
+              "at": "2026-11-06T14:10:02.624Z"
+            }
+          ]
+        },
+        "openai": {
+          "ens": "openai.otter.supabrain.eth",
+          "labelhash": "0x0bd66e3a815e15147ece75ce94f9de5d939900aeec0be5ed0b9f28440c11f76c",
+          "wallet": "0xdA6A769494c0DB9a86F13ff9c911c8312bBc6Cd6",
+          "resolver": "0x917ecFFE3426B4bB143a899debb18548c4CCfc71",
+          "resolverSalt": "24184277447867585289913888902598773254258111885393818333745087725768517749161",
+          "accountIndex": 1,
+          "addressIndex": 2,
+          "expiry": 1795183692,
+          "records": {
+            "sb.role": "worker",
+            "sb.scope": "*",
+            "sb.write.daily": "200",
+            "sb.status": "active",
+            "sb.vendor": "openai",
+            "sb.pay.cap": "0",
+            "sb.pay.daily": "0",
+            "agent-context": "Supabrain AI openai.otter.supabrain.eth: the openai AI of the brain otter (worker). Its checkpoints are signed by its own wallet on Arkiv; its rules are these ENS records, set by the Supabrain server for the brain's owner."
+          },
+          "txs": [
+            {
+              "id": "deployResolver",
+              "hash": "0xf57d91d46db6c0a3e5520091b5833fc9e419fed0f08d495fd321edcde40ff150",
+              "url": "https://sepolia.etherscan.io/tx/0xf57d91d46db6c0a3e5520091b5833fc9e419fed0f08d495fd321edcde40ff150",
+              "at": "2026-11-06T14:10:13.457Z"
+            },
+            {
+              "id": "grantMemoryHead",
+              "hash": "0xfd2b2e41046eb92a5e5070837e5047ba9c516e46ceaccc02618c2526a14686a6",
+              "url": "https://sepolia.etherscan.io/tx/0xfd2b2e41046eb92a5e5070837e5047ba9c516e46ceaccc02618c2526a14686a6",
+              "at": "2026-11-06T14:10:28.554Z"
+            },
+            {
+              "id": "registerAgent",
+              "hash": "0xd9eae701d2ed5ddf6492c2e9d4312aab8fa8a50bdd56d09ab893e51915cdc818",
+              "url": "https://sepolia.etherscan.io/tx/0xd9eae701d2ed5ddf6492c2e9d4312aab8fa8a50bdd56d09ab893e51915cdc818",
+              "at": "2026-11-06T14:10:39.554Z"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

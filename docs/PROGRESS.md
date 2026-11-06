@@ -273,6 +273,32 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 
+### 2026-11-06 21:20 IST · B · v2 live: the two-AI injection scene on `maple.supabrain.eth` (`pnpm demo:injection`)
+- did: brain-mode server for `maple`. Two real MCP clients act as `claude.maple` (claude-code) and `gemini.maple` (antigravity). **10/10 checks:**
+  1. Claude commits.
+  2. The owner narrows Gemini's ENS `sb.scope` to `docs/` through the website API (team key pays).
+  3. Gemini continues and sees Claude's work.
+  4. Gemini relays a poisoned README → **STOPPED** (`instruction-override`, saved as evidence, revoked on Arkiv at once).
+  5. Gemini's write to `.github/workflows/deploy.yml` → **refused by ENS `sb.scope`**.
+  6. Claude's next `continue` doesn't contain the injected text.
+  7. `/blocked` lists both.
+  8. Claude's commit becomes its ENS head (`sb.memory.head` = its Arkiv key).
+  9. The scope is restored.
+- proof:
+  - scope → docs/ https://sepolia.etherscan.io/tx/0x9e7e2478e18db18c8591e296b4c4c108203d281cb5db2e9d71f035f61ee7bfb4
+  - stop revocation (team-signed, Arkiv) https://rabdi.explorer.arkiv.network/tx/0x988dc29cdcb3a21520630ea19863428c4703f0a4bcab1390865a80b188eff303
+  - Claude's commit `0x893b34c5…9329`, signed by `claude.maple`'s wallet `0xBA73…E046`: https://rabdi.explorer.arkiv.network/tx/0x2d918737a2b8bc30d4f6d87a3fc05658143d9ac705bf8cabf2629446265bc83d
+  - ENS head https://sepolia.etherscan.io/tx/0xac4d4de888b9236c0c65b36caae3c231e6a6d3906359474d1d1f78a78cf5e5b1
+  - scope restored https://sepolia.etherscan.io/tx/0x80f329e021e690e0d2861d87f407852bd1d4d00737fe77450f1c06851fc0e97d
+- result: PASS on the second run. **Three bugs were found live and fixed test-first:**
+  - **(a)** `sb.scope = "docs/"` would also have refused files under `docs/` (trailing slash). The first run's message showed `docs//`.
+  - **(b)** One transient ENS read failure right after the rule tx made Gemini's `continue` fail closed (`AUTHORITY_UNKNOWN`). ENS reads now retry twice before failing closed.
+  - **(c)** Gemini's ENS head was published as its **stopped** checkpoint, because Arkiv confirmed the write while the revocation was still being written. Stopped commits are now marked first and the publisher re-checks.
+  - `gemini.maple`'s `sb.memory.head` still points at that stopped test checkpoint (`0xa2bd4532…`); its next clean commit replaces it.
+  - Commits 3f5e636, 3929f9a; 518 tests.
+- next: the UI (`docs/FRONTEND_V2.md`); demo on `otter`; the server runs locally in brain mode for `maple`
+- asks/blockers: none
+
 ### 2026-11-06 21:00 IST · B · v2 steps 3–4 backend (taking over Lane A while Kai's laptop is down)
 - did:
   - **ENS rules on every call:** `sb.status` paused, `sb.scope`, `sb.write.daily` (new `RATE_LIMIT`). Every refusal is logged with the rule named and streamed as `blocked`.

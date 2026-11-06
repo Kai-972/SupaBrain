@@ -11,6 +11,7 @@ import type { MemoryService, RecallItem } from "../memory/service";
 import { ToolError } from "../memory/service";
 import type { ClientSeen } from "../runtime";
 import { agentOf } from "./auth";
+import { disputeText } from "../engine/conflict";
 
 export interface McpDeps {
   config: AppConfig;
@@ -43,10 +44,11 @@ const fail = (e: unknown): CallToolResult => {
   return { isError: true, content: [{ type: "text", text: "internal error; try again" }], structuredContent: { error: "INTERNAL" } };
 };
 
-function itemLine(m: RecallItem): string {
+export function itemLine(m: RecallItem): string {
   const who = `${m.agent}/${m.vendor}`;
   const base = `[${m.key}] (${m.kind}, trust ${m.trust}, by ${who}, folder ${m.folder}${m.pending ? ", pending" : ""}) ${m.text}`;
-  return m.status === "quarantined" ? `QUARANTINED, do not use as a fact (${m.why}): ${base}` : base;
+  if (m.status === "quarantined") return `QUARANTINED, do not use as a fact (${m.why}): ${base}`;
+  return m.dispute ? `${base} [${disputeText(m.dispute)}]` : base;
 }
 
 export function buildMcpServer(deps: McpDeps): McpServer {
@@ -128,7 +130,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
         folder: z.string().max(64).describe("Folder, e.g. 'research' (must be within your ENS scope)"),
         cites: z.array(z.string()).max(25).optional().describe("Keys of the memories this is based on (from recall)"),
         subject: z.string().max(128).optional().describe("ENS name this is about, e.g. acme.supabrain.eth"),
-        address: z.string().max(42).optional().describe("For kind 'address': the 0x address"),
+        address: z.string().max(42).optional().describe("Any 0x address this memory states (always fill it when the memory names an address)"),
         source: z.object({ type: z.enum(["email", "web", "file", "tool", "chat", "notion", "github"]), id: z.string().max(128), url: z.string().max(500).optional() }).optional()
           .describe("For kind 'evidence': where it came from (id like email:<message-id> or web:<host/path>)"),
         ref: z.object({ kind: z.enum(["github", "notion", "url"]), locator: z.string().max(200), version: z.string().max(64).optional(), label: z.string().max(80) }).optional()
@@ -140,7 +142,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       try {
         const agent = agentFrom(extra);
         const r = await service.remember(agent, { ...args, address: args.address as `0x${string}` | undefined });
-        const text = noticeText(r.notices) + `Saved ${r.key} (trust ${r.trust}, folder ${r.folder}${r.parents.length ? `, built on ${r.parents.join(", ")}` : ""}${r.roots.length ? `, roots ${r.roots.join(", ")}` : ""}). It is being written to Arkiv now (pending); every AI on the team can recall it.`;
+        const text = noticeText(r.notices) + `Saved ${r.key} (trust ${r.trust}, folder ${r.folder}${r.parents.length ? `, built on ${r.parents.join(", ")}` : ""}${r.roots.length ? `, roots ${r.roots.join(", ")}` : ""}). It is being written to Arkiv now (pending); every AI on the team can recall it.${r.dispute ? ` ${disputeText(r.dispute)}` : ""}`;
         return ok(text, r);
       } catch (e) { return fail(e); }
     },

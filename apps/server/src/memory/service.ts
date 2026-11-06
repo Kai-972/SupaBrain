@@ -3,6 +3,7 @@
 import { isAddress, type Hex } from "viem";
 import type { AgentView, AppConfig, EnsAuthority, MemoryKind, MemoryNode, Payment, PrivateRef, SourceRef, Trust } from "@supabrain/shared";
 import type { MemoryGraph } from "../engine/graph";
+import { disputeOf, type Dispute, type VendorAddresses } from "../engine/conflict";
 import { computeLineage, scopeAllows, validateFolder, validateRef, validateSource } from "../engine/lineage";
 import { searchMemories } from "../engine/search";
 import type { Notice, NoticeBox, ReadLog, ReadSets } from "../engine/session";
@@ -36,7 +37,7 @@ export interface RememberInput {
 }
 
 export type RecallItem = Pick<MemoryNode, "key" | "text" | "kind" | "trust" | "agent" | "vendor" | "folder" | "status" | "createdAt"> &
-  Partial<Pick<MemoryNode, "subject" | "address" | "ref" | "source" | "pending">> & { why?: string };
+  Partial<Pick<MemoryNode, "subject" | "address" | "ref" | "source" | "pending">> & { why?: string; dispute?: Dispute };
 
 export interface ExplainHop { key: string; text: string; kind: string; trust: Trust; agent: string; vendor: string; status: string; why?: string }
 
@@ -88,12 +89,33 @@ export function createMemoryService(d: ServiceDeps) {
     return a;
   }
 
-  const toItem = (n: MemoryNode): RecallItem => {
+  /** Live ENS address of each team vendor (or only `names`), via the cached EnsAuthority; a failure is "unavailable". */
+  async function vendorAddresses(names?: string[]): Promise<VendorAddresses> {
+    const team = new Set(d.ens.teamVendors().map((v) => v.toLowerCase()));
+    const wanted = [...new Set((names ?? [...team]).map((v) => v.toLowerCase()))].filter((v) => team.has(v));
+    const out = new Map<string, `0x${string}` | null | "unavailable">();
+    await Promise.all(wanted.map(async (v) => {
+      try { out.set(v, await d.ens.resolveEns(v)); } catch { out.set(v, "unavailable"); }
+    }));
+    return out;
+  }
+  /** Disputes for these nodes, resolving only the vendors they name (computed on read: survives restarts). */
+  async function disputesFor(nodes: MemoryNode[]): Promise<Map<string, Dispute>> {
+    const subjects = [...new Set(nodes.map((n) => n.subject).filter((x): x is string => !!x))];
+    const out = new Map<string, Dispute>();
+    if (!subjects.length) return out;
+    const vendors = await vendorAddresses(subjects);
+    for (const n of nodes) { const dp = disputeOf(n, vendors); if (dp) out.set(n.key, dp); }
+    return out;
+  }
+
+  const toItem = (n: MemoryNode, dispute?: Dispute): RecallItem => {
     const why = n.status === "quarantined" ? d.graph.why(n.key) : undefined;
     return {
       key: n.key, text: n.text, kind: n.kind, trust: n.trust, agent: n.agent, vendor: n.vendor, folder: n.folder, status: n.status, createdAt: n.createdAt,
       ...(n.subject ? { subject: n.subject } : {}), ...(n.address ? { address: n.address } : {}), ...(n.ref ? { ref: n.ref } : {}),
       ...(n.source ? { source: n.source } : {}), ...(n.pending ? { pending: true } : {}), ...(why ? { why } : {}),
+      ...(dispute ? { dispute } : {}),
     };
   };
 
@@ -138,6 +160,7 @@ export function createMemoryService(d: ServiceDeps) {
 
   return {
     notices: d.notices,
+    disputesFor,
 
     async whoami(agent: string, ctx: { tokenId?: string; client?: string } = {}) {
       const a = await authority(agent);
@@ -152,7 +175,8 @@ export function createMemoryService(d: ServiceDeps) {
     async recall(agent: string, q: { query: string; folder?: string; limit?: number }) {
       await requireActive(agent);
       const found = searchMemories(d.graph.all(), q.query ?? "", { folder: q.folder, limit: q.limit });
-      const items = found.map(toItem);
+      const disputes = await disputesFor(found);
+      const items = found.map((n) => toItem(n, disputes.get(n.key)));
       d.readSets.add(agent, found.filter((n) => n.status === "active").map((n) => n.key));
       d.readLog.record(agent, found.map((n) => n.key));
       recallLog.push({ at: now(), agent, query: q.query ?? "", results: items.map((m) => ({ key: m.key, status: m.status })) });
@@ -187,9 +211,12 @@ export function createMemoryService(d: ServiceDeps) {
         ...(input.subject ? { subject: input.subject } : {}), ...(input.address ? { address: input.address } : {}),
         ...(input.source ? { source: input.source } : {}), ...(input.ref ? { ref: input.ref } : {}),
       };
+      // The ENS lookup runs alongside the write; it never blocks or fails it (machines flag, humans retract).
+      const vendorsP = draft.subject ? vendorAddresses([draft.subject]) : Promise.resolve(new Map() as VendorAddresses);
       const node = await commit(agent, draft, a.wallet);
       d.readSets.reset(agent);
-      return { key: node.key, trust: node.trust, parents: node.parents, roots: node.roots, folder: node.folder, pending: true as const, notices: d.notices.unread(agent) };
+      const dispute = disputeOf(node, await vendorsP);
+      return { key: node.key, trust: node.trust, parents: node.parents, roots: node.roots, folder: node.folder, pending: true as const, notices: d.notices.unread(agent), ...(dispute ? { dispute } : {}) };
     },
 
     /**

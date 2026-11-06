@@ -72,17 +72,24 @@ export function mountApi(app: Express, p: { config: AppConfig; ens: EnsAuthority
     res.json({ team: { id: config.app.team.id, displayName: config.app.team.displayName, ens: teamEns }, agents, vendors: ens.teamVendors(), counts: graph.counts() });
   });
 
-  app.get("/api/graph", (req, res) => {
+  // `dispute` (an extra JSON field, not part of MemoryNode): memories whose address disagrees with a team vendor's live
+  // ENS record are "disputed"; ENS unreadable → "unverified". Computed on read (supermemory-plan.md #2).
+  app.get("/api/graph", async (req, res) => {
     const since = Number(req.query.since ?? 0) || 0;
     const nodes = graph.since(since);
-    res.json({ nodes, edges: nodes.flatMap((n) => n.parents.map((parent) => ({ parent, child: n.key }))), seq: graph.maxSeq() });
+    const disputes = await service.disputesFor(nodes);
+    res.json({
+      nodes: nodes.map((n) => { const dp = disputes.get(n.key); return dp ? { ...n, dispute: dp } : n; }),
+      edges: nodes.flatMap((n) => n.parents.map((parent) => ({ parent, child: n.key }))), seq: graph.maxSeq(),
+    });
   });
 
-  app.get("/api/memory/:key", (req, res) => {
+  app.get("/api/memory/:key", async (req, res) => {
     const n = graph.get(req.params.key);
     if (!n) return void res.status(404).json({ error: "no such memory (it may have expired)" });
     const why = n.status === "quarantined" ? graph.why(n.key) : undefined;
-    res.json({ ...n, lineage: graph.lineagePaths(n.key), readers: service.readers([n.key]), ...(why ? { why } : {}) });
+    const dispute = (await service.disputesFor([n])).get(n.key);
+    res.json({ ...n, lineage: graph.lineagePaths(n.key), readers: service.readers([n.key]), ...(why ? { why } : {}), ...(dispute ? { dispute } : {}) });
   });
 
   app.get("/api/recall-log", (req, res) => {

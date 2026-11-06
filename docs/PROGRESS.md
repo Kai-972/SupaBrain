@@ -16,7 +16,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
-| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS: steps 1–2 ✅ → step 3 register team | 🛑 blocked | Funding: Sepolia ETH (owner, agents, acme); tGLM + ARKIV_ACCESS_KEY for S2 |
+| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS: steps 1–2 ✅ → step 3 register team | 🔨 in progress | – (all wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · World spike: switched to IDKit 4 (OIDC portal needs enterprise Google); client + 46 tests done, live approve/deny waiting on WORLD_RP_ID + WORLD_SIGNING_KEY | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
@@ -103,6 +103,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane A (Brain)
 <!-- newest first; format in CLAUDE.md §3.4 -->
+
+### 2026-11-06 05:10 IST · A · S1 / funding
+- did: set `ARKIV_ACCESS_KEY` (validated: Rabdi eth_chainId 7794095 via path auth); added `pnpm fund` (dry run by default); moved 0.01 ETH lead-claude → gem-research and acme on Sepolia; moved 3 tGLM lead-claude → gem-research and gpt-writer on Rabdi
+- proof: Sepolia gem-research https://sepolia.etherscan.io/tx/0x123b2528f0fb207496560e342a7aef1710494b42efac4e7f5ea51271ebb5f6c5 · acme https://sepolia.etherscan.io/tx/0x81cea6d38775317dd2ee64649d407caf9b35fac6da1b9c3d9cd077769c5949bf · Rabdi https://rabdi.explorer.arkiv.network/tx/0x33fcdae7a917fdf0f84b1f7a90560d0b2072b2c817293d8429f96e9c1c9d2bd7
+- result: PASS after one FAIL. First attempt used a hard-coded 21000 gas; both transfers reverted (status 0, only ~756k wei of gas lost). Sending to a brand-new empty account needs ~207k gas on Sepolia now (node estimate). Fix: `fund` uses `estimateGas` + 25%. Failed txs: 0x0f3669a0…d2e0, 0x5c7cf937…56bc
+- commit: 144aac9
+- next: S1 step 3 `register-team.ts` (owner has 0.05 ETH)
+- asks/blockers: none for ENS. Note for Lane B: any plain value transfer to a fresh address needs ~207k gas on Sepolia, so never hard-code 21000
 
 ### 2026-11-06 04:52 IST · A · S1 ENS / steps 1–2 (keys, verify-deployments)
 - did: generated dev keys into `.env.local` (owner, team, 3 agents, acme vendor; Kai OK'd it); filled `config/ens.sepolia.json` (13 contracts, commit 07e55a05, from the live deployments page); pinned ABIs in `packages/ens/src/abis`; `pnpm run ens:verify` checks code, registry wiring, registrar and label availability; chose team label `supabrain` (AVAILABLE)

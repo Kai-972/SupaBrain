@@ -12,6 +12,7 @@ The write path and queries behind every row are proven live in the S1 spike. The
 | ✅ Keep (`undo.ts`, `arkiv/store.ts` `extendMemory`) | `extendEntity` on memory + edges + taints, one owner-signed batch | a node stops fading; its expiry date moves out (refused for quarantined memories) |
 | ✅ Memories fade after 2 days | entity expiry | a lie nobody kept disappears from the shared store by itself (proven: a 60 s memory was gone from queries at exactly its expiry block; no event is emitted, the server emits `expired` itself) |
 | ✅ Undo ("this source is wrong") (`undo.ts`) | `sb.revocation` (max lifetime, team wallet), `sb.notice` | cascade of red nodes, retraction notices in every vendor's next answer; survives a restart |
+| ✅ **Verify a memory without us** (`pnpm verify:memory <key>`, [`scripts/arkiv/verify-memory.ts`](../scripts/arkiv/verify-memory.ts)) | `sb.memory` read by `$key` with **no** creator filter, so forgeries show up; `sb.revocation` by the team wallet; ENSv2 `getOwner` on Sepolia | for each hop of a memory's lineage, ✓ when `$creator` is the wallet that owns `<agent>.supabrain.eth` right now and the team holds the record, plus REVOKED marks. Live example: gpt-writer's draft → lead-claude's plan → owner invoice + gem-research's address → the phishing email, 5/5 verified, 4 revoked |
 | ⏳ Public advisories | `sb.revocation` read live | the README query and `/advisories` list real revocations |
 
 ## Writes (who signs what)

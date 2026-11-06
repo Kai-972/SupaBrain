@@ -42,7 +42,8 @@
     "dev:public": "bash scripts/dev-public.sh",
     "e2e:undo": "tsx scripts/demo/e2e-undo.ts",
     "demo:seed": "tsx scripts/demo/seed.ts",
-    "arkiv:reach": "tsx scripts/arkiv/reach.ts"
+    "arkiv:reach": "tsx scripts/arkiv/reach.ts",
+    "verify:memory": "tsx scripts/arkiv/verify-memory.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

@@ -70,6 +70,7 @@ describe("Stop: prompt injection relayed between AIs", () => {
     expect(store.written.length).toBeGreaterThan(0); // written: the owner can review exactly what arrived
     expect(stops).toEqual([{ key: r.key, reason: expect.stringMatching(/instruction-override|agent-to-agent|payment-redirect/) }]);
     expect(r.stopped).toMatchObject({ rule: expect.any(String), excerpt: expect.stringMatching(/ignore all previous instructions/) });
+    expect(rt.continuity.isStopping(r.key)).toBe(true); // marked before the revocation is written, so it can never become an ENS head
     expect(rt.blocked.list()[0]).toMatchObject({ agent: "gem-research", tool: "checkpoint", code: "STOPPED", key: r.key });
     expect(events.some((e) => e.t === "blocked" && e.block.code === "STOPPED")).toBe(true);
   });

@@ -39,6 +39,18 @@ describe("ENS heads", () => {
     expect(sent.map((s) => s.key)).toEqual([key(1), key(3)]);
   });
 
+  it("a checkpoint being stopped never becomes a head, even if Arkiv confirms it before the revocation lands", async () => {
+    const graph = new MemoryGraph();
+    const bus = new EventBus();
+    const sent: string[] = [];
+    const stopping = new Set([key(7)]);
+    const pub = createHeadPublisher({ writer: { async setHead(_e, k) { sent.push(k); return { txHash: "0x1", txUrl: "t" }; } }, bus, graph, ensOf: (a) => a, skip: (k) => stopping.has(k) });
+    graph.upsert(cp(key(7)));
+    bus.emit({ t: "confirmed", key: key(7), proofUrl: "x" });
+    await pub.idle();
+    expect(sent).toEqual([]);
+  });
+
   it("stopped (quarantined) checkpoints, tasks and files never become a head", async () => {
     const { graph, bus, sent, pub } = setup();
     graph.upsert(cp(key(1)));

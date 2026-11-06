@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅ → S1 Arkiv spike | 🔨 in progress | – (wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8). Next: set-agents → fund → 1-USDC pay → step-kill (each ASK go) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), 3 agents set. Next: fund (needs test USDC) → 1-USDC pay → step-kill | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -153,6 +153,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S2 / set-agents on Sepolia
+- did: `pnpm vault:set-agents --yes` after the ASK go (owner key)
+- proof: lead-claude ceiling 30 https://sepolia.etherscan.io/tx/0x399031897064938351af533681476bf3d561f09f490d2e75f5cc6c604bf40134 · gem-research ceiling 4 https://sepolia.etherscan.io/tx/0x7eebf371aec9def3753d1242e6dce7b7f223ce8bc66d57ef6cb636b9e38def24 · gpt-writer ceiling 0 https://sepolia.etherscan.io/tx/0xd591128b699d740aa0eb77bf58e311648a231279ac37ad5cd2fa08f350035798 · `vault:status`: all three set, live ENS `getOwner` = wallet ✓
+- result: PASS
+- commit: (this entry)
+- next: fund the vault (owner needs test USDC), 1-USDC `vault:pay-proof`, then `step-kill` with gem-research
+- asks/blockers: owner 0 USDC (faucet.circle.com → 0xFcf0…E198); guardian 0x2782…4D51 0 ETH
 
 ### 2026-11-06 08:43 IST · B · S2 / BrainVault deployed on Sepolia
 - did: `pnpm vault:deploy --yes` after the ASK go. Dry run first caught a gas limit above the EIP-7825 per-tx cap (Sepolia estimates ~15.5M gas for 11 KB init code; +25% would be rejected) → fixed to +5% capped (9091655)

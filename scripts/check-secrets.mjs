@@ -17,6 +17,7 @@ const RULES = [
   ["private key assignment", assign("PRIVATE_KEY", "0x[0-9a-fA-F]{64}")],
   ["Arkiv access key value", assign("ARKIV_ACCESS_KEY", val(16))],
   ["World client secret value", assign("WORLD_CLIENT_SECRET", val(8))],
+  ["World signing key value", assign("WORLD_SIGNING_KEY", val(8))],
   ["Notion token value", assign("NOTION_TOKEN", `(?:secret_|ntn_)${val(8)}`)],
   ["signing secret value", assign("TOKEN_SIGNING_SECRET", val(8))],
   ["admin passphrase value", assign("DASHBOARD_ADMIN_PASSPHRASE", val(4))],

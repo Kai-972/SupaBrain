@@ -38,6 +38,8 @@ describe("check-secrets", () => {
     expect(scanSecrets("WORLD_CLIENT_SECRET=                  # B")).toEqual([]);
     expect(scanSecrets("OWNER_PRIVATE_KEY=                # dev machines only")).toEqual([]);
     expect(scanSecrets("NOTION_TOKEN=ntn_abc123def456")).toEqual([{ line: 1, rule: "Notion token value" }]);
+    expect(scanSecrets("WORLD_SIGNING_KEY=abcdefgh12345678")).toEqual([{ line: 1, rule: "World signing key value" }]);
+    expect(scanSecrets("WORLD_SIGNING_KEY=             # B, SECRET")).toEqual([]);
     expect(scanSecrets(`{ "WORLD_CLIENT_SECRET": "abcdefgh123" }`)).toEqual([{ line: 1, rule: "World client secret value" }]);
   });
 

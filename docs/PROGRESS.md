@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS: steps 1–2 ✅ → step 3 register team | 🔨 in progress | – (all wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · World spike: switched to IDKit 4 (OIDC portal needs enterprise Google); client + 46 tests done, live approve/deny waiting on WORLD_RP_ID + WORLD_SIGNING_KEY | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · World spike ✅ live: approve ×3, deny, cancel (IDKit 4). Next: `decidePayment` | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -35,7 +35,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] A · S1 ENS: team name + registry · agent + own resolver · `sb.memory.head` ✓ · `sb.pay.cap` revert tx · UR read-back · unregister → null · transfer revert · **handoff `ens.sepolia.json` to B**
 - [ ] A · S2 Arkiv: batch ok · `$creator ≠ $owner` · queries ok · **extend-on-readonly result: ___** · watcher fires · friction logged
 - [ ] A · S3 MCP: public URL · Claude Code ✓ · Claude.ai ✓ · Antigravity ✓ · bad token 401
-- [ ] B · S4 World: OIDC discovery ✓ (52c950e) · IDKit 4 client ✓ (e46d944) · approve · deny · expire/cancel  ← needs WORLD_APP_ID / WORLD_RP_ID / WORLD_SIGNING_KEY
+- [x] B · S4 World: IDKit 4 live: approve ×3 · deny (`verification_rejected`) · cancel (85c358a; runs logged in WORLD_DEBRIEF.md)
 - [x] B · S5 Vault: `forge test` green (mock registry) · 47 passed · V1 review done (0 crit/high/med; L-2/L-3/L-4 fixed) · 34f9228
 - [ ] C: static graph with all encodings + list view (screenshot)
 
@@ -130,6 +130,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 08:01 IST · B · S1 / S4 World spike LIVE
+- did: registered the relying party (RP ID in env; signer key generated locally, only its address given to the portal). Live runs against production World App: `any(proof_of_human, selfie)` → `feature_unavailable`; Orb only + legacy → APPROVED ×3 (111 s, 85 s, 99 s), reject → DENIED `verification_rejected` (46 s), `--cancel-after 45` → CANCELLED
+- proof: spike output (redacted: credential, nullifier prefix); every approval passed the local checks + `/api/v4/verify/{rp_id}`
+- result: PASS
+- commit: 85c358a
+- next: `decidePayment` policy + table tests; then the pending-human wiring into `createPayments`
+- asks/blockers: booth: confirm the prize means this product (Human-in-the-loop / World ID 4)
 
 ### 2026-11-06 IST · B · S1 / S4 World: switch to IDKit 4 (Human-in-the-loop)
 - did: OIDC route blocked (pasted creds were IDKit app id + portal API key → `invalid_client`; the auth.world.org portal returns `account_not_eligible` for non-enterprise Google). Built World ID 4 approval on `@worldcoin/idkit-core@4.6.0`: per-intent action `supabrain-pay:<intentHash>` signed server-side, signal = intent hash, bridge polled from Node, local checks (action, nonce, env pin, signal_hash, credential) then `/api/v4/verify/{rp_id}`, one-time `(action, nullifier)`. OIDC kept as `world:oidc-spike`

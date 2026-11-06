@@ -29,8 +29,9 @@ Agents can spend money. The payment policy decides when a human must approve. Th
 |---|---|
 | 2026-11-06 | Read docs; live discovery against `auth.world.org` ✓ (device grant, `client_secret_basic`, RS256). Sandbox issuer discovery ✓ |
 | 2026-11-06 | OIDC portal → `account_not_eligible` (enterprise Google Workspace only). Switched to IDKit 4; confirmed `IDKit.request` + `pollOnce` run from plain Node against the bridge |
-| _pending_ | First approval with validated claims (time to first success: ___) |
-| _pending_ | Deny path live · expire/cancel path live |
+| 2026-11-06 07:52 | First live attempt with `proof_of_human` **or** `selfie` → World App `feature_unavailable` |
+| 2026-11-06 07:54 | **First approval**, Orb only + legacy allowed: verified by World, bound to the intent. Time to first success ≈ 25 min from RP registration, ~2 h from first reading the docs (including the OIDC dead end) |
+| 2026-11-06 08:00 | Deny live (`verification_rejected`) · app-side cancel live |
 
 ## Friction (as it happened)
 - **The name "Agent Pass" doesn't appear in the public docs** (auth.world.org/docs). The closest is the "Human checkpoints" (step-up) guide. We asked the booth which product the prize means.
@@ -41,7 +42,9 @@ Agents can spend money. The payment policy decides when a human must approve. Th
   - the vault checks that attestation on chain.
 - **No mock proofs or simulator are documented.** Testing needs the sandbox issuer, a sandbox World App (TestFlight) and a test credential that takes about an hour to issue. We test validation with locally signed fixtures, as the docs recommend.
 - **Two "World ID" credential systems that look alike.** The first credentials we tried were a Developer Portal app ID (`app_…`) and an API key (`api_…`, base64 of `key_…:sk_…`). The device endpoint returned `401 invalid_client` on both production and sandbox, with "check the environment, registered authentication method, and credentials". The OIDC flow needs a separate client registered at `auth.world.org/portal`, whose secret starts with `worldidp_client_secret_` and is shown once. Nothing in either portal points to the other. A hint in the `invalid_client` error ("this looks like an IDKit/API key") would have saved us the round trip.
-- **Device-only clients still need an exact HTTPS redirect URI** at registration, even though the device grant never uses it.
+- **Asking for `any(proof_of_human, selfie)` fails the whole request** with `feature_unavailable`, rather than falling back to the credential the user has. Selfie Check is a preview feature that has to be enabled per app. We request Orb only.
+- **A 300 s RP signature window is tight for a remote approver.** Our first link expired while it was being sent over chat. Showing the QR on screen right away fixed it. The approval card has to show it instantly.
+- **(OIDC only) Device-only clients still need an exact HTTPS redirect URI** at registration, even though the device grant never uses it.
 - **`nonce` is omitted in device grants,** so freshness relies on `auth_time` + `jti`.
 - **The discovery document under-reports:**
   - `acr_values_supported` lists only Orb classes, though the docs also describe Selfie classes;

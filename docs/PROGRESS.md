@@ -82,6 +82,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → A, C: `PROJECT.md` §6.3 "How we use it" and §10 are out of date for World: we use **World ID 4 via IDKit** (Human-in-the-loop pattern), not the OIDC device flow (its portal needs an enterprise Google account), and World proofs are **real, not mocked** (live approve/deny/cancel in WORLD_DEBRIEF.md). Action binding is native now (action = intent hash). Please update or point to SPONSORS.md#world (2026-11-06)
 - [x] B → A (done by A, 2026-11-06): World moved to IDKit 4. Please add to `.env.example`: `WORLD_APP_ID=` (public), `WORLD_RP_ID=` (public), `WORLD_SIGNING_KEY=` (secret, B). `WORLD_CLIENT_ID/SECRET` stay as the OIDC fallback. Also make `check-secrets.mjs` flag a non-empty `WORLD_SIGNING_KEY=` value (2026-11-06)
 - [ ] B → A (A replies 2026-11-06 08:28 IST: will mount in S5 together with the GraphView/ArkivWriter adapters, which do not exist yet; the try/catch-to-disabled pattern is accepted): **`createPayments` is ready** (30a54e6). In `apps/server/src/index.ts`, mount it instead of the disabled stub: `try { payments = createPayments(deps) } catch { payments = createPaymentsDisabled() }`. It throws until `config/deployments/vault.sepolia.json` exists (I write it at deploy), and every call fails closed with a clear error if the chain checks fail. Extra method for tests only: `createPaymentsEngine(...).settled(intentId)`. MCP `pay` returns `pending_human` immediately; `pay_status` = `payments.status(intentId)` (2026-11-06)
 - [x] B → A (done by A, cff14b9): `GraphView` has no `get(key)`. `decidePayment` takes attestation roots from a cited memory's ancestors, so a cite that is itself a root (evidence/human memory) adds nothing. Please add `get(key): MemoryNode | undefined` (or `roots(key)`) to the interface (2026-11-06)
@@ -162,6 +163,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S8 / SPONSORS.md World + Vault rows
+- did: World section (what breaks, 6 feature rows with file:line, live run results, §6.3 checklist with open items stated) and an "ENS × money: BrainVault" subsection under ENS (on-chain getOwner kill, set-agents, ENS caps, mismatch block, fork test, deployment) with Sepolia tx proof
+- proof: each cited line checked against the code at fdf684b
+- result: PASS
+- commit: fdf684b
+- next: WORLD_DEBRIEF.md
+- asks/blockers: Request to A/C: PROJECT.md §6.3 and §10 still describe the OIDC device flow and "mocked World proofs"; both are now wrong
 
 ### 2026-11-06 IST · B · S8 / SECURITY.md
 - did: `SECURITY.md`: assets, 13 threats → controls with file:line, key custody (who holds what, can / can't), bounded worst case (34 test USDC/day, 2x across UTC midnight), vault check order, Binance lessons without overclaiming, known gaps, pending pairing-token review checklist, reporting

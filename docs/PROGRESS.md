@@ -273,7 +273,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 
-### 2026-11-06 21:20 IST · B · v2 live: the two-AI injection scene on `maple.supabrain.eth` (`pnpm demo:injection`)
+### 2026-11-06 21:09 IST · B · v2 live: the two-AI injection scene on `maple.supabrain.eth` (`pnpm demo:injection`)
 - did: brain-mode server for `maple`. Two real MCP clients act as `claude.maple` (claude-code) and `gemini.maple` (antigravity). **10/10 checks:**
   1. Claude commits.
   2. The owner narrows Gemini's ENS `sb.scope` to `docs/` through the website API (team key pays).

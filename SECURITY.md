@@ -110,17 +110,34 @@ We do **not** claim Supabrain would have stopped that attack. It was an access-c
 - **Shared testnet burners.** During the hackathon the owner and agent burner keys were shared between the two developers by hand. They are testnet-only and must never hold real value.
 - **Out of scope:** malware on a developer laptop (the Binance way in), and a compromised owner key.
 
-## 7. Token and pairing review (Lane A, S4)
+## 7. Token and pairing review (MCP agent tokens, reviewed 2026-11-06)
 
-Pending: the pairing endpoint (`/api/pair`) and agent tokens aren't built yet. When they land we will review:
-- HMAC with `TOKEN_SIGNING_SECRET` (at least 32 chars, server-only);
-- token expiry and revocation on unregister;
-- one agent label per token;
-- no token in logs, URLs that get logged, Arkiv or the browser bundle;
-- redaction of path-tokens in access logs;
-- constant-time comparison.
+**Design.** Token = `base64url("<label>|<exp>|<hmac>")`, where `hmac = HMAC-SHA256(TOKEN_SIGNING_SECRET, "v1|<label>|<exp>")` (`apps/server/src/auth/tokens.ts:14–21`). It goes in `Authorization: Bearer` or, for clients that can't send headers, in the path `/mcp/t/<token>` (`mcp/routes.ts:54–55`). A token only authenticates the client. What the agent may *do* is decided live by ENS on every call.
 
-Findings go here and under Requests in `docs/PROGRESS.md`.
+**Verified OK:**
+- **HMAC:** SHA-256 with a version and domain prefix (`v1|`).
+- **Comparison:** constant-time (`timingSafeEqual` after a length check, `tokens.ts:32–34`).
+- **Expiry:** inclusive, checked after the signature. Unknown agents are rejected after the signature too.
+- **Input limits:** labels can't smuggle the `|` separator (`^[a-z0-9-]{1,63}$`). Input is base64url-only and capped at 512 chars.
+- **Secret strength:** the server won't start with a secret under 32 chars (`readEnv` → `EnvSchema`).
+- **Failure responses:** 401 with `WWW-Authenticate`, and the token is never echoed (`mcp/auth.ts:19–23`).
+- **Host allowlist (DNS-rebinding):** only localhost plus the `PUBLIC_BASE_URL` host is accepted; anything else gets 403. MCP returns 503 when the secret or ENS isn't configured (`app.ts:34–40`).
+- **`whoami` fails closed:** an ENS read error is an error, and a killed agent reports `canWrite: false` even with a valid token (`mcp/server.ts:39–54`).
+- **Body limit:** JSON bodies are capped at 64 KB.
+
+**Findings.** Each confirmed finding is a test in `apps/server/src/mcp/security-review.test.ts`, marked `it.fails` until it's fixed. All are filed under Requests (B → A).
+
+| # | Severity | Finding | Fix suggested |
+|---|---|---|---|
+| F1 | **High** | **Path token leaks into the server log.** Express matches routes case-insensitively, so `/MCP/T/<token>` authenticates (200), but `redactTokenPath` only matches lowercase `/mcp/t/`, so the raw credential is logged. | Redact from the matched route (`req.params.token`) instead of a regex, or make the regex case-insensitive. Better: log `req.route.path` plus the agent label only. |
+| F2 | Medium | **Unauthenticated stack trace.** A malformed JSON body returns Express's HTML error page with a stack trace and local file paths (`express.json` runs before auth). | Add an error handler after `express.json` that returns a JSON-RPC `-32700` parse error with no stack. Run with `NODE_ENV=production`. |
+| F3 | Low | **Log forging.** `clientInfo.name` and `version` (authenticated client) go into the log line unsanitised, so a newline forges a second line. | Strip control characters and cap the length before logging and before storing for the dashboard. |
+
+**Design notes** (no test; under Requests):
+- **D1:** no per-token revocation. Tokens live 7 days, and the only kill switches are ENS unregister (stops writes and payments) or rotating the secret (kills every token). When `recall` lands, it must also check ENS status, or a leaked token can **read** team memory for up to 7 days.
+- **D2:** tokens aren't bound to a deployment. Two servers sharing a secret accept each other's tokens. Suggest MACing `v1|<appNamespace>|<label>|<exp>`.
+- **D3:** path tokens also live in tunnel request inspectors (the ngrok inspector records full URLs) and in client settings. Run ngrok with inspection off, and consider a shorter TTL for path tokens.
+- **D4:** 401 descriptions distinguish `expired` from `bad_signature`, which confirms an old token was genuine. Minor; acceptable.
 
 ## 8. Reporting
 

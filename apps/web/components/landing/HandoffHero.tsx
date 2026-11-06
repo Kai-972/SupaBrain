@@ -2,6 +2,7 @@
 // The hero product card: the whole story in one loop, drawn like the live commit graph.
 // Illustration only (labelled); the live pages read the real server.
 import { useEffect, useState } from "react";
+import { useStore } from "@/lib/store";
 
 type Lane = 0 | 1 | 2;
 interface Row { lane: Lane; text: string; tag?: { t: string; c: "ok" | "bad" | "warn" | "mut" }; kind: "cp" | "note" | "block"; from?: number }
@@ -17,6 +18,7 @@ const LANES = [{ l: "claude", c: "var(--vc)", k: "C" }, { l: "gemini", c: "var(-
 const X = [40, 150, 260], Y0 = 92, DY = 58;
 
 export function HandoffHero() {
+  const ens = useStore((s) => s.health?.ens);
   const [step, setStep] = useState(0);
   useEffect(() => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) { setStep(ROWS.length); return; }
@@ -27,7 +29,7 @@ export function HandoffHero() {
   return (
     <div className="hero-card dark" aria-label="Illustration: Claude commits, Gemini continues, a poisoned README is stopped, a write outside scope is blocked by ENS">
       <div className="hc-top">
-        <span className="dot ok pulse" /><span className="mono">otter.supabrain.eth</span><span className="dim mono">· live brain</span>
+        <span className="dot ok pulse" /><span className="mono">{ens ?? "<brain>.<team>.eth"}</span><span className="dim mono">{ens ? "· live brain" : "· a brain"}</span>
         <span className="spacer" /><span className="mono dim tiny">illustration</span>
       </div>
       <svg viewBox="0 0 470 440" className="hc-svg" role="img">

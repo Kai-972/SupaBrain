@@ -38,10 +38,10 @@ async function start() {
 }
 
 describe("v2 tools over MCP (production surface)", () => {
-  it("the AIs see continue, checkpoint, checkout (and pay); the v1 tools are hidden; the continue prompt exists", async () => {
+  it("the AIs see continue, checkpoint, checkout; pay is hidden while payments are disabled; the v1 tools are hidden; the continue prompt exists", async () => {
     const { connect } = await start();
     const c = await connect("lead-claude", "claude-code");
-    expect((await c.listTools()).tools.map((t) => t.name).sort()).toEqual(["checkout", "checkpoint", "continue", "pay", "pay_status"]);
+    expect((await c.listTools()).tools.map((t) => t.name).sort()).toEqual(["checkout", "checkpoint", "continue"]);
     expect((await c.listPrompts()).prompts.map((p) => p.name)).toContain("continue");
     expect((c.getInstructions() ?? "")).toMatch(/says continue/);
     await c.close();

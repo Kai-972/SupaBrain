@@ -167,8 +167,9 @@ export function buildMcpServer(deps: McpDeps): McpServer {
 
   if (deps.legacyTools ?? true) registerLegacyTools(server, deps, agentFrom);
 
-  // S5: Lane B's tools. The agent comes ONLY from the authenticated token.
-  registerPaymentTools(server, { payments: deps.payments, agentOf });
+  // S5: Lane B's tools. The agent comes ONLY from the authenticated token. Hidden while payments are disabled
+  // (brain mode), so an AI is never offered a tool that can only fail.
+  if ((deps.payments as { enabled?: boolean }).enabled !== false) registerPaymentTools(server, { payments: deps.payments, agentOf });
 
   return server;
 }

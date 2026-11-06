@@ -123,7 +123,7 @@ function MoreMenu({ id, href, path }: { id: string; href: (p: string) => string;
     [id ? `/b/${id}/files` : "/brains", "Files", "Project files and who wrote them"],
     [id ? `/b/${id}/tasks` : "/brains", "Tasks", "Open and done"],
     [id ? `/b/${id}/review` : "/brains", `Review${review ? ` · ${review}` : ""}`, "Stopped items for the owner"],
-    ["/brains", "Registry", "The 10 brains on ENS"],
+    ["/brains", "Registry", "Every brain on ENS"],
     ["/verify", "Verify", "Check everything without us"],
     ["/connect", "Connect", "Add Supabrain to your AI app"],
   ];

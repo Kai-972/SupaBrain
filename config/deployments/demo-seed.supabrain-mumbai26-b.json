@@ -1,0 +1,21 @@
+{
+  "namespace": "supabrain-mumbai26-b",
+  "team": "team1",
+  "server": "http://localhost:3001",
+  "seededAt": "2026-11-06T07:47:28.317Z",
+  "vendorEns": "acme.supabrain.eth",
+  "source": "email:acme-0611",
+  "attackerAddress": "0xf8925A551cB1e295104F5BA45eaD180A734aFf6c",
+  "attackerPartnerAddress": "0x2BaC2f3DE1C2cF33C0C25B9e01f1993231474fb0",
+  "keys": {
+    "H1": "0x9d526192bf2154464a5001452ab01bdd7d78563bfad322d373ba1fa1fac75290",
+    "H2": "0x2754f555e3edf1842e89b07644b30ae97fedece02ca827dd377d88076d0c985b",
+    "E1": "0xf2ca75d71baf3d7204120a153470aad25cf5bb6b9eae93be51ca63a9b41ab02d",
+    "M1": "0x98f743734c14e6a3566cd71fc6942faf148f3198ec80af3504d1f94ac1a618be",
+    "M2": "0xddf5e2fe13c74b36cf207ccdfa7919800916c439ce9cd9525a661f2c26fe6570",
+    "M3": "0x32975c97bcf381e475db1c490fb4bd669b9275969084baf03eae911ef691d5c9",
+    "M4": "0x79115e651dbf525a044112f80d6f15a89ee3109557bf3c0d600af6553c95bffc",
+    "E2": "0xac71b3ef7a897160bd4bf1173e860f116e68217ca7ab0136114ec192ffaf0d0c",
+    "M5": "0xf35588ecbee800877855db3a6551c927ed12750f9cded2ecf0eef524306cb55c"
+  }
+}

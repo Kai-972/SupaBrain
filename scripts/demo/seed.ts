@@ -1,9 +1,9 @@
 // pnpm demo:seed [--base <url>]   Seed the "bank details changed" story (docs/lanes/C-UI.md §5) into the RUNNING server's
 // namespace through REAL MCP calls as each agent and the owner's dashboard API, so the lineage on Arkiv is real.
 // Content comes from config/demo-scenario.json; attacker addresses are fresh burners. Writes
-// config/deployments/demo-seed.json (memory keys by fixture name + attacker addresses) for Lane B's demo:step fallbacks.
+// config/deployments/demo-seed.<namespace>.json (memory keys by fixture name + attacker addresses) for Lane B's demo:step fallbacks.
 // Run within 2 days of judging (memories fade), against a fresh namespace (SUPABRAIN_APP_NAMESPACE on the server).
-import { writeFileSync } from "node:fs";
+import { writeSeed } from "./seed-file";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -79,7 +79,7 @@ async function main() {
   for (const c of Object.values(agents)) await c.close();
 
   const out = { namespace: health.app, team: health.team, server: base, seededAt: new Date().toISOString(), vendorEns, source: s.email.sourceId, attackerAddress: attacker, attackerPartnerAddress: partner, keys };
-  writeFileSync(join(findRootDir(), "config", "deployments", "demo-seed.json"), JSON.stringify(out, null, 2) + "\n");
-  console.log("wrote config/deployments/demo-seed.json (for pnpm demo:step blocked|approve)");
+  const seedFile = writeSeed(findRootDir(), { ...out, namespace: health.app });
+  console.log(`wrote ${seedFile.slice(findRootDir().length + 1)} (for pnpm demo:step blocked|approve)`);
 }
 main().catch((e) => { console.error(e instanceof Error ? e.message : e); process.exit(1); });

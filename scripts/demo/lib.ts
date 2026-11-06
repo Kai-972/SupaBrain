@@ -1,27 +1,17 @@
 // Shared setup for the demo fallbacks (scripts/demo/step-*.ts, Lane B). They connect to the RUNNING server's MCP
 // endpoint as a real agent (token signed with TOKEN_SIGNING_SECRET), so every step goes through the same createPayments
 // path a live model uses. Nothing is simulated: on-chain steps are real Sepolia transactions.
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { issueAgentToken } from "@supabrain/server/tokens";
 import { findRootDir, loadConfig, readEnv, requireEnv } from "@supabrain/shared/config";
 import { connectAsAgent } from "../../packages/payments/src/demo/steps";
+import { readSeedFor } from "./seed-file";
 
 export const opt = (name: string) => {
   const i = process.argv.indexOf(`--${name}`);
   return i >= 0 ? process.argv[i + 1] : undefined;
 };
 
-/** Written by Lane A's seed (scripts/demo/seed.ts): the attacker addresses and memory keys of the seeded story. */
-export interface DemoSeed {
-  attackerAddress?: string;
-  attackerPartnerAddress?: string;
-  keys?: Record<string, string>;
-}
-export function readSeed(): DemoSeed {
-  const f = join(findRootDir(), "config", "deployments", "demo-seed.json");
-  return existsSync(f) ? (JSON.parse(readFileSync(f, "utf8")) as DemoSeed) : {};
-}
+export type { DemoSeed } from "./seed-file";
 
 export async function demoContext() {
   const config = loadConfig();
@@ -31,8 +21,11 @@ export async function demoContext() {
   const base = (opt("server") ?? env.PUBLIC_BASE_URL ?? `http://localhost:${config.app.server.port}`).replace(/\/+$/, ""); // hardcode-ok: local fallback when PUBLIC_BASE_URL is unset
   const token = issueAgentToken({ label: agent, ttlSec: 900, secret: requireEnv("TOKEN_SIGNING_SECRET") });
   console.log(`demo step as ${agent} → ${base}/mcp (same pay tool and createPayments path as a live model)\n`);
+  const health = (await (await fetch(`${base}/healthz`)).json()) as { app: string };
+  const seed = readSeedFor(findRootDir(), health.app); // this server's namespace only (QA D2)
+  console.log(`namespace ${health.app} · seed ${seed.attackerAddress ? "found" : "not found (pass --payee/--cites)"}`);
   const client = await connectAsAgent({ url: `${base}/mcp`, token });
   const who = await client.callTool({ name: "whoami", arguments: {} });
   console.log(((who.content as { text?: string }[]) ?? []).map((x) => x.text).join(" "), "\n");
-  return { config, client, seed: readSeed(), agent };
+  return { config, client, seed, agent };
 }

@@ -1,54 +1,88 @@
 # World ID debrief (Supabrain · ETHGlobal Mumbai 2026)
 
-Lane B keeps this file up to date as things happen. It is the debrief World asks for.
+This is the debrief World asks for, kept by Lane B as things happened.
+
+## Summary
+- **What World does for us:** our AI agents can spend a team budget, and the payment policy decides when a real human must approve. World makes that approval a unique human proving it in World App **for one exact payment**, checked on our backend and by World's verify API before any money moves.
+- **Product used:** World ID 4 through IDKit core (`@worldcoin/idkit-core@4.6.0`), following World's Human-in-the-loop pattern for agents. We also built the OIDC device flow at auth.world.org, but couldn't register a client for it (below).
+- **Live results** (production World App, 2026-11-06): **approve ×3** (111 s, 85 s, 99 s, `proof_of_human`, verified by World), **deny** (`verification_rejected`, 46 s), **cancel** (45 s). Nothing moved on any non-approval.
+- **Time to first success:** about 2 h from first reading the docs, including about 1 h 30 on the OIDC route we couldn't use. From registering the relying party to the first verified approval: **about 25 min**, of which about 5 min was finding that Selfie Check (preview) breaks the request.
 
 ## What we protect with World
-Agents can spend money. The payment policy decides when a human must approve. The agent cannot skip it or trigger it itself. A human is needed for:
-1. paying a payee that came from outside content (an email, a web page) and isn't verified by the team's ENS (**denied** live: the attacker's "partner" address);
-2. paying over the agent's ENS-set cap (**approved** live: Acme's real 5 USDC invoice → paid on chain).
+The policy (`packages/payments/src/policy.ts`) asks for a human when:
+1. the payee came from **outside content** (an email or web page, via memory) and isn't verified by the team's ENS: the attacker's "partner" address in our demo, which the human **denies**;
+2. the payee is **new**, or the amount is **over the agent's ENS-set cap or daily limit**: Acme's real 5 USDC invoice against lead-claude's 4 USDC cap, which the human **approves**.
 
-## How we integrate
-**Primary: World ID 4 through IDKit core, following World's Human-in-the-loop pattern** (`packages/payments/src/world/humanApproval.ts`, wiring in `idkitAdapter.ts`, `@worldcoin/idkit-core@4.6.0`).
-- **Action = the payment.** Every intent gets its own action, `supabrain-pay:<intentHash>`. The server signs `rp_context` for that action with the RP signing key (`signRequest`), so World App only accepts a proof for this exact payment. The signal is the intent hash too.
-- **Server-side from Node:** `IDKit.request(...).constraints(...)` gives a `connectorURI`, which the dashboard shows as a QR on the owner-only approval card. The server polls the bridge with `pollOnce()`. No browser widget is needed.
-- **Backend validation, fail closed.** Before calling World, we check:
-  - `protocol_version`;
-  - `action` equals this intent's action;
-  - `nonce` equals the one we signed;
-  - `environment` equals the pinned one (staging and sandbox accept test proofs);
-  - every response's `signal_hash == hashSignal(intentHash)`;
-  - the credential is in the allowed list.
+The agent can't skip the check or trigger it itself. An ENS mismatch or a revoked source is a hard block that no approval can override.
 
-  Then `POST /api/v4/verify/{rp_id}` with the result forwarded as-is, and we require `success: true` with the same environment and action. Last, the `(action, nullifier)` pair is consumed once. Only after all of that does the policy signer sign the EIP-712 attestation with `humanApproved=true`, which BrainVault checks on chain.
-- **Config:** `config/world.json` → `idkit` block (environment, verify base URL, RP signature TTL, credentials, action prefix). `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_SIGNING_KEY` come from env.
+Status of the protected action: approve → **paid** runs end to end against the real compiled BrainVault on anvil (`packages/payments/src/vault/vault.anvil.test.ts`; the `Paid` event carries `humanApproved=true`). The live Sepolia run happens once the server mounts payments (Lane A, S5). The vault is already on Sepolia and has made a real payment.
 
-**Fallback: OIDC device flow at auth.world.org** (`deviceFlow.ts`, `discovery.ts`, `idToken.ts`, `world:oidc-spike`). It's built and tested (discovery-only endpoints, `client_secret_basic`, `id_token` checked with jose: signature, iss, aud, exp, `auth_time` freshness, one-time `jti`). We couldn't use it because its portal needs an enterprise Google Workspace account.
+## How we integrate (flow)
+1. The policy returns `pending_human` and the engine snapshots the payee, amount and lineage roots (`engine.ts:203–215`).
+2. **Action = the payment:** `supabrain-pay:<intentHash>`, where `intentHash = keccak256(agent, payee, amount, rootsHash, intentId, intentExpiry)` (`vault/attestation.ts:51`, `world/humanApproval.ts:106`).
+3. The server signs `rp_context` for that action with our RP signing key (`signRequest`, `idkitAdapter.ts:10`). The signal is the intent hash too.
+4. `IDKit.request(...).constraints(...)` runs **from Node** and returns a `connectorURI`. The dashboard shows it as a QR on the owner-only approval card, and the MCP `pay` call returns `pending_human` at once (`idkitAdapter.ts:16`).
+5. The server polls the bridge (`waitForHumanApproval`, `humanApproval.ts:247`), sleeping the interval before each poll and keeping going through retryable bridge errors.
+6. On a confirmed result: backend validation (below), then **every hard policy check again, live** (`engine.ts:172–190`), then a fresh EIP-712 attestation with `humanApproved=true`, then `BrainVault.pay`.
+
+## How we validate on the backend (fail closed)
+`verifyApprovalResult` (`packages/payments/src/world/humanApproval.ts:165–235`). Any failure is `failed`, never an approval:
+- the request window hasn't passed (RP signature expiry);
+- `protocol_version` is 4.0 (3.0 only if legacy is enabled in config);
+- `action` equals this intent's action;
+- `nonce` equals the nonce **we** signed;
+- `environment` equals the pinned one (production; staging and sandbox accept test proofs);
+- every response's `signal_hash == hashSignal(intentHash)`, and the credential is in the allowed list;
+- `POST {verifyBaseUrl}/api/v4/verify/{rp_id}` with the result as-is, requiring `success: true` and the same environment and action;
+- the `(action, nullifier)` pair is consumed **once** (replay store).
+
+Tests: 46 in `humanApproval.test.ts`. Deliberately disabling the action, signal or replay check makes tests fail each time.
+
+## Where the denied, expired and cancelled paths are
+| Path | Trigger | Code | Proof |
+|---|---|---|---|
+| **Denied** | Human rejects in World App (`user_rejected` / `verification_rejected`) | `humanApproval.ts:282` → `engine.ts:160–166` | Live 2026-11-06 08:00 (`verification_rejected`) · tests |
+| **Expired** | Bridge `timeout`, the RP signature window passing, or an approval arriving after the intent's expiry | `humanApproval.ts:283`, `:259` · `engine.ts:168` | Unit tests (`waitForHumanApproval`, engine "approval after expiry") |
+| **Cancelled** | Owner cancels on the dashboard, a revoke cancels intents in its blast radius, or app-side abort | `engine.ts` `cancel` / `onRevoke`; `humanApproval.ts:258` | Live (`--cancel-after`) · tests |
+| **Failed** | Any other World error, a failed verify, a replayed proof | `humanApproval.ts:285`, `:165–235` | Tests |
+
+In every one of these the decision is recorded (Arkiv + dashboard event) and **no attestation is signed, so nothing can move.** Video: _timestamp to add_ (booth/video version shows approve and deny).
 
 ## Timeline
 | When (IST) | What |
 |---|---|
-| 2026-11-06 | Read docs; live discovery against `auth.world.org` ✓ (device grant, `client_secret_basic`, RS256). Sandbox issuer discovery ✓ |
-| 2026-11-06 | OIDC portal → `account_not_eligible` (enterprise Google Workspace only). Switched to IDKit 4; confirmed `IDKit.request` + `pollOnce` run from plain Node against the bridge |
-| 2026-11-06 07:52 | First live attempt with `proof_of_human` **or** `selfie` → World App `feature_unavailable` |
-| 2026-11-06 07:54 | **First approval**, Orb only + legacy allowed: verified by World, bound to the intent. Time to first success ≈ 25 min from RP registration, ~2 h from first reading the docs (including the OIDC dead end) |
-| 2026-11-06 08:00 | Deny live (`verification_rejected`) · app-side cancel live |
+| 2026-11-06 ~06:00 | Read auth.world.org docs; built and tested the OIDC device-flow client (37 tests); live discovery ✓ (device grant, `client_secret_basic`, RS256; sandbox too) |
+| 2026-11-06 ~07:00 | First credentials were a Developer Portal app id + API key → `invalid_client`. The OIDC portal → `account_not_eligible` (enterprise Google Workspace only) |
+| 2026-11-06 ~07:20 | Switched to IDKit 4; confirmed `IDKit.request` + `pollOnce` from plain Node; built and tested the approval module (46 tests) |
+| 2026-11-06 07:52 | Registered the relying party. First live run with `proof_of_human` **or** `selfie` → `feature_unavailable` |
+| 2026-11-06 07:54 | **First verified approval** (Orb only, legacy allowed) |
+| 2026-11-06 08:00 | Deny live (`verification_rejected`); app-side cancel live |
 
 ## Friction (as it happened)
-- **The name "Agent Pass" doesn't appear in the public docs** (auth.world.org/docs). The closest is the "Human checkpoints" (step-up) guide. We asked the booth which product the prize means.
-- **Two different "verified human" products, and only one was open to us.** The OIDC portal at auth.world.org returns `{"error":"account_not_eligible"}` unless you sign in with an enterprise Google Workspace account. Hackathon teams on personal Gmail can't register a client at all. We moved to IDKit 4 (Developer Portal), which works with any account.
-- **(OIDC only) No native action binding.** The device profile marks `binding_message` and action terms as unsupported: they aren't shown on the approval page or signed into the ID token. The human sees only the requester and the user code. Our workaround:
-  - the server binds `device_code → hash(intent)`;
-  - only after validation does it sign the EIP-712 attestation, with `humanApproved=true` and the same `intentId`;
-  - the vault checks that attestation on chain.
-- **No mock proofs or simulator are documented.** Testing needs the sandbox issuer, a sandbox World App (TestFlight) and a test credential that takes about an hour to issue. We test validation with locally signed fixtures, as the docs recommend.
-- **Two "World ID" credential systems that look alike.** The first credentials we tried were a Developer Portal app ID (`app_…`) and an API key (`api_…`, base64 of `key_…:sk_…`). The device endpoint returned `401 invalid_client` on both production and sandbox, with "check the environment, registered authentication method, and credentials". The OIDC flow needs a separate client registered at `auth.world.org/portal`, whose secret starts with `worldidp_client_secret_` and is shown once. Nothing in either portal points to the other. A hint in the `invalid_client` error ("this looks like an IDKit/API key") would have saved us the round trip.
-- **Asking for `any(proof_of_human, selfie)` fails the whole request** with `feature_unavailable`, rather than falling back to the credential the user has. Selfie Check is a preview feature that has to be enabled per app. We request Orb only.
-- **A 300 s RP signature window is tight for a remote approver.** Our first link expired while it was being sent over chat. Showing the QR on screen right away fixed it. The approval card has to show it instantly.
-- **(OIDC only) Device-only clients still need an exact HTTPS redirect URI** at registration, even though the device grant never uses it.
-- **`nonce` is omitted in device grants,** so freshness relies on `auth_time` + `jti`.
-- **The discovery document under-reports:**
-  - `acr_values_supported` lists only Orb classes, though the docs also describe Selfie classes;
-  - `claims_supported` omits `email`.
+**Finding the right product**
+- **"Agent Pass" isn't in the public docs** (auth.world.org or docs.world.org). The closest are "Human checkpoints" (OIDC step-up) and the agents "Human-in-the-loop" guide. We asked the booth which product the prize means.
+- **Two "World ID" stacks that look alike, with credentials that look alike.** Our first credentials were a Developer Portal app id (`app_…`) and an API key (`api_…`, base64 of `key_…:sk_…`). The OIDC device endpoint answered `401 invalid_client` on production and sandbox. The OIDC flow needs a different client from a different portal (secret `worldidp_client_secret_…`, shown once). Neither portal points to the other. A hint in the `invalid_client` error would have saved the round trip.
+- **The OIDC portal is closed to most hackers:** `{"error":"account_not_eligible"}` unless you sign in with an enterprise Google Workspace account. Teams on personal Gmail can't register a client at all.
+
+**IDKit 4**
+- **`any(proof_of_human, selfie)` fails the whole request** with `feature_unavailable` instead of falling back to the credential the user has. Selfie Check is a preview feature that must be enabled per app. We ask for Orb only.
+- **A 300 s RP-signature window is tight** for a human who isn't at the screen. Our first link expired while it was being sent over chat. The approval card must show the QR instantly.
+- **The relying-party setup isn't obvious from the app page:** "RP ID: Not registered" with a "Register relying party" button. The docs say to keep `rp_id` and `signing_key` but don't say where they appear.
+- **Mock proofs and testing:** the docs point to staging plus the simulator, or a sandbox World App build. We tested validation with fixtures and did the real runs in production.
+- **`signal_hash` semantics in v4** aren't documented (v4 examples show `"0x0"`); we inferred `hashSignal` from the SDK.
+
+**OIDC device flow (built, unused)**
+- No native action binding: `binding_message` and action terms are unsupported in the device profile. We'd have had to bind `device_code → hash(intent)` on our server.
+- Device-only clients still need an exact HTTPS redirect URI at registration.
+- `nonce` is omitted in device grants, so freshness relies on `auth_time` + `jti`.
+- Discovery under-reports: `acr_values_supported` lists only Orb classes; `claims_supported` omits `email`.
+
+## Missing capability
+**A typed, human-readable action.** IDKit 4 binds the proof to our action and signal, so "a human approved *this intent*" is verifiable. But World App shows only our free-text `action_description`, and the human can't check that `supabrain-pay:0x…` is the 5 USDC invoice they think it is. The human trusts our dashboard for amount and payee.
+
+**Approver binding across actions.** Nullifiers are per action, and every payment is its own action, so we can't require "the same human who approved before" without session proofs. Any verified human who sees the QR can approve. We show the QR only on the owner-authenticated dashboard.
 
 ## The single most important improvement
-**Show the bound action to the human in a structured way.** IDKit 4 does bind the proof to our action and signal, so "a human approved *this exact intent*" is verifiable. But World App shows only the free-text `action_description`, and the human can't check that `supabrain-pay:0x…` is the 5 USDC invoice they think it is. A typed "payment" display (amount, payee, chain), signed into the proof, would close the last gap. Second: make the OIDC portal usable without an enterprise Google account, or say so on the landing page.
+**Structured approvals for agent actions:** let the RP pass a typed payload (amount, token, payee, chain), have World App render it, and sign its hash into the proof. That closes "what you see isn't what you sign" for agent payments: the human would see the payment itself, and the proof would commit to exactly that, with no trust in the requesting app's UI.
+
+Second: make the OIDC portal usable with any account, or say on its landing page that it needs Google Workspace.

@@ -8,8 +8,9 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@supabrain/arkiv": "workspace:*",
+    "@supabrain/ens": "workspace:*",
     "@supabrain/shared": "workspace:*",
-    "viem": "^2.57.16",
-    "@supabrain/ens": "workspace:*"
+    "viem": "^2.57.16"
   }
 }

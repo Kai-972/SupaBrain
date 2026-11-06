@@ -25,6 +25,10 @@
     "accessKeys": "https://hub.arkiv.network/access-keys",
     "nativeSymbol": "tGLM",
     "source": "https://docs.arkiv.network/",
-    "verifiedAt": "2026-11-06"
+    "verifiedAt": "2026-11-06",
+    "registry": {
+      "address": "0x4400000000000000000000000000000000000044",
+      "source": "https://www.npmjs.com/package/@arkiv-network/sdk/v/1.0.1"
+    }
   }
 }

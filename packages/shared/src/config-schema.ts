@@ -73,7 +73,9 @@ export const NetworksFileSchema = z.object({
   rabdi: z.object({
     chainId: z.number().int(), name: z.string(), rpc: z.url(), explorer: Explorer,
     ws: z.string().startsWith("wss://"), // hardcode-ok: protocol prefix check, not an endpoint
-    faucet: z.url(), accessKeys: z.url(), nativeSymbol: z.string(), ...Sourced,
+    faucet: z.url(), accessKeys: z.url(), nativeSymbol: z.string(),
+    registry: z.object({ address: HexAddress, source: z.url() }), // the Arkiv operation address every write is sent to
+    ...Sourced,
   }),
 });
 

@@ -1,0 +1,18 @@
+{
+  "name": "@supabrain/arkiv",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@supabrain/shared": "workspace:*",
+    "@arkiv-network/sdk": "1.0.1",
+    "viem": "^2.57.16"
+  }
+}

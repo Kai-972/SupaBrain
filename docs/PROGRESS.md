@@ -55,7 +55,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] contents encrypted on Arkiv; the brain's AIs and owner read them; live check on the explorer
 
 ### Step 6: hosting + simple website (A, C)
-- [ ] server on api.supabrain.blackslate.me · [ ] website on supabrain.blackslate.me · [ ] full demo from the hosted version
+- [x] server on Render free (Singapore): https://supabrain-otter.onrender.com (brain otter) · [x] website on Vercel: https://supabrain-eth.vercel.app (API proxied on the same domain, so the owner cookie is first-party) · [ ] full demo from the hosted version (blackslate.me subdomains dropped: no DNS access with Kai offline)
 
 ### Step 7: ship
 - [ ] README · [ ] SPONSORS · [ ] arkiv/* · [ ] DEMO_SCRIPT · [ ] SECURITY · [ ] video · [ ] rehearsals · [ ] submitted
@@ -178,6 +178,13 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Log: Lane A (Brain)
+
+### 2026-11-07 02:25 IST · A (Srijit's Claude) · v2 Step 6 hosting
+- did: Render web service `supabrain-otter` (free, Singapore, created through the Render API from the public repo; 12 env values, no owner key; fresh TOKEN_SIGNING_SECRET for the host) and Vercel project `supabrain-eth` (root apps/web). The website proxies `/api/*` and `/healthz` to Render (`SUPABRAIN_API_ORIGIN`, `NEXT_PUBLIC_SERVER_URL="/"`), so the SameSite=Lax owner cookie works. `.vercelignore` keeps `.env*` and `.data/` out of CLI uploads. `.github/workflows/keep-warm.yml` pings both every 10 min (Render's free tier sleeps after 15 idle minutes)
+- proof: https://supabrain-otter.onrender.com/healthz → brain otter, mode brain · https://supabrain-eth.vercel.app/b/otter renders live Arkiv data on a 375px phone viewport · SSE pings arrive through the proxy · owner login through the proxy → `Secure` first-party cookie, `/api/admin/me` → admin · `/mcp` without a token → 401 (reachable). A clean clone booted with only those env values (rebuilt otter from Arkiv in 1.9 s, ~51 MB RSS)
+- result: PASS
+- next: full demo from the hosted version; MCP clients use `https://supabrain-otter.onrender.com/mcp` (pair from /connect)
+- asks/blockers: Render's disk is ephemeral, so the blocked log (.data/) restarts empty after a redeploy; commits and stops live on Arkiv and rebuild
 
 ### 2026-11-06 19:25 IST · A · v2 step 1 (tools + live run)
 - did: `continue` / `checkpoint` / `checkout` over MCP (v1 tools hidden in production, `continue` prompt, v2 server instructions); one Arkiv write per checkpoint (tasks, notes, file versions, checkpoint last, keys predicted); website API for the demo brain (`/api/brains`, summary, checkpoints, tasks + add, files + content/versions, notes; file contents never in lists or SSE); `/healthz` CORS (C's request); live harness `pnpm e2e:continue`

@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from "react";
 import type { BlockedEntry, CheckpointView, FileView, HeadView, StreamEvent, TaskView, Vendor } from "@supabrain/shared";
 import {
-  api, ApiError, SERVER_URL,
+  api, ApiError, HAS_SERVER,
   type BrainView, type GraphNode, type HeadRow, type Health, type LabResponse, type Registry, type ReviewItem, type RulesResponse,
 } from "./api";
 import { blockLabel, short } from "./format";
@@ -232,7 +232,7 @@ export async function boot(mock: boolean) {
   if (booted) return;
   booted = true;
   if (mock) { const { startMock } = await import("./mock"); return startMock(); }
-  if (!SERVER_URL) { setState({ conn: "noserver", loaded: true, error: "NEXT_PUBLIC_SERVER_URL is not set, so there is no server to read from." }); return; }
+  if (!HAS_SERVER) { setState({ conn: "noserver", loaded: true, error: "NEXT_PUBLIC_SERVER_URL is not set, so there is no server to read from." }); return; }
   try {
     const health = await api.health();
     setState({ health });

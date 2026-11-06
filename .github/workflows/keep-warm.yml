@@ -1,0 +1,15 @@
+# Render's free tier sleeps after 15 idle minutes; a cold start takes about a minute. Ping the hosted
+# server and website every 10 minutes so judges never wait. Read-only GETs, no secrets.
+name: keep-warm
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: |
+          curl -fsS -m 90 https://supabrain-otter.onrender.com/healthz
+          curl -fsS -m 30 -o /dev/null https://supabrain-eth.vercel.app/

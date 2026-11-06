@@ -25,3 +25,4 @@ contracts/broadcast/*/31337/
 
 # server runtime state (refusal log)
 .data/
+.vercel

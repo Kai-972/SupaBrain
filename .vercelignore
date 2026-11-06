@@ -1,0 +1,14 @@
+# Vercel CLI uploads (it does NOT read .gitignore when this file exists). Never upload secrets or runtime state.
+.env*
+!.env.example
+.secrets/
+.data/
+.claude/
+**/node_modules/
+**/.next/
+*.log
+*.tsbuildinfo
+contracts/out/
+contracts/cache/
+contracts/lib/
+docs/llms_full.txt

@@ -3,7 +3,10 @@ import type {
   AgentView, BlockedEntry, CheckpointView, Client, Edge, FileView, HeadView, MemoryNode, TaskView,
 } from "@supabrain/shared";
 
-export const SERVER_URL = (process.env.NEXT_PUBLIC_SERVER_URL ?? "").replace(/\/+$/, "");
+const RAW_SERVER = process.env.NEXT_PUBLIC_SERVER_URL ?? "";
+/** "/" means same origin: next.config.ts proxies /api and /healthz to SUPABRAIN_API_ORIGIN, so the owner cookie is first-party. */
+export const SERVER_URL = RAW_SERVER === "/" ? "" : RAW_SERVER.replace(/\/+$/, "");
+export const HAS_SERVER = RAW_SERVER !== "";
 
 export interface Health { ok: boolean; app: string; team: string; mode: "brain" | "team"; ens: string; payments: "enabled" | "disabled" }
 
@@ -46,7 +49,7 @@ export class ApiError extends Error {
 }
 
 async function call<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {
-  if (!SERVER_URL) throw new ApiError(0, "NO_SERVER", "NEXT_PUBLIC_SERVER_URL is not set");
+  if (!HAS_SERVER) throw new ApiError(0, "NO_SERVER", "NEXT_PUBLIC_SERVER_URL is not set");
   const { json, ...rest } = init ?? {};
   let res: Response;
   try {

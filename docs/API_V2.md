@@ -60,8 +60,9 @@ POST /api/brains/:id/review/:key/release     → not built yet (show disabled)
 GET  /api/brains/:id/heads                   → [{ agent, ens, serverHead, ensHead, match, txUrl? }]   sb.memory.head on ENS = newest Arkiv commit (SSE `head`)
 GET  /api/registry                           → the pre-made brains on ENS (config/deployments/brains.sepolia.json), public
 GET  /healthz                                → { …, mode: "brain" | "team", ens }
+POST /api/brains/:id/lab/act { agent, action: continue|checkpoint|checkout, input }  (owner) → { outcome: ok|stopped|refused, result | code, rule, message }
 ```
-Full shapes and screens: `docs/FRONTEND_V2.md`.
+The lab runs the same tool an AI calls over MCP, as that AI (real ENS rules, guard, Arkiv). Full shapes and screens: `docs/FRONTEND_V2.md`.
 
 ## Statuses to show (text, never color alone)
 Checkpoint: SAVED · SAVING (pending) · STOPPED (quarantined, with `why`) · EXPIRED. Task: OPEN · DONE (by whom, when) · STOPPED. Brain: ACTIVE · STOPPED · EXPIRES IN … . AI: CONNECTED (app name) · ACTIVE · PAUSED · AUTHORITY UNKNOWN (ENS unreadable).

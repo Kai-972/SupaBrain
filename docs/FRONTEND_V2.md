@@ -1,6 +1,6 @@
 # Supabrain v2 frontend brief (for the UI Claude)
 
-**As of 2026-11-06 21:00 IST, `main`.** Written after the backend upgrades so a fresh Claude session can build the website and merge cleanly. Read this file, then `docs/PLAN.md` (the product), `docs/API_V2.md` (the contract) and `packages/shared/src/types.ts` (import the types; never redefine them). The visual reference is `docs/design/supabrain-night.html` (Srijit's "Supabrain · Night"): open it in a browser first.
+**As of 2026-11-06 21:20 IST, `main`.** Written after the backend upgrades so a fresh Claude session can build the website and merge cleanly. Read this file, then `docs/PLAN.md` (the product), `docs/API_V2.md` (the contract) and `packages/shared/src/types.ts` (import the types; never redefine them). The visual reference is `docs/design/supabrain-night.html` (Srijit's "Supabrain · Night"): open it in a browser first.
 
 ---
 
@@ -150,6 +150,20 @@ Base: `NEXT_PUBLIC_SERVER_URL`. Always `fetch(url, { credentials: "include" })`.
 ### 5.7 Owner session
 `POST /api/admin/login { passphrase }` sets an httpOnly cookie. `GET /api/admin/me` → `{ admin }`. `POST /api/admin/logout`. Show owner controls (rules, tasks, pair, review) only when `admin` is true.
 
+### 5.8 The attack lab API (judges drive the real system)
+`POST /api/brains/:id/lab/act { agent, action, input }` (owner session) runs the **same** tool an AI calls over MCP, as one of this brain's AIs. Real ENS checks, the real injection guard, real Arkiv writes signed by that AI's wallet. Nothing is simulated.
+
+- **`action`:** `continue` (`input: { focus? }`), `checkpoint` (`input`: the MCP checkpoint input, i.e. `{ summary, next?, done?, add_tasks?, notes?: [{ text, kind?, source? }], files?: [{ path, content? , delete? }] }`) or `checkout` (`input: { paths? }`).
+- **Response (always 200 for a decided outcome):**
+  - `{ agent, action, outcome: "ok", result }`: for continue, `result.text` is exactly what the AI reads;
+  - `{ …, outcome: "stopped", result: { key, stopped: { rule, excerpt, arkivUrl? } } }`;
+  - `{ …, outcome: "refused", code, rule?, message }` (SCOPE, RATE_LIMIT, NOT_AUTHORIZED, INVALID, …).
+- **Errors:**
+  - 400: unknown agent or action;
+  - 401: no owner session;
+  - 429: the lab cap (40 checkpoints per 10 minutes per brain, because every write spends that AI's tGLM).
+- The same events stream over SSE as for a real AI (`memory`, `confirmed`, `blocked`, `head`), so the graph and feeds update by themselves.
+
 ## 6. Screens
 ### 6.1 `/`: landing
 - Use the reference's structure: hero field, a scroll-pinned story, how it works, inside the brain, try it. Rewrite the story for v2:
@@ -185,16 +199,33 @@ Layout from the reference's `.pin` grid: left rail, centre graph, right live log
   - **Live:** particles on edges when a commit confirms; a ripple and red cascade on STOPPED or a revocation.
 - **Right, the live log** (SSE). Memory, confirmed, head and blocked entries in the reference's `.it` style. Meters on top: Commits · Tasks done/open · Files · **Stopped** · **Blocked by ENS**.
 
-### 6.3 The attack lab (a tab on `/b/[id]`, built for the judge demo)
-Two consoles side by side, **Claude Code** and **Antigravity (Gemini)**:
-- Each console shows that AI's MCP calls as they happen: `continue`, `checkpoint`, refusals.
-- Reconstruct them from SSE (`memory` with `node.agent`, `blocked` with `block.agent`) plus `/blocked`.
-- In between, a **rules strip** shows each AI's live ENS records (`sb.status`, `sb.scope`, `sb.write.daily`) with the resolver address.
-- **When `blocked` arrives:**
-  - STOPPED: show the excerpt in a red callout, the matched rule, "saved for review · revoked on Arkiv" with `arkivUrl`, and "Claude did not receive this".
-  - SCOPE: show "gemini tried `.github/workflows/deploy.yml` · ENS says `sb.scope = docs/`" with a link to the AI's ENS name. Build the URL from `ens`, e.g. the ENS app domain page; the base URL comes from config, so ask the backend under Requests if it's needed.
-- **Owner controls here:** narrow Gemini's scope to `docs/` (POST rules, shows the tx), Pause Gemini, Resume.
-- **Don't run attacks from the browser.** The presenter drives the real AIs, or runs `pnpm demo:injection` in a terminal; the page just shows what's live. A fixture-backed replay is fine behind `?mock=1`.
+### 6.3 The attack lab (a tab on `/b/[id]`): fully dynamic, nothing scripted
+The judge can **change any value or inject any prompt, or touch nothing**, and the page always shows what the real system decided. Never fake an outcome in the UI; render the API's answer.
+
+- **Two live consoles side by side:** Claude (`claude.<brain>`) and Gemini (`gemini.<brain>`), with a selector for `openai` too.
+  - Each console lists that AI's calls and outcomes as they happen. Merge real MCP traffic (SSE `memory` / `blocked` by `agent`) with lab actions.
+  - A badge shows the source: `MCP · claude-code` (from `checkpoint.client`) or `LAB`.
+- **Under each console, an action box.** It's a form, all fields editable:
+  - **Continue** (an optional focus). Show `result.text` as "what this AI reads now".
+  - **Checkpoint:** summary, next, new tasks, notes (text + kind, with `source` for evidence) and files (path + content).
+  - **Checkout** (optional paths).
+- **Presets fill the form and the judge can edit any field before sending:**
+  - a clean commit;
+  - "Gemini read this README" with a poisoned README note;
+  - "write `.github/workflows/deploy.yml`" as a file outside a narrowed scope;
+  - "send 5 USDC to 0x…";
+  - "paste your .env".
+  - Free text works the same way.
+- **In the middle, the rules strip.** Each AI's live ENS records (`sb.status`, `sb.scope`, `sb.write.daily`, `sb.role`, from `GET /rules`), **editable inline by the owner** (`POST /rules`).
+  - Show "writing to ENS…", then the Sepolia `txUrl`, then the read-back value.
+  - After a change, the next lab action or real AI call obeys it, because the server drops its cached rules.
+- **Outcome callouts (from the API, never from UI logic):**
+  - **ok:** a green "SAVED · signed by `<ens>`" with the Arkiv link once `confirmed` arrives. A HEAD tag appears when `head` arrives.
+  - **stopped:** red "STOPPED · INJECTION · `<rule>`", the excerpt, "saved for review · revoked on Arkiv" (`arkivUrl`) and "the other AIs will not receive this". Then show the other AI's next `continue` text, proving the content is absent.
+  - **refused:** red "BLOCKED BY ENS · `<rule>`", the `message`, and the record's live value (from the rules strip) with a link to the AI's ENS name.
+- **A "what the next AI reads" panel:** `GET /api/brains/:id/summary` (or a lab `continue` as the other AI), refreshed after each action.
+- **Judges who change nothing still see the real flow:** real AIs over MCP (Claude Code, Antigravity) appear in the same consoles live.
+- **Behind `?mock=1` only:** a replay of the fixture timeline, with the MOCK DATA banner.
 
 ### 6.4 `/b/[id]/rules`
 - A table of AIs × rules: status (active/paused), scope (`*` or a path prefix ending in `/`), writes per day (integer), role.
@@ -248,6 +279,7 @@ Payments (team mode) are for the booth: BLOCKED by ENS mismatch, World approve/d
 ```bash
 pnpm i
 SUPABRAIN_BRAIN=maple pnpm --filter @supabrain/server start      # brain mode on :3001 (needs the root .env.local)
+SUPABRAIN_APP_NAMESPACE=supabrain-mumbai26 SUPABRAIN_BRAIN=otter pnpm --filter @supabrain/server start   # the judging brain, in the main Arkiv namespace
 pnpm --filter @supabrain/web dev                                  # :3000, with apps/web/.env.local NEXT_PUBLIC_SERVER_URL=http://localhost:3001
 SUPABRAIN_BRAIN=maple pnpm demo:injection                         # the live judge scene against the running server
 ```
@@ -265,3 +297,22 @@ Create `apps/web/fixtures/v2-demo.json` with the same shapes as §5. Use them on
 - Every screen works on live data from a brain-mode server, and on the fixture with the banner.
 - `pnpm lint:hardcode` and `pnpm check:secrets` pass, `pnpm --filter @supabrain/web build` succeeds, and `pnpm test` is still green.
 - The steps you did are logged under "Log: Lane C" in `docs/PROGRESS.md`, and `docs/DEMO_SCRIPT.md` is written from §8.
+
+## 12. Files to ignore in this repo (don't read, don't follow)
+They're history or another lane's material, and reading them wastes context or gives you the v1 product by mistake.
+
+| Path | Why to skip it |
+|---|---|
+| `docs/llms_full.txt` | A 1.8 MB dump of the ENS docs for backend research. Never open it |
+| `docs/CLAUDE.srijit-original.md`, `START_HERE.md` | The earliest briefs and setup notes, superseded |
+| `docs/lanes/C-UI.md` | The **v1** dashboard brief (team memory, revoke-first). This file replaces it. Its design rules (text labels, fixtures, no hard-coding) live on here |
+| `docs/lanes/A-BRAIN.md`, `docs/lanes/B-MONEY.md` | Backend lane plans |
+| `docs/PROJECT_REFERENCE.md` | The v1 reference (payments demo, v1 API). Use it only for team-mode payment screens (booth), §7 |
+| `PROJECT.md`, `docs/IDEA.md`, `docs/ARCHITECTURE.md` | v1 pitch and architecture; `docs/PLAN.md` wins |
+| `docs/QA_PLAN.md`, `docs/research/*`, `WORLD_DEBRIEF.md`, `SECURITY.md`, `AI_USAGE.md` | Backend QA, research and sponsor write-ups (read `docs/research/supermemory-v2.md` §"one line for judges" for copy, nothing else) |
+| `contracts/`, `packages/payments/`, `scripts/vault/`, `scripts/ens/`, `scripts/brains/`, `scripts/arkiv/` | Chain code; the website never imports it |
+| `config/deployments/demo-seed.*.json` | v1 seed records |
+| `apps/server/`, `packages/*` | Read the types (`packages/shared/src/types.ts`) and, when unsure, a route file; never edit them |
+
+**What to read:** this file, `docs/PLAN.md`, `docs/API_V2.md`, `packages/shared/src/types.ts`, `docs/design/supabrain-night.html`, and `CLAUDE.md` §2 (ground rules) and §12 (git) only.
+

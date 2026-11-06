@@ -40,3 +40,8 @@ export { idkitDeps, idkitSigner, idkitBridge } from "./world/idkitAdapter";
 
 // Payment policy (B-MONEY.md §3)
 export { decidePayment, type PolicyContext, type PolicyDecision, type PolicyRequest } from "./policy";
+
+// BrainVault: EIP-712 attestation + typed client
+export { attestationDigest, intentHash, newIntentId, rootHash, rootsHash, signAttestation, PAYMENT_TYPES, type VaultDomain, type VaultPayment } from "./vault/attestation";
+export { createVaultClient, VaultRevert, type VaultClient, type VaultTx } from "./vault/client";
+export { brainVaultAbi } from "./vault/abi";

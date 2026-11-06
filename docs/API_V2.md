@@ -45,17 +45,23 @@ GET  /api/brains/:id/stream?since=<seq>      (SSE) → StreamEvent   memory · c
 ```
 Until step 3 the demo brain is served at the v1 paths too (`/api/graph`, `/api/stream`, `/api/team`).
 
-## Rules (step 4)
+## Rules (step 4) · LIVE in brain mode
 ```
-GET  /api/brains/:id/rules                   → { [family]: { status, scope, writeDaily, role, ens, resolver } }
-POST /api/brains/:id/rules/:family  { status?, scope?, writeDaily? } → { txUrl }   written to that AI's ENS records by the server
+GET  /api/brains/:id/rules                   → { editable, agents: [{ agent, vendor, ens, resolver, status, scope, writeDaily, role }] }   read live from ENS
+POST /api/brains/:id/rules  { agent, status?, scope?, writeDaily?, role? }  (owner) → { agent, ens, txHash, txUrl, changed }
+POST /api/brains/:id/rules/:family  { status?, scope?, writeDaily?, role? } (owner) → same   one multicall on that AI's resolver, team key pays
 ```
 
-## Review notices (step 4)
+## Safety and refs (step 4) · LIVE
 ```
-GET  /api/brains/:id/review                  → [{ key, kind, agent, reason, at, status }]   items stopped as malicious
-POST /api/brains/:id/review/:key/release     → 204    owner says it was a false alarm
+GET  /api/brains/:id/blocked                 → BlockedEntry[]   refusals by an ENS rule + stopped injections, newest first (SSE `blocked`)
+GET  /api/brains/:id/review                  → [{ key, agent, ens, reason, excerpt, at, status: "stopped", arkivUrl }]   stopped items
+POST /api/brains/:id/review/:key/release     → not built yet (show disabled)
+GET  /api/brains/:id/heads                   → [{ agent, ens, serverHead, ensHead, match, txUrl? }]   sb.memory.head on ENS = newest Arkiv commit (SSE `head`)
+GET  /api/registry                           → the pre-made brains on ENS (config/deployments/brains.sepolia.json), public
+GET  /healthz                                → { …, mode: "brain" | "team", ens }
 ```
+Full shapes and screens: `docs/FRONTEND_V2.md`.
 
 ## Statuses to show (text, never color alone)
 Checkpoint: SAVED · SAVING (pending) · STOPPED (quarantined, with `why`) · EXPIRED. Task: OPEN · DONE (by whom, when) · STOPPED. Brain: ACTIVE · STOPPED · EXPIRES IN … . AI: CONNECTED (app name) · ACTIVE · PAUSED · AUTHORITY UNKNOWN (ENS unreadable).

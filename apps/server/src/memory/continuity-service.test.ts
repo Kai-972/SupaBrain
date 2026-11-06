@@ -122,7 +122,7 @@ describe("continue / checkpoint / checkout (v2 step 1)", () => {
 
   it("continue shows notices once, then they are read", async () => {
     const { c, rt } = setup();
-    rt.notices.add("gem-research", { toAgent: "gem-research", revocation: "0xrev", text: "RETRACTED: the README", affected: [], at: Date.now() });
+    rt.notices.add("gem-research", { revocation: "0xrev", text: "RETRACTED: the README", affected: [], at: Date.now() });
     expect((await c.resume("gem-research")).notices).toHaveLength(1);
     expect((await c.resume("gem-research")).notices).toHaveLength(0);
   });

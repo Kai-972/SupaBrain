@@ -38,6 +38,17 @@ The vault, not our server, decides whether an agent may still spend: every `pay`
 | **Disputed by ENS** (answers Supermemory's latest-wins): a memory that claims an address for a team vendor that differs from the vendor's own ENS record is flagged on read | [`apps/server/src/engine/conflict.ts`](apps/server/src/engine/conflict.ts), surfaced in `recall`/`remember` text and `/api/graph` + `/api/memory/:key` (`dispute`) | Gemini saves the email's address and is told at once: "DISPUTED by ENS: acme.supabrain.eth's own ENS record says 0xf15f…". Live on the `-b` namespace: E1 and M1 disputed after a rebuild from Arkiv |
 | Deployed vault | [`config/deployments/vault.sepolia.json`](config/deployments/vault.sepolia.json) | [`0x2da7…0ec8`](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8), first real 1-USDC payment [0x9ab2…06ae](https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae) |
 
+### v2: brains as ENSv2 subname registries (Lane B, 2026-11-06)
+| ENSv2 feature | Our use | Code | Proof |
+|---|---|---|---|
+| **A subname registry per project** | Each brain is its own `UserRegistry` under `supabrain.eth` (`otter.supabrain.eth` … `tundra.supabrain.eth`, 10 live). Inside it, one name per AI family: `claude` / `gemini` / `openai.<brain>.supabrain.eth` | `scripts/ens/provision-brains.ts`, `packages/ens/src/brains.ts` | 111 Sepolia txs in `config/deployments/brains.sepolia.json`; `pnpm ens:brains-status` ✓ 10 brains / 30 names |
+| **Enhanced Access Control, set only at registration** | On each brain registry, the server's team key holds register, renew, unregister and set resolver (+ admins), and so does the offline owner. On the brain name, the team key holds renew only. The AIs hold no roles | `BRAIN_REGISTRY_ROLES`, `BRAIN_TOKEN_ROLES` (pinned by tests) | `checkBrainOnChain` reads every bitmap back |
+| **A per-name Permissioned Resolver with scoped setters** | One resolver per AI. The team key may set text (rules); the AI's own wallet may set only `sb.memory.head` | `packages/ens/src/brains-chain.ts` | status check: "AI can set only its memory head" |
+| **Text records as live rules** | `sb.status` (active/paused), `sb.scope` (path prefix), `sb.write.daily`, `sb.role`, read on **every** MCP call. A broken rule is refused with the rule named (`SCOPE`, `RATE_LIMIT`, `NOT_AUTHORIZED`) | `packages/ens/src/authority.ts`, `apps/server/src/memory/continuity-service.ts` | `apps/server/src/memory/guard.test.ts`; live: `openai.otter` paused + scoped and restored (Sepolia `0x5f46ebed…`, `0x4bdc5a01…`) |
+| **Rules written from the website (sponsored gas)** | `POST /api/brains/:id/rules` → `createRulesWriter`: finds the resolver live, writes only the changed keys in one multicall, waits for the receipt | `packages/ens/src/rules.ts` | 25 tests; `pnpm ens:brain-rules` |
+| **Refs on ENS, objects on Arkiv** | After each confirmed commit, the AI's ENS name gets `sb.memory.head = <Arkiv entity key>`. Anyone can resolve `claude.otter.supabrain.eth` → the newest commit → walk its lineage on Arkiv without our server | `apps/server/src/ens-heads.ts`, `GET /api/brains/:id/heads` | `apps/server/src/ens-heads.test.ts` |
+| **`addr(60)` = the AI's signing wallet** | The Arkiv `$creator` of every commit must equal the address ENS gives for that AI. `pnpm verify:memory` checks this with no server | `scripts/arkiv/verify-lib.ts` | |
+
 ## Arkiv: Build on Arkiv from scratch
 ### What breaks without it
 Supabrain's whole point is that a team's AIs share one memory they can all read and nobody can quietly edit. Arkiv is that store: entities signed by each agent's own wallet (`$creator`), owned by the team wallet (`$owner`), readonly so nobody can rewrite a memory, and expiring on their own so an unconfirmed lie fades. Without Arkiv we would need a database we run and everyone has to trust, and "who wrote this" would be a column we could change.
@@ -61,6 +72,14 @@ Supabrain's whole point is that a team's AIs share one memory they can all read 
 - [ ] README wallet-address table (S8, generated from `config/deployments/arkiv.rabdi.json`)
 - [x] Server reads the UI's data from Arkiv: the graph is rebuilt from Arkiv at startup and kept current by `watchEntityEvents` (`apps/server/src/memory/sync.ts`, `arkiv/store.ts`); a restart rebuilt everything from the chain alone
 - [ ] Video timestamp
+
+### v2: commits, stops and funding on Arkiv (Lane B, 2026-11-06)
+| Arkiv feature | Our use | Code |
+|---|---|---|
+| `$creator` per write | Every brain commit is signed by that AI's **own derived wallet** (30 wallets funded with 0.33 tGLM each from a separate funder; cost measured from real receipts: ≈ 52k + 77.5 gas per byte) | `scripts/brains/write-cost.ts`, `scripts/brains/fund-brains.ts`, `apps/server/src/brain-mode.ts` |
+| Attributes + queries | Arkiv `team` = the brain label, so each brain is its own queryable history; the server rebuilds each brain from Arkiv at startup | `apps/server/src/arkiv/store.ts` |
+| Team-signed, long-lived revocations | A relayed prompt injection is **saved as evidence** (signed by the AI that relayed it) and **revoked at once** by the team wallet: it and everything under it is stopped for every AI, and the revocation outlives it | `apps/server/src/engine/guard.ts`, `apps/server/src/app.ts` (`onStop` → `undo.revoke`) |
+| Expiry | Brain data expires with the project (2-day lease unless kept); quarantined data is never extended | `config/app.json` `arkivExpirySec` |
 
 ## World: World ID (human approval for agent payments)
 ### What breaks without it

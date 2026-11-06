@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supabrain · Night</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{--sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+--bg:#050806;--fg:#E8EDE9;--muted:#8E9B92;--dim:#55625A;--line:#14201A;--line2:#2A4333;--panel:#080E0A;--panel2:#0C140F;
+--flow:#5CFF8F;--lie:#FF5C5C;--lie-text:#FFB4B4;--lie-on:#1A0505;--amber:#FFC247;--amber-on:#1A1200;
+--vc:#F59E6B;--vg:#6CB2FF;--vo:#F28CC4;--vh:#E8EDE9;--glow:10;--fline:#122218;--fnode:#2E4A38;--fclusters:[[0.16,0.34],[0.5,0.42],[0.84,0.3]]}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+a:focus-visible,button:focus-visible,.ev:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:8px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 clamp(20px,4vw,40px)}
+.mono{font-family:var(--mono)}
+.dim{color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 22px;border-radius:999px;font-size:15px;font-weight:500;letter-spacing:-.01em;transition:transform .15s,filter .2s;white-space:nowrap}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.97)}
+.btn.p{background:var(--amber);color:var(--amber-on)}
+.btn.g{border:1px solid var(--line2)}
+.btn.r{background:var(--lie);color:var(--lie-on)}
+.btn.sm{height:34px;padding:0 15px;font-size:13.5px}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--flow);box-shadow:0 0 10px var(--flow)}
+
+nav.top{position:fixed;inset:0 0 auto 0;z-index:60;background:rgba(5,8,6,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid transparent;transition:border-color .3s}
+nav.top.s{border-color:var(--line)}
+nav.top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
+.logo{display:inline-flex;align-items:center;gap:10px;font-weight:500;font-size:17px;letter-spacing:-.02em}
+.links{display:flex;align-items:center;gap:24px;font-size:14px;color:var(--muted)}
+.links a:not(.btn):hover{color:var(--fg)}
+
+/* hero */
+.hero{position:relative;min-height:100svh;display:flex;align-items:flex-end;overflow:hidden}
+.field{position:absolute;inset:0;-webkit-mask-image:linear-gradient(#000 35%,transparent 92%);mask-image:linear-gradient(#000 35%,transparent 92%)}
+.field canvas{width:100%;height:100%;display:block}
+.hero .copy{position:relative;z-index:2;width:100%;padding-bottom:clamp(48px,9vh,96px)}
+.hero h1{font-weight:500;font-size:clamp(46px,7.4vw,104px);line-height:1;letter-spacing:-.045em;margin:0;max-width:13ch;text-wrap:balance}
+.hero .row{display:flex;flex-wrap:wrap;gap:24px 56px;align-items:flex-end;justify-content:space-between;margin-top:36px}
+.hero p{margin:0;max-width:520px;font-size:18px;line-height:1.6;color:var(--muted)}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+
+/* story */
+.story{position:relative;height:440vh;border-top:1px solid var(--line)}
+.pin{position:sticky;top:0;height:100vh;display:grid;grid-template-columns:270px minmax(0,1fr) 330px;gap:40px;max-width:1360px;margin:0 auto;padding:92px clamp(20px,3vw,40px) 28px}
+.left{display:flex;flex-direction:column;min-height:0}
+.left h2{margin:14px 0 26px;font-size:26px;line-height:1.1;font-weight:500;letter-spacing:-.035em}
+.left ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.left li button{display:block;width:100%;text-align:left;padding:12px 0 12px 16px;border-left:1px solid var(--line2);transition:border-color .3s}
+.left li b{display:block;font-weight:500;font-size:15px;color:var(--muted);transition:color .3s}
+.left li span{display:block;font-size:13.5px;line-height:1.5;color:var(--dim);margin-top:4px;max-height:0;overflow:hidden;transition:max-height .45s,color .3s}
+.left li.on button{border-color:var(--flow)}
+.left li.on b{color:var(--fg)}
+.left li.on span{max-height:90px;color:var(--muted)}
+.prog{margin-top:auto;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.tree{position:relative;min-height:0}
+.tree::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 22px);-webkit-mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent);opacity:.55;pointer-events:none}
+.tree svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.log{display:flex;flex-direction:column;min-height:0;border:1px solid var(--line2);border-radius:14px;background:var(--panel);overflow:hidden}
+.log .hd{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);font-size:13px}
+.log .hd b{font-weight:500}
+.meter{display:flex;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meter div b{display:block;font-family:var(--sans);font-weight:500;font-size:22px;color:var(--fg);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.meter .q b{color:var(--lie)}
+.bar{height:3px;margin:0 16px 0;background:var(--line);border-radius:3px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%;background:var(--flow);transition:width .4s}
+.bar i.q{background:var(--lie)}
+.feed{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:10px 16px 14px;gap:2px;-webkit-mask-image:linear-gradient(transparent,#000 22%);mask-image:linear-gradient(transparent,#000 22%)}
+.it{display:none;gap:10px;align-items:flex-start;padding:7px 0;font-size:13px;line-height:1.45;color:var(--muted);animation:in .35s ease}
+.it.on{display:flex}
+.it .vb{margin-top:1px}
+.it b{color:var(--fg);font-weight:500}
+.it.bad{color:var(--lie-text)}
+.it.bad b{color:var(--lie)}
+.it.ok b{color:var(--flow)}
+.it.card{display:none;flex-direction:column;align-items:stretch;gap:10px;margin:6px 0;padding:12px;border:1px solid var(--line2);border-radius:10px;background:var(--panel2);color:var(--fg)}
+.it.card.on{display:flex}
+.it.card .r{display:flex;gap:16px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.it.card .r b{display:block;font-family:var(--sans);font-size:18px}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.vb{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font:700 10px var(--mono);color:#000}
+.cap{display:none}
+
+/* tree svg */
+.lane{stroke:var(--line2);stroke-width:1;stroke-dasharray:2 5;opacity:.6}
+.pill rect{fill:var(--fg)}
+.pill text{font:500 12px var(--mono);fill:var(--bg)}
+.pill .cnt{fill:#5d6b62}
+.tk{fill:none;stroke:var(--line2);stroke-width:1.4}
+.cv{fill:none;stroke:#3E6A4E;stroke-width:1.5;transition:stroke .4s,opacity .4s}
+.cv.bad{stroke:var(--lie);opacity:.75}
+.rv .cv.bad,.rv .tk.bad{stroke:var(--dim);opacity:.35;stroke-dasharray:.008 .012}
+.tk.bad{stroke:var(--lie);opacity:.75}
+.ev{cursor:pointer;transform-box:fill-box;transform-origin:center}
+.ev .d{transition:fill .4s,stroke .4s,r .3s}
+.ev.h .d{fill:var(--fg)}
+.ev.a .d{fill:var(--flow)}
+.ev.e .d{fill:var(--bg);stroke:var(--muted);stroke-width:1.5;stroke-dasharray:2.5 2.5}
+.ev.pay .d{fill:var(--amber)}
+.ev.bad .d{fill:var(--lie);stroke:none}
+.ev.bad.e .d{fill:var(--bg);stroke:var(--lie);stroke-dasharray:none}
+.ev .hl{fill:none;stroke:var(--lie);stroke-width:1.2;opacity:0}
+.blast .ev.bad .hl{animation:pulse 1.4s ease-out infinite}
+@keyframes pulse{0%{opacity:.9;r:7}100%{opacity:0;r:22}}
+.ev .lb{font:500 13px var(--sans);fill:var(--fg);paint-order:stroke;stroke:var(--bg);stroke-width:6px;stroke-linejoin:round}
+.ev.bad .lb{fill:var(--lie-text)}
+.ev .x{stroke:var(--lie);stroke-width:1.6;opacity:0}
+.ev .st{stroke:var(--lie-text);stroke-width:1.2;opacity:0}
+.rv .ev.bad .d{fill:var(--bg);stroke:var(--lie);stroke-width:1.5;stroke-dasharray:none}
+.rv .ev.bad .x,.rv .ev.bad .st{opacity:1}
+.rv .ev.bad .lb{opacity:.55}
+.ev .d,.ev .x,.ev .st,.ev .lb{transition-delay:var(--dl,0s)}
+.ev.keep .gl{opacity:.35}
+.ev .gl{fill:var(--flow);opacity:0;filter:url(#glow);transition:opacity .8s}
+.ev.h.keep .gl{fill:var(--fg)}
+.pd{fill:var(--flow);filter:url(#glow)}
+.pd.bad{fill:var(--lie)}
+.tag rect{fill:var(--lie)}
+.tag text{font:600 11px var(--mono);fill:var(--lie-on)}
+.tag{opacity:0;transition:opacity .4s}
+.tag.on{opacity:1}
+.rip{fill:none;stroke:var(--lie);stroke-width:1.5;opacity:0}
+#tipc{position:absolute;z-index:5;width:250px;padding:12px 14px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;font-size:13px;line-height:1.5;box-shadow:0 16px 40px rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .2s}
+#tipc.on{opacity:1}
+#tipc .m{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+#tipc q{display:block;margin-top:8px;quotes:none;color:var(--muted)}
+
+/* sections */
+section.blk{padding:clamp(72px,9vw,112px) 0;border-top:1px solid var(--line)}
+.blk h2{font-weight:500;font-size:clamp(32px,4vw,52px);line-height:1.05;letter-spacing:-.04em;margin:14px 0 0;max-width:20ch;text-wrap:balance}
+.blk .lede{margin:16px 0 0;max-width:56ch;color:var(--muted);font-size:17px;line-height:1.6}
+.tiles{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px;margin-top:44px}
+.tile{border:1px solid var(--line2);border-radius:16px;background:var(--panel);overflow:hidden;display:flex;flex-direction:column}
+.tile canvas{display:block;width:100%;height:190px}
+.tile .tx{padding:18px 20px 22px;border-top:1px solid var(--line)}
+.tile h3{margin:0;font-size:17px;font-weight:500;letter-spacing:-.01em}
+.tile p{margin:6px 0 0;color:var(--muted);font-size:14.5px;line-height:1.55}
+.tile .lg{display:flex;gap:16px;padding:10px 20px 0;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tile .lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:14px;border:1px solid var(--line2);border-radius:16px;overflow:hidden}
+.trio div{padding:20px 22px;font-size:14.5px;line-height:1.55;color:var(--muted)}
+.trio div+div{border-left:1px solid var(--line)}
+.trio b{display:block;color:var(--fg);font-weight:500;font-size:15.5px;margin-bottom:4px}
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
+.steps3>div{padding:22px;border:1px solid var(--line2);border-radius:16px;background:var(--panel)}
+.steps3 .n{font-family:var(--mono);font-size:12px;color:var(--flow)}
+.steps3 h3{margin:10px 0 0;font-size:18px;font-weight:500;letter-spacing:-.015em}
+.steps3 p{margin:8px 0 0;color:var(--muted);font-size:14.5px;line-height:1.55}
+pre.code{margin:16px 0 0;padding:14px 16px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font:12px/1.7 var(--mono);overflow-x:auto;color:var(--fg)}
+pre.code .s{color:#9CF5B8}
+pre.code .c{color:var(--dim)}
+.term{display:flex;align-items:center;gap:10px;margin-top:16px;padding:10px 14px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font:12.5px var(--mono)}
+.term .s{color:var(--flow)}
+.end{position:relative;overflow:hidden;padding:clamp(96px,12vw,150px) 0}
+.end canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.7;-webkit-mask-image:radial-gradient(ellipse at 70% 50%,#000,transparent 70%);mask-image:radial-gradient(ellipse at 70% 50%,#000,transparent 70%)}
+.end .wrap{position:relative}
+.end .cta{margin-top:32px}
+footer{border-top:1px solid var(--line);padding:26px 0 36px;font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px 32px;justify-content:space-between}
+
+@media (max-width:1100px){.pin{grid-template-columns:230px minmax(0,1fr) 290px;gap:24px}}
+@media (max-width:900px){
+ .links .hide{display:none}
+ .story{height:460vh}
+ .pin{display:flex;flex-direction:column;gap:10px;padding:76px 14px 14px}
+ .left{flex:none}
+ .left h2,.left ol,.prog{display:none}
+ .cap{display:block;min-height:104px}
+ .cap b{display:block;font-size:20px;font-weight:500;letter-spacing:-.02em}
+ .cap span{display:block;margin-top:6px;font-size:14.5px;line-height:1.5;color:var(--muted)}
+ .cap .k{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:6px}
+ .tree{flex:1 1 auto}
+ .log{flex:0 0 150px}
+ .meter{padding:8px 14px}.meter div b{font-size:18px}
+ .log .hd{display:none}
+ .tiles,.trio,.steps3{grid-template-columns:1fr}
+ .trio div+div{border-left:0;border-top:1px solid var(--line)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<nav class="top" id="nav"><div class="wrap">
+<a class="logo" href="#top"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M8 10L14 6M8 12L14 16" stroke="#2A4333" stroke-width="1.5" fill="none"/><circle cx="5" cy="11" r="3" fill="#5CFF8F"/><circle cx="17" cy="5" r="3" fill="#E8EDE9"/><circle cx="17" cy="17" r="3" fill="#E8EDE9"/></svg>Supabrain</a>
+<div class="links"><a class="hide" href="#story">See it work</a><a class="hide" href="#how">How it works</a><a class="btn p sm" href="#demo">Open demo team</a></div>
+</div></nav>
+
+<header class="hero" id="top">
+<div class="field" aria-hidden="true"><canvas id="field"></canvas></div>
+<div class="copy"><div class="wrap">
+<h1>One memory for every AI. <span class="dim">One click to take a lie back.</span></h1>
+<div class="row">
+<p>Supabrain remembers where every fact came from. When one turns out wrong, you revoke it from Claude, Gemini and ChatGPT at once, and no money moves on a lie.</p>
+<div class="cta"><a class="btn p" href="#demo">Open demo team</a><a class="btn g" href="#how">Connect your AI</a></div>
+</div>
+</div></div>
+</header>
+
+<main>
+<section class="story" id="story">
+<div class="pin">
+<div class="left">
+<span class="eyebrow"><i></i>See it work</span>
+<h2>Watch a team's memory grow, catch a lie, and let it go.</h2>
+<ol id="list">
+<li><button data-s="0"><b>The memory grows</b><span>Every AI writes to one shared memory, and each fact keeps a line back to where it came from.</span></button></li>
+<li><button data-s="1"><b>A lie gets in</b><span>One email with fake bank details reaches three AIs in seconds. A payment gets queued.</span></button></li>
+<li><button data-s="2"><b>See the blast radius</b><span>Before anything changes, see every memory and payment built on that email.</span></button></li>
+<li><button data-s="3"><b>Revoke once</b><span>Gone from every AI at the same moment. What a person decided stays.</span></button></li>
+<li><button data-s="4"><b>No money moves</b><span>The queued payment was built on the lie, so it never leaves.</span></button></li>
+</ol>
+<div class="prog" id="prog">Scroll, or pick a step</div>
+</div>
+<div class="cap" id="cap"></div>
+<div class="tree" id="tree"><svg id="g" role="img" aria-label="Lineage of the example team's shared memory"></svg><div id="tipc"></div></div>
+<div class="log" aria-live="polite">
+<div class="hd"><b>Team memory</b><span class="mono dim" style="font-size:11px">example team</span></div>
+<div class="meter"><div>Memories<b id="cM">0</b></div><div>Clean<b id="cC">0</b></div><div class="q">Quarantined<b id="cQ">0</b></div><div>Moved<b id="cP">0</b></div></div>
+<div class="bar"><i id="bC" style="width:0"></i><i id="bQ" class="q" style="width:0"></i></div>
+<div class="feed" id="feed"></div>
+</div>
+</div>
+</section>
+
+<section class="blk" id="how"><div class="wrap">
+<span class="eyebrow"><i></i>How it works</span>
+<h2>Plug it in once. Your AIs do the rest.</h2>
+<div class="steps3">
+<div><div class="n">01</div><h3>Connect each AI</h3><p>Add Supabrain as an MCP server in Claude, Gemini or ChatGPT. Each AI gets an ENS name with its own rules.</p>
+<pre class="code"><span class="c">// example</span>
+"supabrain": {
+  "url": <span class="s">"https://supabrain.example/mcp"</span>,
+  "agent": <span class="s">"lead-claude.demo.eth"</span>
+}</pre></div>
+<div><div class="n">02</div><h3>Work as usual</h3><p>Your AIs save what they learn and read what the others saved. Every fact records its sources without anyone thinking about it.</p>
+<div class="term"><span class="s">●</span>gem-research saved “invoice #0611 due Friday”</div><div class="term"><span class="s">●</span>lead-claude read 4 team memories</div></div>
+<div><div class="n">03</div><h3>Take a lie back</h3><p>Mark the source wrong, check the blast radius, revoke. Every AI forgets it at once and payments built on it stop.</p>
+<div class="term"><span style="color:var(--lie)">●</span>revoke email:acme-0611</div><div class="term"><span class="s">●</span>5 memories quarantined, 0 USDC moved</div></div>
+</div>
+</div></section>
+
+<section class="blk"><div class="wrap">
+<span class="eyebrow"><i></i>Inside the brain</span>
+<h2>A memory that grows, checks itself, and forgets on time.</h2>
+<div class="tiles">
+<div class="tile"><canvas data-m="grow"></canvas><div class="lg"><span><i style="background:var(--fg)"></i>From people</span><span><i style="background:var(--flow)"></i>From AIs</span></div><div class="tx"><h3>It grows with your team</h3><p>Every AI adds to the same memory, and every new fact carries a line back to its parents. Trust is the lowest of them.</p></div></div>
+<div class="tile"><canvas data-m="blast"></canvas><div class="lg"><span><i style="background:var(--lie)"></i>Built on the lie</span></div><div class="tx"><h3>Blast radius first</h3><p>One wrong source lights up everything that depends on it, before you change a thing.</p></div></div>
+<div class="tile"><canvas data-m="expire"></canvas><div class="lg"><span><i style="background:var(--amber)"></i>Kept</span></div><div class="tx"><h3>Forgets on time</h3><p>Facts fade after two days unless someone keeps them, so stale context leaves on its own.</p></div></div>
+</div>
+<div class="trio">
+<div><b>Every AI has a name</b>Each agent is an ENS name with the folders it may write to and a cap on what it can pay.</div>
+<div><b>People approve money</b>Anything over the cap waits for a real person, confirmed with World ID.</div>
+<div><b>Stored on Arkiv</b>Memories and revocations live on Arkiv, so every AI sees the same truth.</div>
+</div>
+</div></section>
+
+<section class="blk end" id="demo"><canvas id="field2" aria-hidden="true"></canvas><div class="wrap">
+<span class="eyebrow"><i></i>Try it</span>
+<h2>Give your AIs one memory you can take back.</h2>
+<div class="cta"><a class="btn p" href="#top">Open demo team</a><a class="btn g" href="#how">Connect your AI</a></div>
+</div></section>
+</main>
+<footer><div class="wrap"><span>Supabrain · built at ETHGlobal Mumbai 2026</span><span>Names, addresses and amounts on this page are example data.</span></div></footer>
+
+<script>
+(()=>{
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cssv=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
+const GLOW=parseFloat(cssv('--glow'))||0;
+const nav=document.getElementById('nav');
+addEventListener('scroll',()=>nav.classList.toggle('s',scrollY>10),{passive:true});
+/* ---------------- hero field ---------------- */
+function mkField(id){
+ const cv=document.getElementById(id),ctx=cv.getContext('2d');
+ let W,H,N=[],E=[],P=[],lie=-1,lieT=0,run=true,raf=0;
+ const C={line:cssv('--fline'),node:cssv('--fnode'),flow:cssv('--flow'),lie:cssv('--lie')};
+ const R=(a,b)=>a+Math.random()*(b-a);
+ function init(){
+  const d=Math.min(2,devicePixelRatio||1),r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);
+  N=[];E=[];P=[];const CL=JSON.parse(cssv("--fclusters")||'[[.2,.35],[.5,.55],[.8,.32]]'),per=W<700?8:15;
+  CL.forEach((c,ci)=>{for(let i=0;i<per;i++)N.push({x:(c[0]+R(-.15,.15))*W,y:(c[1]+R(-.2,.2))*H,r:R(1.4,3),c:ci,p:R(0,6.3)})});
+  N.forEach((a,i)=>{N.map((b,j)=>[j,(a.x-b.x)**2+(a.y-b.y)**2]).filter(x=>x[0]!==i).sort((x,y)=>x[1]-y[1]).slice(0,2).forEach(([j])=>{if(!E.some(e=>(e.a==i&&e.b==j)||(e.a==j&&e.b==i)))E.push({a:i,b:j})})});
+  for(let k=0;k<6;k++){const a=R(0,N.length)|0,b=R(0,N.length)|0;if(N[a].c!==N[b].c)E.push({a,b})}
+  for(let k=0;k<E.length*.7;k++)P.push({e:R(0,E.length)|0,t:Math.random(),s:R(.0025,.007)});
+ }
+ const pos=(n,t)=>[n.x+Math.sin(t*.0004+n.p)*5,n.y+Math.cos(t*.00033+n.p)*5];
+ function frame(t){
+  ctx.clearRect(0,0,W,H);
+  if(lie<0&&t-lieT>3800){lie=R(0,N.length)|0;lieT=t}
+  const age=lie>=0?t-lieT:0;if(lie>=0&&age>3800){lie=-1;lieT=t}
+  const bad=new Set();if(lie>=0){bad.add(lie);if(age>600)E.forEach(e=>{if(e.a==lie)bad.add(e.b);if(e.b==lie)bad.add(e.a)})}
+  const f=lie<0?0:age<2700?1:Math.max(0,1-(age-2700)/900);
+  const isBad=e=>f>0&&bad.has(e.a)&&bad.has(e.b);
+  ctx.lineWidth=1;
+  E.forEach(e=>{const[a,b]=[pos(N[e.a],t),pos(N[e.b],t)];const k=isBad(e);ctx.strokeStyle=k?C.lie:C.line;ctx.globalAlpha=k?.25+.6*f:1;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()});
+  P.forEach(p=>{p.t+=p.s;if(p.t>1){p.t=0;p.e=R(0,E.length)|0}const e=E[p.e],[a,b]=[pos(N[e.a],t),pos(N[e.b],t)],k=isBad(e);ctx.fillStyle=k?C.lie:C.flow;ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=GLOW;ctx.globalAlpha=Math.sin(p.t*Math.PI);ctx.beginPath();ctx.arc(a[0]+(b[0]-a[0])*p.t,a[1]+(b[1]-a[1])*p.t,1.7,0,6.3);ctx.fill()});
+  ctx.globalAlpha=1;ctx.shadowBlur=0;
+  N.forEach((n,i)=>{const[x,y]=pos(n,t),k=f>0&&bad.has(i);ctx.fillStyle=k?C.lie:C.node;if(k){ctx.shadowColor=C.lie;ctx.shadowBlur=GLOW*1.6}ctx.beginPath();ctx.arc(x,y,k?n.r+1.2:n.r,0,6.3);ctx.fill();ctx.shadowBlur=0;
+   if(i==lie&&age>2700){const q=(age-2700)/900;ctx.strokeStyle=C.lie;ctx.globalAlpha=Math.max(0,1-q);ctx.beginPath();ctx.arc(x,y,6+q*46,0,6.3);ctx.stroke();ctx.globalAlpha=1}});
+  if(run&&!RM)raf=requestAnimationFrame(frame);
+ }
+ init();addEventListener('resize',()=>{init();if(RM)frame(0)});
+ new IntersectionObserver(es=>{const v=es[0].isIntersecting;if(v&&!run&&!RM){run=true;raf=requestAnimationFrame(frame)}else if(!v)run=false}).observe(cv);
+ RM?frame(0):raf=requestAnimationFrame(frame);
+}
+mkField('field');mkField('field2');
+
+
+/* ============ story: lineage tree ============ */
+const LANES=[{id:'H',n:'kai',s:'You',v:'H'},{id:'G',n:'gem-research',s:'Gemini',v:'G'},{id:'C',n:'lead-claude',s:'Claude',v:'C'},{id:'O',n:'gpt-writer',s:'ChatGPT',v:'O'}];
+const VC={C:'var(--vc)',G:'var(--vg)',O:'var(--vo)',H:'var(--vh)'};
+const EV=[
+ {id:'h1',ln:'H',y:110,l:'Budget 10 USDC a week',k:'h',ta:.08,tr:3,q:'A person set this. Nothing below can change it.'},
+ {id:'m4',ln:'C',y:165,l:'Stay in budget',k:'a',p:['h1'],ta:.26,tr:2,q:"Claude's spending rule, built only on your budget."},
+ {id:'r1',ln:'C',y:220,l:'Brand guide v3 · private',k:'e',ta:.42,tr:1,q:'Lives in your GitHub. Supabrain keeps a pointer.'},
+ {id:'g0',ln:'G',y:275,l:'Invoice #0611 due Friday',k:'a',ta:.58,tr:2,q:'Gemini read the invoice from Acme.'},
+ {id:'h2',ln:'H',y:330,l:'Approved: pay Acme 5 USDC',k:'h',p:['g0'],ta:.76,tr:3,q:'You approved paying the invoice.'},
+ {id:'e1',ln:'G',y:395,l:'Email: “new bank 0xBAD…”',k:'e',bad:1,ta:1.05,tr:1,q:'From billing@acme-pay.co, not a verified Acme address.'},
+ {id:'m1',ln:'G',y:450,l:'Acme pays to 0xBAD',k:'a',bad:1,p:['e1'],ta:1.22,tr:1,q:'Gemini saved the address from the email.'},
+ {id:'m2',ln:'C',y:505,l:'Pay 0xBAD 5 USDC',k:'a',bad:1,p:['h2','m1'],ta:1.4,tr:1,q:'Built on your approval and the email. It gets the lower trust: 1 of 3.'},
+ {id:'py',ln:'C',y:560,l:'Payment queued',k:'pay',bad:1,p:['m2'],ta:1.56,tr:1,q:'5 USDC to 0xBAD, waiting to send.'},
+ {id:'m3',ln:'O',y:615,l:'Draft: “Paid 0xBAD”',k:'a',bad:1,p:['m2'],ta:1.72,tr:1,q:'ChatGPT drafted a confirmation to Acme.'},
+ {id:'m5',ln:'C',y:670,l:'Pixel invoice to 0xBAD',k:'a',bad:1,p:['m1'],ta:1.88,tr:1,q:'Claude reused the address for another invoice.'}
+];
+const LOG=[
+ [.08,'H','<b>kai</b> set a budget of 10 USDC a week'],
+ [.26,'C','<b>lead-claude</b> saved a rule: stay in budget'],
+ [.42,'C','<b>lead-claude</b> linked brand guide v3, kept private'],
+ [.58,'G','<b>gem-research</b> noted invoice #0611 is due Friday'],
+ [.76,'H','<b>kai</b> approved paying Acme 5 USDC'],
+ [1.05,'G','<b>gem-research</b> read an email from billing@acme-pay.co','bad'],
+ [1.22,'G','<b>gem-research</b> saved “Acme pays to 0xBAD”','bad'],
+ [1.4,'C','<b>lead-claude</b> planned a 5 USDC payment to 0xBAD','bad'],
+ [1.56,'C','<b>Payment queued:</b> 5 USDC to 0xBAD','bad'],
+ [1.72,'O','<b>gpt-writer</b> drafted “Paid 0xBAD” to Acme','bad'],
+ [1.88,'C','<b>lead-claude</b> reused 0xBAD for the Pixel invoice','bad'],
+ [2.05,'card','<div><b>Dry run</b> <span class="mono dim" style="font-size:11px">email:acme-0611</span></div><div class="r"><div>Memories<b>5</b></div><div>AIs<b>3</b></div><div>Payments<b>1</b></div></div><div style="font-size:12.5px;color:var(--muted)">Nothing has changed yet.</div><button class="btn r sm" data-s="3">Revoke</button>'],
+ [3.05,'H','<b>kai</b> revoked email:acme-0611','ok'],
+ [3.2,'C','<b>5 memories</b> quarantined in Claude, Gemini and ChatGPT','ok'],
+ [4.05,'C','<b>Payment blocked.</b> 0xBAD is not acme.eth. 0 USDC moved.','ok'],
+ [4.25,'card','<div style="font-size:13px">To pay the real Acme, a person approves the new payment.</div><a class="btn g sm" href="#demo">Approve acme.eth with World ID</a>']
+];
+const LAY={d:{w:680,h:720,ys:1,x:{H:44,G:200,C:356,O:512},side:()=>1,pill:'n'},m:{w:420,h:600,ys:.8,x:{H:20,G:118,C:222,O:326},side:x=>x<200?1:-1,pill:'s'}};
+const NS='http://www.w3.org/2000/svg',svg=document.getElementById('g'),tree=document.getElementById('tree'),tipc=document.getElementById('tipc');
+const mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+const byId={};EV.forEach(e=>byId[e.id]=e);
+let L,CON=[],DOTS=[],EG={},rip,tag,pills={};
+function build(){
+ L=matchMedia('(max-width:900px)').matches?LAY.m:LAY.d;
+ svg.innerHTML='';svg.setAttribute('viewBox',`0 0 ${L.w} ${L.h}`);svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+ const defs=mk('defs',{},svg),f=mk('filter',{id:'glow',x:'-300%',y:'-300%',width:'700%',height:'700%'},defs);
+ mk('feGaussianBlur',{stdDeviation:'3',result:'b'},f);const mg=mk('feMerge',{},f);mk('feMergeNode',{in:'b'},mg);mk('feMergeNode',{in:'SourceGraphic'},mg);
+ const gl=mk('g',{},svg),gc=mk('g',{},svg),gp=mk('g',{},svg),ge=mk('g',{},svg),gh=mk('g',{},svg);
+ CON=[];pills={};EV.forEach(e=>e.yy=52+(e.y-52)*L.ys);
+ LANES.forEach(ln=>{const x=L.x[ln.id];mk('line',{class:'lane',x1:x,x2:x,y1:52,y2:L.h},gl);
+  const g=mk('g',{class:'pill'},gh),txt=L.pill==='n'?ln.n:ln.s,w=txt.length*7.3+(L.pill==='n'?48:46);
+  const rx=Math.max(4,Math.min(L.w-w-4,x-14));mk('rect',{x:rx,y:24,width:w,height:24,rx:12},g);
+  mk('circle',{cx:rx+12,cy:36,r:7,fill:VC[ln.v]},g);const vt=mk('text',{x:rx+12,y:36.5,'text-anchor':'middle','dominant-baseline':'central',style:'font:700 9px var(--mono);fill:#000'},g);vt.textContent=ln.v;
+  const t=mk('text',{x:rx+24,y:40},g);t.textContent=txt;const c=mk('text',{class:'cnt',x:rx+w-12,y:40,'text-anchor':'end'},g);c.textContent='0';pills[ln.id]=c;
+  // trunk start
+  let prevY=48,prev=null;
+  EV.filter(e=>e.ln===ln.id).forEach(e=>{const lin=prev&&(e.p||[]).includes(prev.id);
+   const el=mk('path',{d:`M${x},${prevY} L${x},${e.yy}`,class:'tk'+(lin&&e.bad?' bad':''),pathLength:1,'stroke-dasharray':1,'stroke-dashoffset':1},gc);
+   CON.push({el,ev:e,trunk:1,bad:lin&&e.bad,lin});prevY=e.yy;prev=e});
+ });
+ EV.forEach(e=>(e.p||[]).forEach(pid=>{const p=byId[pid];if(p.ln===e.ln)return;const x1=L.x[p.ln],y1=p.yy,x2=L.x[e.ln],y2=e.yy,m=(y1+y2)/2;
+  const el=mk('path',{d:`M${x1},${y1} C${x1},${m} ${x2},${m} ${x2},${y2}`,class:'cv'+(e.bad&&(p.bad||e.id!=='m2'||pid==='m1')?' bad':''),pathLength:1,'stroke-dasharray':1,'stroke-dashoffset':1},gc);
+  CON.push({el,ev:e,bad:el.classList.contains('bad'),lin:1})}));
+ CON.forEach(c=>c.len=c.el.getTotalLength());
+ DOTS=[];CON.filter(c=>c.lin||c.trunk).forEach(c=>{const n=c.trunk&&!c.lin?1:2;for(let k=0;k<n;k++)DOTS.push({c,t:k/n+Math.random()*.2,s:.00022+Math.random()*.00012,el:mk('circle',{r:2.1,class:'pd',opacity:0},gp)})});
+ EG={};
+ const e1=byId.e1;
+ EV.forEach(e=>{const x=L.x[e.ln],sd=L.side(x);
+  const g=mk('g',{class:`ev ${e.k}${e.bad?' bad':''}`,tabindex:0,role:'button','aria-label':e.l,style:`--dl:${e.bad?(Math.hypot(x-L.x.G,e.yy-e1.yy)/900).toFixed(2):0}s`},ge);
+  mk('circle',{class:'gl',cx:x,cy:e.yy,r:7},g);
+  mk('circle',{class:'hl',cx:x,cy:e.yy,r:7},g);
+  if(e.k==='pay')mk('rect',{class:'d',x:x-5.5,y:e.yy-5.5,width:11,height:11,rx:2,transform:`rotate(45 ${x} ${e.yy})`},g);
+  else mk('circle',{class:'d',cx:x,cy:e.yy,r:e.k==='e'?6:5.5},g);
+  mk('path',{class:'x',d:`M${x-3},${e.yy-3}L${x+3},${e.yy+3}M${x+3},${e.yy-3}L${x-3},${e.yy+3}`},g);
+  const lb=mk('text',{class:'lb',x:x+14*sd,y:e.yy+4.5,'text-anchor':sd>0?'start':'end'},g);lb.textContent=e.l;
+  const tw=lb.getComputedTextLength();mk('line',{class:'st',x1:sd>0?x+14:x-14-tw,x2:sd>0?x+14+tw:x-14,y1:e.yy,y2:e.yy},g);
+  g.addEventListener('mouseenter',()=>tip(e,g));g.addEventListener('mouseleave',untip);g.addEventListener('focus',()=>tip(e,g));g.addEventListener('blur',untip);
+  g.addEventListener('click',ev=>{ev.stopPropagation();tip(e,g)});
+  EG[e.id]={g,e,lbw:tw,sd};
+ });
+ const py=byId.py,px=L.x.C,ps=L.side(px),tw=EG.py.lbw;
+ tag=mk('g',{class:'tag'},ge);const tx=ps>0?px+24+tw:px-24-tw-166;mk('rect',{x:tx,y:py.yy-11,width:166,height:22,rx:11},tag);const tt=mk('text',{x:tx+83,y:py.yy+4,'text-anchor':'middle'},tag);tt.textContent='Blocked · 0 USDC moved';
+ rip=mk('circle',{class:'rip',cx:L.x.G,cy:e1.yy,r:0},svg);
+}
+function tip(e,g){const tr=tree.getBoundingClientRect(),r=g.querySelector('.d').getBoundingClientRect();
+ const par=(e.p||[]).map(p=>byId[p].l);const dead=svg.classList.contains('rv')&&e.bad;
+ tipc.innerHTML=`<b style="font-weight:500">${e.l}</b><div class="m">${LANES.find(l=>l.id===e.ln).n}${e.ln==='H'?'.demo.eth · person':'.demo.eth'} · trust ${e.tr} of 3${dead?' · quarantined':''}</div>${par.length?`<div class="m">built from ${par.join(' + ')}</div>`:''}<q>${e.q}</q>`;
+ let x=r.left-tr.left+16,y=r.top-tr.top+16;if(x+260>tr.width)x=r.left-tr.left-266;if(y+140>tr.height)y=r.top-tr.top-130;tipc.style.left=Math.max(0,x)+'px';tipc.style.top=Math.max(0,y)+'px';tipc.classList.add('on')}
+function untip(){tipc.classList.remove('on')}
+document.addEventListener('click',untip);
+
+/* log */
+const feed=document.getElementById('feed');
+const LI=LOG.map(([ta,v,h,cls])=>{const d=document.createElement('div');if(v==='card'){d.className='it card';d.innerHTML=h}else{d.className='it '+(cls||'');d.innerHTML=`<span class="vb" style="background:${VC[v]}">${v}</span><span>${h}</span>`}feed.appendChild(d);return{ta,d}});
+
+/* step state */
+const STEPS=[...document.querySelectorAll('#list li')];
+const cap=document.getElementById('cap');
+const story=document.getElementById('story');
+let tCur=0,tTgt=0,lastStep=-1,revoked=false;
+function stepOf(t){return Math.min(4,Math.floor(t))}
+function scrollT(){const r=story.getBoundingClientRect(),span=story.offsetHeight-innerHeight;return Math.max(0,Math.min(4.999,(-r.top/span)*5))}
+function goStep(s){const span=story.offsetHeight-innerHeight;const y=story.offsetTop+span*((s+.5)/5);scrollTo({top:y,behavior:RM?'auto':'smooth'})}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(b){e.preventDefault();goStep(+b.dataset.s)}});
+const cM=document.getElementById('cM'),cC=document.getElementById('cC'),cQ=document.getElementById('cQ'),cP=document.getElementById('cP'),bC=document.getElementById('bC'),bQ=document.getElementById('bQ');
+function ripple(){if(RM)return;const t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/1200);rip.setAttribute('r',k*900);rip.setAttribute('opacity',((1-k)*.9).toFixed(2));if(k<1)requestAnimationFrame(f)})(t0)}
+function render(t){
+ const s=stepOf(t);
+ if(s!==lastStep){lastStep=s;STEPS.forEach((li,i)=>li.classList.toggle('on',i===s));const li=STEPS[s];cap.innerHTML=`<div class="k">${s+1} / 5</div><b>${li.querySelector('b').textContent}</b><span>${li.querySelector('span').textContent}</span>`;document.getElementById('prog').textContent=`Step ${s+1} of 5`}
+ svg.classList.toggle('blast',t>=2&&t<3.05);
+ const rv=t>=3.05;if(rv!==revoked){revoked=rv;svg.classList.toggle('rv',rv);if(rv)ripple()}
+ tag.classList.toggle('on',t>=4.05);
+ document.querySelectorAll('.it.card [data-s]').forEach(b=>{b.textContent=rv?'Revoked':'Revoke';b.className=rv?'btn g sm':'btn r sm';b.disabled=rv});
+ let shown=0,bad=0;const lc={H:0,G:0,C:0,O:0};
+ EV.forEach(e=>{const f=Math.max(0,Math.min(1,(t-e.ta)/.14)),g=EG[e.id].g;g.style.opacity=f;g.style.transform=`scale(${.4+.6*f})`;e.f=f;if(f>.5&&e.k!=='pay'){shown++;lc[e.ln]++;if(e.bad)bad++}
+  g.classList.toggle('keep',rv&&!e.bad)});
+ for(const k in pills)pills[k].textContent=lc[k];
+ CON.forEach(c=>{c.f=c.ev.f;c.el.setAttribute('stroke-dashoffset',(1-c.f).toFixed(3));if(rv&&c.bad)c.el.removeAttribute('stroke-dasharray');else c.el.setAttribute('stroke-dasharray',1)});
+ cM.textContent=shown;cQ.textContent=rv?bad:0;cC.textContent=shown-(rv?bad:0);cP.textContent=0;
+ bC.style.width=(shown-(rv?bad:0))/10*100+'%';bQ.style.width=(rv?bad:0)/10*100+'%';
+ LI.forEach(x=>x.d.classList.toggle('on',t>=x.ta));
+}
+function rebuild(){build();lastStep=-1;revoked=false;render(tCur)}
+build();
+let last=performance.now();
+function loop(now){
+ const dt=Math.min(50,now-last);last=now;
+ tTgt=scrollT();tCur+=RM?(tTgt-tCur):(tTgt-tCur)*Math.min(1,dt/120);if(Math.abs(tTgt-tCur)<.001)tCur=tTgt;
+ render(tCur);
+ if(!RM)DOTS.forEach(d=>{const c=d.c,live=c.f>=1&&!(revoked&&c.bad);if(!live){d.el.setAttribute('opacity',0);return}
+  d.t=(d.t+dt*d.s*(c.bad?1.5:1)*(600/Math.max(60,c.len)))%1;const p=c.el.getPointAtLength(d.t*c.len);d.el.setAttribute('cx',p.x.toFixed(1));d.el.setAttribute('cy',p.y.toFixed(1));d.el.setAttribute('opacity',Math.sin(d.t*Math.PI).toFixed(2));d.el.setAttribute('class','pd'+(c.bad?' bad':''))});
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+matchMedia('(max-width:900px)').addEventListener('change',rebuild);
+
+/* ============ dot-matrix tiles ============ */
+document.querySelectorAll('canvas[data-m]').forEach(cv=>{
+ const ctx=cv.getContext('2d'),mode=cv.dataset.m;let W,H,cols,rows,sp=11,cells=[],run=false,t0=performance.now()-4000;
+ const C={off:'#14211A',dim:'#1F3328',flow:'#5CFF8F',fg:'#E8EDE9',lie:'#FF5C5C',amber:'#FFC247'};
+ function init(){const d=Math.min(2,devicePixelRatio||1),r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);cols=Math.floor((W-16)/sp);rows=Math.floor((H-16)/sp);
+  cells=[];for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)cells.push({x,y,r:Math.random(),life:Math.random(),keep:Math.random()<.06})}
+ function dot(x,y,c,a,rad){ctx.globalAlpha=a;ctx.fillStyle=c;ctx.beginPath();ctx.arc(8+x*sp+sp/2,8+y*sp+sp/2,rad||2.6,0,6.3);ctx.fill()}
+ function draw(now){
+  const t=(now-t0)/1000;ctx.clearRect(0,0,W,H);
+  if(mode==='grow'){const fill=(t%9)/7;cells.forEach(c=>{const h=rows*(.25+.6*Math.abs(Math.sin(c.x*.33+1)))*Math.min(1,fill*1.3-c.x/cols*.5);const on=rows-c.y<=h;dot(c.x,c.y,on?(c.r<.18?C.fg:C.flow):C.off,on?.35+.55*(1-(rows-c.y)/Math.max(1,h)):1)})}
+  else if(mode==='blast'){const ph=t%8,cx=cols*.38,cy=rows*.5;const R=ph<1?0:ph<4?(ph-1)/3*cols*.42:cols*.42;
+   cells.forEach(c=>{const d=Math.hypot((c.x-cx)*1,(c.y-cy)*1.6);const inR=d<R&&c.r<.72;let col=C.dim,a=.9;
+    if(inR){if(ph<5.2){col=C.lie;a=.5+.5*Math.max(0,1-d/(R+1))}else if(ph<7){col=C.off;a=1}else{col=C.dim;a=(ph-7)}}
+    if(c.x===Math.round(cx)&&c.y===Math.round(cy)&&ph>=.4&&ph<7){col=C.lie;a=1}
+    dot(c.x,c.y,col,a,inR&&ph>5.2&&ph<7?1.6:2.6)})}
+  else{cells.forEach(c=>{const v=c.keep?1:1-((c.life+t/10)%1);dot(c.x,c.y,c.keep?C.amber:C.flow,c.keep?.9:Math.max(.06,v*v*.8))})}
+  ctx.globalAlpha=1;if(run&&!RM)requestAnimationFrame(draw);
+ }
+ init();addEventListener('resize',init);
+ new IntersectionObserver(es=>{const v=es[0].isIntersecting;if(v&&!run){run=true;requestAnimationFrame(draw)}else if(!v)run=false}).observe(cv);
+ if(RM)draw(t0+4000);
+});
+})();
+</script>
+</body>
+</html>

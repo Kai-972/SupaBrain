@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | **v2** (docs/PLAN.md): step 1 continuity (continue/checkpoint/checkout, tasks, files) in progress | 🔨 | – |
 | C: Face (website) | Kai | #2 | **v2**: simple website from docs/API_V2.md (fixtures first) | ⏳ | A: step 1 endpoints |
-| B: Money & Security (policy, vault, World) + v2 brains on ENS | Srijit | #3 | S5/S6 ✅ live. **v2**: B1 ✅ 10 brains / 30 AI names on ENS, B2 ✅ 30 wallets funded, B3 ✅ rules writer live, B6 ✅; B4/B5 wait for Lane A | ⏳ | A: say when B4/B5 can run |
+| B: Money & Security (policy, vault, World) + v2 brains on ENS + **Lane A server (Kai down)** | Srijit | #3 | v2: B1 ✅ B2 ✅ B3 ✅ B6 ✅ · step 4 rules+Stop ✅ · brain mode + ENS heads ✅ · live scene waits for go · UI brief `docs/FRONTEND_V2.md` | 🔨 | Srijit: go for `demo:injection` |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -272,6 +272,20 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - asks/blockers: team ENS label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY (testnet burner), OK to generate keys. Tooling: installed the Arkiv plugin 0.5.4 (Mumbai MCP connected) and the Context7 MCP
 
 ## Log: Lane B (Money & Security)
+
+### 2026-11-06 21:35 IST · B · v2 steps 3–4 backend (taking over Lane A while Kai's laptop is down)
+- did:
+  - **ENS rules on every call:** `sb.status` paused, `sb.scope`, `sb.write.daily` (new `RATE_LIMIT`). Every refusal is logged with the rule named and streamed as `blocked`.
+  - **Prompt-injection Stop:** relayed instructions (override, remote code, payment redirect, secret leak, rule tampering, agent-to-agent command) are saved as evidence and revoked at once on Arkiv by the team wallet.
+  - **Brain mode** `SUPABRAIN_BRAIN=<label>`: serves a pre-made brain from its own ENSv2 subname registry, with the AIs signing through derived wallets.
+  - **ENS heads:** `sb.memory.head` = the newest confirmed commit's Arkiv key.
+  - **New API:** `/api/registry`, rules GET/POST (both forms), `/blocked`, `/review`, `/heads`, healthz `mode`.
+  - `pnpm demo:injection`, the live judge scene.
+  - `docs/research/supermemory-v2.md` (fresh research: they now sell cross-agent memory too, so our edge is accountability), `docs/FRONTEND_V2.md` (the UI brief) and `docs/design/supabrain-night.html` (the visual reference), plus the SPONSORS v2 rows and the API_V2 contract updated.
+- proof: tests first; **514 tests** green, typecheck clean. Commits f61577b, 3032d19, 7f2db9b, 9c19e7b. The server is running in brain mode for `maple` (`/healthz` → `mode: brain, ens: maple.supabrain.eth`)
+- result: PASS (unit + local). The live scene was not run: it broadcasts (ENS rule txs and a head tx from the team wallet, a team-signed Arkiv revocation), so it waits for Srijit's go
+- next: `SUPABRAIN_BRAIN=maple pnpm demo:injection` on go; then demo on `otter`
+- asks/blockers: go for the live scene
 
 ### 2026-11-06 20:12 IST · B · v2 B2: all 30 brain AI wallets funded on Rabdi
 - did: the faucet claim (10 tGLM) went to the funder burner `0x49bE9ddD1e2eacE2662a0B5ffEA86a605287c910`. `pnpm brains:fund --only otter,maple,comet --yes` (9 transfers; balances re-read: 0.33 each), then `pnpm brains:fund --yes` for the other 21. Every AI wallet holds **0.33 tGLM** (≈ 195 writes of 20 KB or ~600 of 6 KB; the target moved from 0.35 so one claim funds all 30, see DECISIONS). The funder has 0.099 tGLM left. Each transfer's hash is recorded per AI in `config/deployments/brains.sepolia.json` (`funding`), with the sizing in `fundingPlan`. No team or server wallet sent anything on Rabdi

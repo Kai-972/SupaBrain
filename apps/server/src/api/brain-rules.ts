@@ -4,6 +4,7 @@
 //   POST /api/brains/:id/rules         change one AI's rules on ENS (owner; the server's team key pays the gas)
 //   GET  /api/brains/:id/blocked       refusals and stops, newest first (also streamed as `blocked`)
 //   GET  /api/brains/:id/heads         each AI's newest checkpoint: on ENS (sb.memory.head) vs what the server knows
+//   GET  /api/brains/:id/review        stopped items waiting for the owner (STOPPED entries of /blocked)
 import type { Express, Request, Response } from "express";
 import type { BrainsDeployment, RulesPatch, RulesWriter } from "@supabrain/ens";
 import { RulesError } from "@supabrain/ens";
@@ -57,10 +58,9 @@ export function mountRulesApi(app: Express, p: {
     }
   });
 
-  app.post("/api/brains/:id/rules", p.owner, async (req, res) => {
+  const setRules = async (req: Request, res: Response, agent: string) => {
     if (!known(req, res)) return;
     if (!p.rules || !p.brainMode) return void res.status(409).json({ error: "NOT_EDITABLE", message: "only brains' rules can be changed from the website; the demo team's records are owner-key only" });
-    const agent = typeof req.body?.agent === "string" ? req.body.agent : "";
     if (!config.app.agents.some((a) => a.label === agent)) return void res.status(400).json({ error: "INVALID", message: `agent must be one of ${config.app.agents.map((a) => a.label).join(", ")}` });
     const { agent: _a, ...patch } = (req.body ?? {}) as Record<string, unknown>;
     try {
@@ -71,6 +71,14 @@ export function mountRulesApi(app: Express, p: {
       if (e instanceof RulesError) return void res.status(STATUS[e.code] ?? 400).json({ error: e.code, message: e.message });
       res.status(502).json({ error: "ENS_WRITE_FAILED", message: (e as Error).message.split("\n")[0] });
     }
+  };
+  app.post("/api/brains/:id/rules", p.owner, (req, res) => setRules(req, res, typeof req.body?.agent === "string" ? req.body.agent : ""));
+  app.post("/api/brains/:id/rules/:family", p.owner, (req, res) => setRules(req, res, String(req.params.family))); // docs/API_V2.md form
+
+  // docs/API_V2.md "review notices": what was stopped, waiting for the owner
+  app.get("/api/brains/:id/review", (req, res) => {
+    if (!known(req, res)) return;
+    res.json(runtime.blocked.list().filter((b) => b.code === "STOPPED").map((b) => ({ key: b.key, agent: b.agent, ens: b.ens, reason: b.rule, excerpt: b.excerpt, at: b.at, status: "stopped", arkivUrl: b.arkivUrl })));
   });
 
   app.get("/api/brains/:id/blocked", (req, res) => {

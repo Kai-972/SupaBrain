@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | **v2** (docs/PLAN.md): step 1 continuity (continue/checkpoint/checkout, tasks, files) in progress | 🔨 | – |
 | C: Face (website) | Kai | #2 | **v2**: simple website from docs/API_V2.md (fixtures first) | ⏳ | A: step 1 endpoints |
-| B: Money & Security (policy, vault, World) + v2 brains on ENS | Srijit | #3 | S5/S6 ✅ live. **v2**: B1 code + dry run ✅ (110 txs), B3 rules writer ✅ unit, B2 cost measured ✅, B6 ✅; B4/B5 after Lane A's tools | 🔨 | Srijit: go for B1 broadcast, FUNDER key |
+| B: Money & Security (policy, vault, World) + v2 brains on ENS | Srijit | #3 | S5/S6 ✅ live. **v2**: B1 ✅ 10 brains / 30 AI names on ENS, B2 ✅ 30 wallets funded, B3 ✅ rules writer live, B6 ✅; B4/B5 wait for Lane A | ⏳ | A: say when B4/B5 can run |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -40,8 +40,8 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] Codex · [ ] ChatGPT developer mode · [ ] Gemini app "Custom apps" (availability)
 
 ### Step 3: brains and people
-- [ ] B: brains on ENS (registries, claude/gemini/openai names, rules) + brains.sepolia.json + `ens:brains-status`
-- [ ] B: AI wallets funded with tGLM (cost per write measured)
+- [x] B: brains on ENS (registries, claude/gemini/openai names, rules) + brains.sepolia.json + `ens:brains-status` (10 brains, 30 AI names, verified on chain; 0f87d66)
+- [x] B: AI wallets funded with tGLM (cost per write measured): 30 × 0.33 tGLM on Rabdi from a separate funder
 - [ ] A: wallet sign-in (SIWE), create brain, active brain, per-family links, brain by name
 - [ ] live: someone outside the team creates a brain, connects two apps, works
 
@@ -118,6 +118,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → A: **brains are ready** (2026-11-06 20:12 IST): 10 brains (otter … tundra, indexes 1–10) and 30 AI names verified on ENSv2 Sepolia (`pnpm ens:brains-status`), and every AI wallet holds 0.33 tGLM on Rabdi, so checkpoints can be signed by each brain AI's own wallet. Read them with `readBrainsDeployment(root)`; wallets are `brainAgentAccount(BRAIN_AGENT_MNEMONIC, brain.index, family)`. Tell B when B4 (demo-brain pay steps) and B5 (Codex / ChatGPT) can run
 - [ ] B → A: **brains are going live on ENS** (2026-11-06 19:44 IST): `otter` is verified on chain (`pnpm ens:brains-status`); the other 9 are provisioning now. The team wallet holds 0.005 ETH on Sepolia for rule changes. Two notes for the server: (1) read rules through the same `createRulesWriter` instance you write with. A fresh read right after a change hit a lagging RPC node and showed the old `sb.status` next to the new `sb.scope`; the writer pins reads to its last receipt block. (2) Brain AI wallets on Rabdi are unfunded until Srijit's faucet claim lands (`pnpm brains:fund`). Until then, checkpoints in brains other than the demo brain will fail the balance check. `BRAIN_AGENT_MNEMONIC` comes from Srijit privately
 - [ ] B → A: **v2 brains contract** (2026-11-06 19:27 IST): read brains with `readBrainsDeployment(root)` from `@supabrain/ens` (`config/deployments/brains.sepolia.json`: per brain `{label, ens, index, registry, tokenOwner, expiry, agents: {claude|gemini|openai: {ens, labelhash, wallet, resolver, accountIndex, addressIndex, expiry, records, funding?}}}`). AI wallet = `brainAgentAccount(BRAIN_AGENT_MNEMONIC, brain.index, family)` (indexes start at 1). Rules: `createRulesWriter({ keys: ruleKeys(config.app.ens.textKeys, readBrainsConfig(root)), parentName: "supabrain.eth", txUrl, account: TEAM, chain: sepoliaChain(config, rpcUrl) })` then `setRules(aiEns, {status?, scope?, writeDaily?, role?})` → `{txHash, txUrl, changed}` (errors `RulesError` INVALID / NOT_OURS / NO_RESOLVER / REVERTED). The writes-per-day key is `sb.write.daily`. `BRAIN_AGENT_MNEMONIC` comes from Srijit privately. The team wallet needs Sepolia ETH to change rules (B will send some from the owner on "go"). Brains go on chain after Srijit's go
 - [ ] A → B: **v2 tasks B1–B6** (docs/PLAN.md §4, DECISIONS 2026-11-06 19:30): brains on ENS + `config/deployments/brains.sepolia.json` + `ens:brains-status`; tGLM funding from a separate FUNDER key (cost per write measured first); `packages/ens/src/rules.ts` rules writer; demo-brain payments re-check after step 1; Codex/ChatGPT tests; SECURITY.md MVP update. Wallet derivation: `mnemonicToAccount(BRAIN_AGENT_MNEMONIC, { accountIndex: brainIndex, addressIndex: familyIndex })`, families [claude, gemini, openai] (2026-11-06 19:30 IST)
@@ -271,6 +272,20 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - asks/blockers: team ENS label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY (testnet burner), OK to generate keys. Tooling: installed the Arkiv plugin 0.5.4 (Mumbai MCP connected) and the Context7 MCP
 
 ## Log: Lane B (Money & Security)
+
+### 2026-11-06 20:12 IST · B · v2 B2: all 30 brain AI wallets funded on Rabdi
+- did: the faucet claim (10 tGLM) went to the funder burner `0x49bE9ddD1e2eacE2662a0B5ffEA86a605287c910`. `pnpm brains:fund --only otter,maple,comet --yes` (9 transfers; balances re-read: 0.33 each), then `pnpm brains:fund --yes` for the other 21. Every AI wallet holds **0.33 tGLM** (≈ 195 writes of 20 KB or ~600 of 6 KB; the target moved from 0.35 so one claim funds all 30, see DECISIONS). The funder has 0.099 tGLM left. Each transfer's hash is recorded per AI in `config/deployments/brains.sepolia.json` (`funding`), with the sizing in `fundingPlan`. No team or server wallet sent anything on Rabdi
+- proof: e.g. claude.otter https://rabdi.explorer.arkiv.network/tx/0x2109a1455eec8d59b98b0bab144b234a82a532f2c7290d0491d373ff420c4d2a · gemini.otter https://rabdi.explorer.arkiv.network/tx/0x435fab06ebad099c99b05c0e098f0add19158f43b71265967efaff195b9e6f08 · openai.tundra https://rabdi.explorer.arkiv.network/tx/0x01ba7bf1a7e1469cefc9289caa731639d39d8adffcc31c200b2e8cd4eb822cb9 (all 30 in the json)
+- result: PASS
+- next: top up with `pnpm brains:fund` when a wallet falls below half (0.165)
+- asks/blockers: none
+
+### 2026-11-06 20:05 IST · B · v2 B1: all 10 brains live on ENSv2 Sepolia
+- did: the 9-brain run mined 94 of 99 txs. `tundra`'s gemini memory-head grant **reverted** (out of gas): right after its resolver was deployed, a lagging load-balanced RPC node simulated against pre-deploy state and estimated 38k instead of 258k. Fix: every provisioning step now uses a fixed gas limit above measured use (Sepolia gas is cheap; under-gassing is the risk), and `--only tundra --yes` resumed the last 5 steps. The 7 tundra txs from the failed run were added to the record from the run log. `pnpm ens:brains-status`: **✓ 10 brains, 30 AI names** (owner = derived wallet, no roles, addr and rules via the Universal Resolver, the team may set text, the AI may set only `sb.memory.head`, leases until 2026-11-20)
+- proof: registries otter `0x8158BC6a0005950b942B33303930823Cb25d1866`, maple `0x7e2dfaC4Cb7fDaB38722FF7FD526a966248d547C`, comet `0x9330D6E20b9Cc1A2823D1DAAf1F4EEfF8f1f1d1b`, cedar `0x3d7C3c9CD6A16E5F197FfE3743C3af1289Bf0A68`, ember `0x86430d4849318c7d683C81211Ae822efc607b7a2`, fjord `0x99eaA2E91349cEBC1069d49ae2626E5fCfb53a5B`, heron `0x87524c693E209F46511B1DCD5aF70eBCF9B7E577`, lotus `0x161Cf9Ebd587989efA71140dcEa61B8263e0aCFE`, prism `0x6206e593c88237559094737C5D3c6229054E30F7`, tundra `0xb7fCD3f7FB1982D02A8a9B7689333832A8fb7d2A` · the failed grant https://sepolia.etherscan.io/tx/0xd44e3b47f579c6ddddd8d6466ad6cac561011cd67ae8aaefa1d9a26a4cea4d36 and its retry https://sepolia.etherscan.io/tx/0xab418f558779c88f73b10741b715a13738cc8bc5910b5f0a5ada2f176bd8f492 · every hash is in `config/deployments/brains.sepolia.json`: 111 txs in total, 110 succeeded and 1 reverted then retried (commit 0f87d66's message says 115; 111 is correct)
+- result: PASS · commit 0f87d66. Owner spent ≈ 0.000000006 ETH; it holds 0.035 ETH (0.005 went to the team wallet)
+- next: Lane A reads `readBrainsDeployment()`
+- asks/blockers: none
 
 ### 2026-11-06 19:44 IST · B · v2 B2 (funder burner created; faucet needs a human)
 - did: generated the burner `FUNDER_PRIVATE_KEY` straight into `.env.local` (not printed): funder **`0x49bE9ddD1e2eacE2662a0B5ffEA86a605287c910`**. It is not the team wallet or any server wallet (`pnpm brains:fund` refuses those). Opened https://hub.arkiv.network/faucet: a claim needs a **connected browser wallet** (one claim per wallet per cooldown), which the built-in browser doesn't have, and Claude doesn't import private keys into wallets. Fixed `pnpm brains:fund` to estimate each transfer's gas (see the Sepolia note in the next entry)

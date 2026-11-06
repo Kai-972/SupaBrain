@@ -3,7 +3,7 @@
   "chainId": 11155111,
   "teamRegistry": "0xd5bC492deE1A41873Fa382fF17017F6D5506c41c",
   "factory": "0xda70306c98e97ece36f997a21368e53298572991",
-  "updatedAt": "2026-11-06T14:41:57.174Z",
+  "updatedAt": "2026-11-06T14:46:13.888Z",
   "brains": {
     "otter": {
       "label": "otter",
@@ -66,7 +66,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xa4bb48ad2c34edfcfb4e555704f2d3bd2a78100db35c389573002ef268055cbd",
               "at": "2026-11-06T14:09:28.178Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x2109a1455eec8d59b98b0bab144b234a82a532f2c7290d0491d373ff420c4d2a",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x2109a1455eec8d59b98b0bab144b234a82a532f2c7290d0491d373ff420c4d2a",
+            "at": "2026-11-06T14:43:08.155Z"
+          }
         },
         "gemini": {
           "ens": "gemini.otter.supabrain.eth",
@@ -106,7 +112,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x538f304c9b046579d22ab4435ebcf61add9994740e079ce77f5465f6572015ce",
               "at": "2026-11-06T14:10:02.624Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x435fab06ebad099c99b05c0e098f0add19158f43b71265967efaff195b9e6f08",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x435fab06ebad099c99b05c0e098f0add19158f43b71265967efaff195b9e6f08",
+            "at": "2026-11-06T14:43:14.222Z"
+          }
         },
         "openai": {
           "ens": "openai.otter.supabrain.eth",
@@ -146,7 +158,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xd9eae701d2ed5ddf6492c2e9d4312aab8fa8a50bdd56d09ab893e51915cdc818",
               "at": "2026-11-06T14:10:39.554Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xd0d0d14fad6113ded3ffadffe8eec17b33e7090bb7e54f9f9a297a8406c8aa85",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xd0d0d14fad6113ded3ffadffe8eec17b33e7090bb7e54f9f9a297a8406c8aa85",
+            "at": "2026-11-06T14:43:16.282Z"
+          }
         }
       }
     },
@@ -211,7 +229,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xfbd880b4453fe9b9b5be5ad589232515100f37ebe0952202af95e1f64eba9e6d",
               "at": "2026-11-06T14:12:17.762Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x537d0100208746aae35c20da8b6a41483addc654acb959479bb1f01aa46b19e1",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x537d0100208746aae35c20da8b6a41483addc654acb959479bb1f01aa46b19e1",
+            "at": "2026-11-06T14:43:22.168Z"
+          }
         },
         "gemini": {
           "ens": "gemini.maple.supabrain.eth",
@@ -251,7 +275,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x1f5a2de17b0027a98c73d5eb6a0270453bad45ec191f88f821c2606724773176",
               "at": "2026-11-06T14:12:49.324Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x20627719d7c23b9685c30b134b8cbf05ca428f64be7fad353d7a2e82397f6282",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x20627719d7c23b9685c30b134b8cbf05ca428f64be7fad353d7a2e82397f6282",
+            "at": "2026-11-06T14:43:28.007Z"
+          }
         },
         "openai": {
           "ens": "openai.maple.supabrain.eth",
@@ -291,7 +321,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x2d6f68b9269ea009cb6a26e4d17760a37382b31ca99426a0e21900eb8e067a5f",
               "at": "2026-11-06T14:14:02.808Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x2e96f75389bd2172ee3b851e4007cf6084deda91f2986e74f878b354badda2ea",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x2e96f75389bd2172ee3b851e4007cf6084deda91f2986e74f878b354badda2ea",
+            "at": "2026-11-06T14:43:33.715Z"
+          }
         }
       }
     },
@@ -356,7 +392,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x8d5d0631551c8b18c2393efcef2d5b3d7eb9ad34f96d387f06bbf1dbc1c66ee2",
               "at": "2026-11-06T14:15:15.026Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x1bc006f3900e57b88713fba7cd260789a5fe78e836abf671d7850554c637c092",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x1bc006f3900e57b88713fba7cd260789a5fe78e836abf671d7850554c637c092",
+            "at": "2026-11-06T14:43:39.442Z"
+          }
         },
         "gemini": {
           "ens": "gemini.comet.supabrain.eth",
@@ -396,7 +438,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xcca7fbdd369d605a6e1f4ea1412e1a107dfbc0e9719fa8a913d5d16dbc514776",
               "at": "2026-11-06T14:16:05.355Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x4fecb46036cd125f28d55d77479b858dec4171f23172f581d53da0da347c743b",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x4fecb46036cd125f28d55d77479b858dec4171f23172f581d53da0da347c743b",
+            "at": "2026-11-06T14:43:45.351Z"
+          }
         },
         "openai": {
           "ens": "openai.comet.supabrain.eth",
@@ -436,7 +484,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xa12bcc5e974d0ef33aebfaaa660ed78ceabf5ed9e904a9d3013647a67eefc1e7",
               "at": "2026-11-06T14:16:40.049Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x218c7f4b99b5fdbfb558bca827c42728aa1ce323f7899215fb0e4b4a75c99b89",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x218c7f4b99b5fdbfb558bca827c42728aa1ce323f7899215fb0e4b4a75c99b89",
+            "at": "2026-11-06T14:43:51.090Z"
+          }
         }
       }
     },
@@ -501,7 +555,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x2b2ecb73596c74bafef12817b6ba8939e316fa1ac2dffe16a0eb9be5b8b72adb",
               "at": "2026-11-06T14:18:05.457Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x25226c0de4d0f89ce14b76b566e442a6b8ce963d22579734b6a8ca3d65bde3d3",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x25226c0de4d0f89ce14b76b566e442a6b8ce963d22579734b6a8ca3d65bde3d3",
+            "at": "2026-11-06T14:44:29.012Z"
+          }
         },
         "gemini": {
           "ens": "gemini.cedar.supabrain.eth",
@@ -541,7 +601,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x13b596d8e91fca73267ba3af69ac93a87985bed8c1ca540590331335afa76533",
               "at": "2026-11-06T14:18:51.383Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xf6b918f6b410c0aedbab1d6af96e4b2ef729341dfdce5ca5bc21a21e4ff1d2c6",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xf6b918f6b410c0aedbab1d6af96e4b2ef729341dfdce5ca5bc21a21e4ff1d2c6",
+            "at": "2026-11-06T14:44:34.612Z"
+          }
         },
         "openai": {
           "ens": "openai.cedar.supabrain.eth",
@@ -581,7 +647,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x601c08decbd61dd5125d0ec96903766ec8637f764f316c6a0375177d9d4affef",
               "at": "2026-11-06T14:19:39.852Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xae84420bd66c7050ca6bf78f04ac1ae14830d7e7e24b6f1155eed6d48e3b31e9",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xae84420bd66c7050ca6bf78f04ac1ae14830d7e7e24b6f1155eed6d48e3b31e9",
+            "at": "2026-11-06T14:44:39.936Z"
+          }
         }
       }
     },
@@ -646,7 +718,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x0c8417c7f6837c93ce32b5f4fc669b39bf64036ccce2472e6a3ed1008270609f",
               "at": "2026-11-06T14:20:38.327Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x86cc559134e2bab79115ad59a2764b03bc44cd6134a3cbecf01fda7d7e733caf",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x86cc559134e2bab79115ad59a2764b03bc44cd6134a3cbecf01fda7d7e733caf",
+            "at": "2026-11-06T14:44:45.266Z"
+          }
         },
         "gemini": {
           "ens": "gemini.ember.supabrain.eth",
@@ -686,7 +764,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x068748832a835215849a20651cbd07e0571d34cd750f2dd521a9f32f51cb0473",
               "at": "2026-11-06T14:21:27.278Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x0e396f6230427c92bfabb7eec2b882f606df69e255a42971648bcfef7b868194",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x0e396f6230427c92bfabb7eec2b882f606df69e255a42971648bcfef7b868194",
+            "at": "2026-11-06T14:44:50.707Z"
+          }
         },
         "openai": {
           "ens": "openai.ember.supabrain.eth",
@@ -726,7 +810,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x4f02d9f940a28d870d4072646807fa5e15a892a83ccd0109711dc15dc75112a5",
               "at": "2026-11-06T14:22:05.630Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x8a82c098bdfecb549f8b817fcd3d9a2e92bb9771a407dfd6e5157db584473254",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x8a82c098bdfecb549f8b817fcd3d9a2e92bb9771a407dfd6e5157db584473254",
+            "at": "2026-11-06T14:44:56.129Z"
+          }
         }
       }
     },
@@ -791,7 +881,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xfd2682b15ce7ac7dd48cd8ed37a4ab7ee9b9fbff4b5312bf2c7591d884a0e750",
               "at": "2026-11-06T14:23:52.754Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xa25a29a7430d5ef90cba19e0ac38b3635e382086caa8c629823d41bcfbd95428",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xa25a29a7430d5ef90cba19e0ac38b3635e382086caa8c629823d41bcfbd95428",
+            "at": "2026-11-06T14:45:01.602Z"
+          }
         },
         "gemini": {
           "ens": "gemini.fjord.supabrain.eth",
@@ -831,7 +927,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xe1ecde69bfa5ff4b3f5affa1247f2b5347ff77524484db914c281bcca67fbc5e",
               "at": "2026-11-06T14:24:56.200Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xf04b793445de4f9b6bef07f5fd3470505a2cf3975f8edba8ee75fb4d007df6f9",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xf04b793445de4f9b6bef07f5fd3470505a2cf3975f8edba8ee75fb4d007df6f9",
+            "at": "2026-11-06T14:45:07.212Z"
+          }
         },
         "openai": {
           "ens": "openai.fjord.supabrain.eth",
@@ -871,7 +973,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x5f4d5482a8b7c1df32503534154f219d7c01fc27fabb86c8844612863c81ce0a",
               "at": "2026-11-06T14:27:17.571Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x350b1ee8d852ebf43ef154e8988a1ee6d012c82fd751b69d6102170244b403bd",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x350b1ee8d852ebf43ef154e8988a1ee6d012c82fd751b69d6102170244b403bd",
+            "at": "2026-11-06T14:45:12.462Z"
+          }
         }
       }
     },
@@ -936,7 +1044,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xbe9cd5b60289b63baa13cbb5886fb73f044388179259d75bcfb45827468b6fa6",
               "at": "2026-11-06T14:29:31.110Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xd5130dd065f6f9abd3b0856f9e72fa4f3ec5bd5c8c3e8cdc1fb612d1a046fc34",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xd5130dd065f6f9abd3b0856f9e72fa4f3ec5bd5c8c3e8cdc1fb612d1a046fc34",
+            "at": "2026-11-06T14:45:17.760Z"
+          }
         },
         "gemini": {
           "ens": "gemini.heron.supabrain.eth",
@@ -976,7 +1090,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xbf0e0ffa4847b4c3993619c30fffaa6d94d7476f78c2a57b71b45c81977a256e",
               "at": "2026-11-06T14:30:40.440Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xbb7987f33bd1185c9c86e27c4f2eb202241b29c417dc9c8ac5e5f029ab0f83e4",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xbb7987f33bd1185c9c86e27c4f2eb202241b29c417dc9c8ac5e5f029ab0f83e4",
+            "at": "2026-11-06T14:45:23.150Z"
+          }
         },
         "openai": {
           "ens": "openai.heron.supabrain.eth",
@@ -1016,7 +1136,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x9954273d6322a2eb3e4ab4986ebea298c9ee43d0d08afc4b5cca63ecac9ffda7",
               "at": "2026-11-06T14:31:46.193Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xa72cdf0ff6de4ddf2071059d76fe4566efa373b50bd77adbae1271d312b41f34",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xa72cdf0ff6de4ddf2071059d76fe4566efa373b50bd77adbae1271d312b41f34",
+            "at": "2026-11-06T14:45:28.496Z"
+          }
         }
       }
     },
@@ -1081,7 +1207,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x607bccc6678655b7c65c1adc231d926ff7915e422c7c3e1aa881dbcec066ce06",
               "at": "2026-11-06T14:34:27.293Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x86c8b0791b9778d6a68430e73817d6576662582a8ef57af2e698a28a73721ba5",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x86c8b0791b9778d6a68430e73817d6576662582a8ef57af2e698a28a73721ba5",
+            "at": "2026-11-06T14:45:33.992Z"
+          }
         },
         "gemini": {
           "ens": "gemini.lotus.supabrain.eth",
@@ -1121,7 +1253,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xe6da09c8a05d55b7667246401a6aae93a790a5e6963cc903b27e3e9fa08fda95",
               "at": "2026-11-06T14:35:15.030Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x5cd517c3d81e26ef4c58e54358f1f1c34452b251b56e7d97929537c6e2ff4775",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x5cd517c3d81e26ef4c58e54358f1f1c34452b251b56e7d97929537c6e2ff4775",
+            "at": "2026-11-06T14:45:39.309Z"
+          }
         },
         "openai": {
           "ens": "openai.lotus.supabrain.eth",
@@ -1161,7 +1299,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xb6d6e8d2bde5305d459cd633c590a3355e409a41dcb3e12600035a7c6bfedc1c",
               "at": "2026-11-06T14:35:52.951Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xd5127846994d9368ded430bf7632954d9e8fae8cfec2d80d4fc8bf98f8d8c400",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xd5127846994d9368ded430bf7632954d9e8fae8cfec2d80d4fc8bf98f8d8c400",
+            "at": "2026-11-06T14:45:44.887Z"
+          }
         }
       }
     },
@@ -1226,7 +1370,13 @@
               "url": "https://sepolia.etherscan.io/tx/0xd9b68da5a5ec81f3810c62a54fd3e1d6af9065701a9a14ea03d63f323964c046",
               "at": "2026-11-06T14:37:03.453Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xe24f0613879ae1283f499b568a9fe2518f765f59ea62b88b370681175b355f84",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xe24f0613879ae1283f499b568a9fe2518f765f59ea62b88b370681175b355f84",
+            "at": "2026-11-06T14:45:50.591Z"
+          }
         },
         "gemini": {
           "ens": "gemini.prism.supabrain.eth",
@@ -1266,7 +1416,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x1eda5884d90ec6f2828ff2d80a2a2b5b1fea238c046c8fffb3f4b6fed3062a59",
               "at": "2026-11-06T14:37:53.273Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x04261e7b8938c3500741dde6d8f5aa427f9808a1d86803658e9ca38a43c3b5cc",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x04261e7b8938c3500741dde6d8f5aa427f9808a1d86803658e9ca38a43c3b5cc",
+            "at": "2026-11-06T14:45:55.948Z"
+          }
         },
         "openai": {
           "ens": "openai.prism.supabrain.eth",
@@ -1306,7 +1462,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x47b4ab8f3437838d216f2ccde4de1b99b9a2ca207d9cf5c6e3dccd3028d89cc6",
               "at": "2026-11-06T14:38:28.137Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x0b2d415d4249c14db6237eae78753569c0c44177a4c222bf426bac52412ab22c",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x0b2d415d4249c14db6237eae78753569c0c44177a4c222bf426bac52412ab22c",
+            "at": "2026-11-06T14:46:01.369Z"
+          }
         }
       }
     },
@@ -1371,7 +1533,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x7984e74097b17b97a0f76b61960645c0664f875c09d1643b79951f62a3200f2c",
               "at": "2026-11-06T14:42:14.431388Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0xc782e2cfac7539838bd9ac426c51296476132946da301e32da843085bcc04821",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0xc782e2cfac7539838bd9ac426c51296476132946da301e32da843085bcc04821",
+            "at": "2026-11-06T14:46:06.771Z"
+          }
         },
         "gemini": {
           "ens": "gemini.tundra.supabrain.eth",
@@ -1417,7 +1585,13 @@
               "url": "https://sepolia.etherscan.io/tx/0x1a054dd6afb07614a4082728978b4da3ab3ac145070ea25cf4dfa03aae010959",
               "at": "2026-11-06T14:41:14.750Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x31bb997812b07bcefd5d43da66684d7cc1783ebffa3cebaa4a2038427ec05237",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x31bb997812b07bcefd5d43da66684d7cc1783ebffa3cebaa4a2038427ec05237",
+            "at": "2026-11-06T14:46:08.438Z"
+          }
         },
         "openai": {
           "ens": "openai.tundra.supabrain.eth",
@@ -1457,9 +1631,27 @@
               "url": "https://sepolia.etherscan.io/tx/0xca97520738e8ffcb330fe8354730ab4984a95a5a7edc0d09114db311559d871d",
               "at": "2026-11-06T14:41:54.867Z"
             }
-          ]
+          ],
+          "funding": {
+            "amountGlm": "0.33",
+            "txHash": "0x01ba7bf1a7e1469cefc9289caa731639d39d8adffcc31c200b2e8cd4eb822cb9",
+            "url": "https://rabdi.explorer.arkiv.network/tx/0x01ba7bf1a7e1469cefc9289caa731639d39d8adffcc31c200b2e8cd4eb822cb9",
+            "at": "2026-11-06T14:46:13.888Z"
+          }
         }
       }
     }
+  },
+  "fundingPlan": {
+    "network": "Arkiv Rabdi DB-Chain testnet",
+    "funder": "0x49bE9ddD1e2eacE2662a0B5ffEA86a605287c910",
+    "perWalletGlm": "0.33",
+    "writesPerWallet": 200,
+    "costPerWriteGlm": "0.00165",
+    "measuredFrom": [
+      "pnpm brains:write-cost",
+      "pnpm brains:write-cost on 2026-11-06: 23 Rabdi receipts fit gasUsed ≈ 52k + 77.5 gas per input byte at a flat 1 gwei. A 20 KB checkpoint ≈ 1.6M gas ≈ 0.0016 tGLM, a typical 6 KB write ≈ 0.0005. 0.33 tGLM ≈ 195 writes of 20 KB (or ~600 of 6 KB) plus ~0.015 tGLM so one maximum-size write's upfront gas limit still passes the balance check. Set to 0.33 (from 0.35) so one 10 tGLM faucet claim funds all 30 AI wallets; top up with pnpm brains:fund when a wallet falls below half"
+    ],
+    "at": "2026-11-06T14:46:13.893Z"
   }
 }

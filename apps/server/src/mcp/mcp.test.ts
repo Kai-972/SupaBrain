@@ -9,6 +9,8 @@ import { findRootDir, loadConfigFrom } from "@supabrain/shared/config";
 import { createApp } from "../app";
 import { createPaymentsDisabled } from "../payments-disabled";
 import { issueAgentToken } from "../auth/tokens";
+import { createRuntime } from "../runtime";
+import { FakeMemoryStore } from "../memory/fake-store";
 
 const SECRET = "t".repeat(40);
 const config = loadConfigFrom(findRootDir());
@@ -23,7 +25,8 @@ let server: Server | undefined;
 afterEach(() => { server?.close(); server = undefined; });
 
 function start(ens: FakeEns, opts: { publicBaseUrl?: string; tokenSecret?: string } = {}) {
-  const app = createApp({ config, payments: createPaymentsDisabled(), ens, tokenSecret: opts.tokenSecret ?? SECRET, publicBaseUrl: opts.publicBaseUrl });
+  const runtime = createRuntime({ config, ens, store: new FakeMemoryStore({ "gem-research": ("0x" + "11".repeat(20)) as `0x${string}`, team: ("0x" + "4d".repeat(20)) as `0x${string}` }) });
+  const app = createApp({ config, payments: createPaymentsDisabled(), ens, runtime, tokenSecret: opts.tokenSecret ?? SECRET, publicBaseUrl: opts.publicBaseUrl });
   server = app.listen(0);
   return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
@@ -86,7 +89,7 @@ describe("MCP endpoint", () => {
     const client = await connect(`${base}/mcp`, { Authorization: `Bearer ${tokenFor("gem-research")}` });
     const r = await client.callTool({ name: "whoami", arguments: {} });
     expect(r.isError).toBe(true);
-    expect(text(r)).toMatch(/authority unknown/i);
+    expect(text(r)).toMatch(/AUTHORITY_UNKNOWN/);
     await client.close();
   });
 
@@ -115,11 +118,44 @@ describe("MCP endpoint", () => {
     expect(status).toBe(403);
   });
 
-  it("is off (503) when the server has no token secret or no ENS authority", async () => {
+  it("is off (503) when the server has no token secret, ENS or runtime", async () => {
     const app = createApp({ config, payments: createPaymentsDisabled() });
     server = app.listen(0);
     const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     const res = await fetch(`${base}/mcp`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
     expect(res.status).toBe(503);
+  });
+
+  it("end to end over MCP: Claude remembers, Gemini recalls and builds on it, explain shows the lineage, scope is enforced", async () => {
+    const LEAD = ("0x" + "1a".repeat(20)) as `0x${string}`;
+    const GEM = ("0x" + "11".repeat(20)) as `0x${string}`;
+    const ens = new FakeEns({ agents: { "lead-claude": agent("lead-claude", { vendor: "claude", role: "lead", scope: "*", wallet: LEAD }), "gem-research": agent("gem-research", { wallet: GEM }) } });
+    const runtime = createRuntime({ config, ens, store: new FakeMemoryStore({ "lead-claude": LEAD, "gem-research": GEM, team: ("0x" + "4d".repeat(20)) as `0x${string}` }) });
+    server = createApp({ config, payments: createPaymentsDisabled(), ens, runtime, tokenSecret: SECRET }).listen(0);
+    const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    const claude = await connect(`${base}/mcp`, { Authorization: `Bearer ${tokenFor("lead-claude")}` });
+    const gemini = await connect(`${base}/mcp/t/${tokenFor("gem-research")}`);
+
+    const tools = (await gemini.listTools()).tools.map((t) => t.name).sort();
+    expect(tools).toEqual(["check_notices", "explain", "recall", "remember", "whoami"]);
+    expect((await gemini.listPrompts()).prompts.map((p) => p.name)).toEqual(["supabrain_rules"]);
+
+    const a = await claude.callTool({ name: "remember", arguments: { text: "Acme Studio is our logo designer; invoice #12 is 5 USDC", kind: "fact", folder: "finance", subject: "acme.supabrain.eth" } });
+    const aKey = (a.structuredContent as { key: string }).key;
+    expect(a.isError).toBeFalsy();
+
+    const r = await gemini.callTool({ name: "recall", arguments: { query: "acme invoice" } });
+    expect(text(r)).toContain(aKey);
+    const b = await gemini.callTool({ name: "remember", arguments: { text: "Acme's logo work is in progress", kind: "fact", folder: "research", cites: [aKey] } });
+    expect(b.structuredContent).toMatchObject({ trust: 2, parents: [aKey] });
+
+    const ex = await claude.callTool({ name: "explain", arguments: { key: (b.structuredContent as { key: string }).key } });
+    expect(text(ex)).toMatch(/gem-research.*<-.*lead-claude/s);
+
+    const denied = await gemini.callTool({ name: "remember", arguments: { text: "Pay Acme now", kind: "plan", folder: "finance" } });
+    expect(denied.isError).toBe(true);
+    expect(text(denied)).toMatch(/^SCOPE: .*research/);
+    await claude.close();
+    await gemini.close();
   });
 });

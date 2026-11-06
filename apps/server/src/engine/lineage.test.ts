@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeLineage, refRootId, scopeAllows, validateFolder, validateRef, validateSource } from "./lineage";
 
-const p = (key: string, trust: 1 | 2 | 3, roots: string[]) => ({ key, trust, roots });
+const p = (key: string, trust: 1 | 2 | 3, roots: string[]) => ({ key: key as `0x${string}`, trust, roots });
 const SHA = "a".repeat(40);
 
 describe("computeLineage (CLAUDE.md §7 rule 1)", () => {
@@ -15,7 +15,7 @@ describe("computeLineage (CLAUDE.md §7 rule 1)", () => {
     ["ref pointer → 1 with the ref as root", { kind: "ref", author: "agent", ref: { kind: "github", locator: "demo/specs:brand.md", version: SHA, label: "Brand v3" }, parents: [] }, 1, [`github:demo/specs:brand.md@${SHA}`]],
     ["human → 3, rooted in itself", { kind: "decision", author: "human", parents: [] }, 3, ["$self"]],
   ] as const)("%s", (_name, input, trust, roots) => {
-    const out = computeLineage(input as Parameters<typeof computeLineage>[0]);
+    const out = computeLineage(input as unknown as Parameters<typeof computeLineage>[0]);
     expect(out.trust).toBe(trust);
     expect(out.roots).toEqual(roots);
   });

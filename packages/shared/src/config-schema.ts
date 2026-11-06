@@ -9,7 +9,7 @@ const Usdc = z.string().regex(/^\d+(\.\d{1,6})?$/, "expected a decimal USDC amou
 const Label = z.string().regex(/^[a-z0-9-]+$/, "expected a lowercase ENS label");
 const VerifiedAt = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "expected an ISO date");
 const Sourced = { source: z.url(), verifiedAt: VerifiedAt };
-const Explorer = z.object({ base: z.url(), tx: z.string().includes("{hash}"), address: z.string().includes("{address}") });
+const Explorer = z.object({ base: z.url(), tx: z.string().includes("{hash}"), address: z.string().includes("{address}"), entity: z.string().includes("{key}").optional() });
 
 // Arkiv max entity lifetime is ~182 d; revocations ("max") must outlive any kept memory.
 const ARKIV_MAX_LIFETIME_DAYS = 182;
@@ -18,7 +18,11 @@ export const AppFileSchema = z
   .object({
     appNamespace: z.string().min(1),
     team: z.object({ id: z.string().min(1), displayName: z.string().min(1) }),
-    server: z.object({ port: z.number().int().positive() }),
+    server: z.object({
+      port: z.number().int().positive(),
+      allowedOrigins: z.array(z.url()), // dashboard origins allowed to call /api with credentials (CORS)
+      adminSessionHours: z.number().int().positive(),
+    }),
     ens: z.object({
       teamLabel: Label.nullable(), // ASK in S1
       leaseDays: z.number().int().positive(),
@@ -44,7 +48,7 @@ export const AppFileSchema = z
       .min(1),
     vendors: z.array(z.object({ label: Label, displayName: z.string().min(1) })),
     trust: z.object({ human: z.literal(3), agent: z.literal(2), evidence: z.literal(1) }),
-    readSet: z.object({ ttlSec: z.number().int().positive() }),
+    readSet: z.object({ ttlSec: z.number().int().positive(), maxParents: z.number().int().positive() }),
     keep: z.object({ defaultDays: z.number().int().positive(), maxDays: z.number().int().positive() }),
     payments: z.object({
       intentTtlSec: z.number().int().positive(),
@@ -185,5 +189,6 @@ export const EnvSchema = z.looseObject({
   DASHBOARD_ADMIN_PASSPHRASE: opt(z.string().min(8)),
   NEXT_PUBLIC_SERVER_URL: opt(z.url()),
   PORT: opt(z.coerce.number().int().positive()),
+  SUPABRAIN_APP_NAMESPACE: opt(z.string().regex(/^[a-z0-9-]+$/)), // overrides app.json appNamespace (e.g. a -dev namespace for testing)
 });
 export type Env = z.infer<typeof EnvSchema>;

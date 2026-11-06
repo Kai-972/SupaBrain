@@ -19,7 +19,8 @@
     "explorer": {
       "base": "https://rabdi.explorer.arkiv.network",
       "tx": "https://rabdi.explorer.arkiv.network/tx/{hash}",
-      "address": "https://rabdi.explorer.arkiv.network/address/{address}"
+      "address": "https://rabdi.explorer.arkiv.network/address/{address}",
+      "entity": "https://rabdi.explorer.arkiv.network/entity/{key}"
     },
     "faucet": "https://hub.arkiv.network/faucet",
     "accessKeys": "https://hub.arkiv.network/access-keys",

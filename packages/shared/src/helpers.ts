@@ -30,6 +30,6 @@ export function redactUrls(message: string): string {
 }
 
 /** Fill an explorer template such as ".../tx/{hash}". */
-export function explorerLink(template: string, values: { hash?: string; address?: string }): string {
-  return template.replace("{hash}", values.hash ?? "").replace("{address}", values.address ?? "");
+export function explorerLink(template: string, values: { hash?: string; address?: string; key?: string }): string {
+  return template.replace("{hash}", values.hash ?? "").replace("{address}", values.address ?? "").replace("{key}", values.key ?? "");
 }

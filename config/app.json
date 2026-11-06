@@ -5,7 +5,12 @@
     "displayName": "Demo Team"
   },
   "server": {
-    "port": 3001
+    "port": 3001,
+    "allowedOrigins": [
+      "http://localhost:3000",
+      "https://supabrain.blackslate.me"
+    ],
+    "adminSessionHours": 12
   },
   "ens": {
     "teamLabel": "supabrain",
@@ -65,7 +70,8 @@
     "evidence": 1
   },
   "readSet": {
-    "ttlSec": 1800
+    "ttlSec": 1800,
+    "maxParents": 12
   },
   "keep": {
     "defaultDays": 7,

@@ -64,7 +64,8 @@ export type StreamEvent =
   | { t: "kept"; key: string; expiresAt: number } | { t: "expired"; key: string }
   | { t: "connected"; agent: string; client?: string }            // first whoami from a client
   | { t: "payment"; payment: Payment } | { t: "approval"; approval: ApprovalView }
-  | { t: "agent"; agent: AgentView };
+  | { t: "agent"; agent: AgentView }
+  | { t: "write_failed"; key: string; error: string };          // an optimistic (pending) memory did not land on Arkiv: drop it
 
 // Dashboard API client ids (CLAUDE.md §6.4).
 export type Client = "claude-code" | "claude-ai" | "antigravity" | "gemini-cli" | "chatgpt";

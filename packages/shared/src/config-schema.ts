@@ -31,6 +31,7 @@ export const AppFileSchema = z
       textKeys: z.object({
         role: z.string(), scope: z.string(), payCap: z.string(), payDaily: z.string(), status: z.string(),
         memoryHead: z.string(), vendor: z.string(), agentContext: z.string(), agentEndpointMcp: z.string(),
+        writeDaily: z.string().optional(), // v2: writes per day (sb.write.daily); absent → no limit
       }),
     }),
     agents: z

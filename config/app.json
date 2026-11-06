@@ -26,7 +26,8 @@
       "memoryHead": "sb.memory.head",
       "vendor": "sb.vendor",
       "agentContext": "agent-context",
-      "agentEndpointMcp": "agent-endpoint[mcp]"
+      "agentEndpointMcp": "agent-endpoint[mcp]",
+      "writeDaily": "sb.write.daily"
     }
   },
   "agents": [

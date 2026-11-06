@@ -12,11 +12,12 @@ import type { MemoryDraft, MemoryStore } from "./store";
 
 export type ToolErrorCode =
   | "AUTHORITY_UNKNOWN" | "NOT_AUTHORIZED" | "KEY_MISMATCH" | "SCOPE" | "INVALID" | "CITE_NOT_READ" | "CITE_QUARANTINED"
-  | "TOO_MANY_PARENTS" | "WRITE_FAILED" | "NOT_FOUND" | "ALREADY_REVOKED" | "KEEP_REFUSED";
+  | "TOO_MANY_PARENTS" | "WRITE_FAILED" | "NOT_FOUND" | "ALREADY_REVOKED" | "KEEP_REFUSED" | "RATE_LIMIT" | "STOPPED";
 
 /** An error the agent should see and act on (returned as an MCP tool error, never a crash). */
 export class ToolError extends Error {
-  constructor(readonly code: ToolErrorCode, message: string) {
+  /** `rule`: the ENS record or guard rule that decided a refusal (sb.status, sb.scope, sb.write.daily, …), for the website. */
+  constructor(readonly code: ToolErrorCode, message: string, readonly rule?: string) {
     super(message);
     this.name = "ToolError";
   }
@@ -69,7 +70,7 @@ export function createMemoryService(d: ServiceDeps) {
     try {
       return await d.ens.getAgentAuthority(agent);
     } catch {
-      throw new ToolError("AUTHORITY_UNKNOWN", `ENS authority for ${agent} is unknown right now (ENS could not be read), so reads, writes and payments are paused. Try again shortly.`);
+      throw new ToolError("AUTHORITY_UNKNOWN", `ENS authority for ${agent} is unknown right now (ENS could not be read), so reads, writes and payments are paused. Try again shortly.`, "ens-unreadable");
     }
   }
 
@@ -77,14 +78,15 @@ export function createMemoryService(d: ServiceDeps) {
   async function requireActive(agent: string): Promise<AgentView & { recordsOk: boolean }> {
     const a = await authority(agent);
     if (!a.registered || a.status !== "active" || !a.recordsOk) {
-      throw new ToolError("NOT_AUTHORIZED", `${a.ens} is not allowed to act: ENS status is "${a.status}"${a.registered ? "" : " (name not registered to the agent wallet)"}${a.recordsOk ? "" : " (records incomplete)"}. Stop and tell the user.`);
+      const rule = !a.registered ? "ens-owner" : !a.recordsOk ? "ens-records" : d.config.app.ens.textKeys.status;
+      throw new ToolError("NOT_AUTHORIZED", `${a.ens} is not allowed to act: ENS status is "${a.status}"${a.registered ? "" : " (name not registered to the agent wallet)"}${a.recordsOk ? "" : " (records incomplete)"}. Stop and tell the user.`, rule);
     }
     if (d.graph.isRevoked({ type: "agent", id: agent })) {
-      throw new ToolError("NOT_AUTHORIZED", `${a.ens} was revoked by the team owner; everything it wrote is quarantined. Stop and tell the user.`);
+      throw new ToolError("NOT_AUTHORIZED", `${a.ens} was revoked by the team owner; everything it wrote is quarantined. Stop and tell the user.`, "revoked");
     }
     const wallet = d.store.walletOf(agent);
     if (!wallet || wallet.toLowerCase() !== a.wallet.toLowerCase()) {
-      throw new ToolError("KEY_MISMATCH", `the server's signing key for ${agent} does not match its ENS wallet ${a.wallet}; refusing to write as it`);
+      throw new ToolError("KEY_MISMATCH", `the server's signing key for ${agent} does not match its ENS wallet ${a.wallet}; refusing to write as it`, "ens-addr");
     }
     return a;
   }

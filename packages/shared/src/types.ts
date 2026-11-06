@@ -40,8 +40,8 @@ export interface DryRun {
 }
 
 export interface AgentView { label: string; ens: string; vendor: Vendor; role: Role; scope: string; wallet: `0x${string}`;
-  registered: boolean; leaseExpiresAt: number; status: "active" | "quarantined" | "unregistered" | "expired";
-  payCap: string; payDaily: string; lastWriteAt?: number; connectedClient?: string }
+  registered: boolean; leaseExpiresAt: number; status: "active" | "paused" | "quarantined" | "unregistered" | "expired";
+  payCap: string; payDaily: string; writeDaily?: string; lastWriteAt?: number; connectedClient?: string }
 
 export type PayReason =
   | { code: "QUARANTINED_LINEAGE"; revoked: string[] }
@@ -73,7 +73,23 @@ export type StreamEvent =
   | { t: "connected"; agent: string; client?: string }            // first whoami from a client
   | { t: "payment"; payment: Payment } | { t: "approval"; approval: ApprovalView }
   | { t: "agent"; agent: AgentView }
-  | { t: "write_failed"; key: string; error: string };          // an optimistic (pending) memory did not land on Arkiv: drop it
+  | { t: "write_failed"; key: string; error: string }           // an optimistic (pending) memory did not land on Arkiv: drop it
+  | { t: "blocked"; block: BlockedEntry }                          // v2: an AI was refused by an ENS rule, or its content was stopped
+  | { t: "head"; head: HeadView };                                 // v2: an AI's latest checkpoint was published to its ENS name (sb.memory.head)
+
+/** v2: one refusal or stop, for the website's live "blocked" feed and the owner's review notices. */
+export interface BlockedEntry {
+  at: number; agent: string; ens?: string; tool: "continue" | "checkpoint" | "checkout" | "pay";
+  code: string;                 // NOT_AUTHORIZED | SCOPE | RATE_LIMIT | STOPPED | KEY_MISMATCH | AUTHORITY_UNKNOWN | ...
+  rule?: string;                // the ENS record or guard rule that decided it: sb.status, sb.scope, sb.write.daily, instruction-override, ...
+  message: string;
+  key?: string;                 // STOPPED: the saved (quarantined) checkpoint key, for review
+  excerpt?: string;             // STOPPED: the matched text
+  arkivUrl?: string;            // STOPPED: the team-signed revocation on Arkiv
+}
+
+/** v2: git-style ref. The newest checkpoint of an AI, as written to ENS (sb.memory.head) and as the server knows it. */
+export interface HeadView { agent: string; ens: string; key: string; txUrl?: string; at: number; error?: string }
 
 // Continuity views (dashboard API). A task is "done" while a live checkpoint ticks it: revoke that checkpoint and the
 // task reopens. A file's current version is its newest version whose checkpoint is live (revoke rolls it back).

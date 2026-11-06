@@ -37,6 +37,8 @@ export interface EnsAuthorityDeps {
 const ROLES: readonly Role[] = ["owner", "lead", "worker", "observer"];
 const VENDORS: readonly Vendor[] = ["claude", "gemini", "openai", "human"];
 const USDC = /^\d+(\.\d{1,6})?$/;
+/** sb.status values a valid record may hold ("paused" is the website's Pause, v2). */
+const STATUSES: readonly string[] = ["active", "paused", "quarantined"];
 
 export function createEnsAuthority(deps: EnsAuthorityDeps): EnsAuthority {
   const { app, deployments, chain } = deps;
@@ -77,24 +79,30 @@ export function createEnsAuthority(deps: EnsAuthorityDeps): EnsAuthority {
         const [owner, expiry] = await Promise.all([chain.getOwner(registry, id), chain.getExpiry(registry, id)]);
         const wallet = dep.wallet as Hex;
         const registered = owner !== ZERO && owner.toLowerCase() === wallet.toLowerCase();
-        const [role, scope, payCap, payDaily, status, vendor] = await Promise.all(
-          [keys.role, keys.scope, keys.payCap, keys.payDaily, keys.status, keys.vendor].map((k) => chain.getEnsText(name, k)),
+        const [role, scope, payCap, payDaily, status, vendor, writeDaily] = await Promise.all(
+          [keys.role, keys.scope, keys.payCap, keys.payDaily, keys.status, keys.vendor, ...(keys.writeDaily ? [keys.writeDaily] : [])].map((k) => chain.getEnsText(name, k)),
         );
         const recordsOk =
           registered && ROLES.includes(role as Role) && !!scope && USDC.test(payCap ?? "") && USDC.test(payDaily ?? "") &&
-          (status === "active" || status === "quarantined") && VENDORS.includes(vendor as Vendor);
+          STATUSES.includes(status ?? "") && VENDORS.includes(vendor as Vendor);
         const lease = expiry * 1000;
         let view: AgentView["status"];
         if (!registered) view = owner === ZERO && expiry > 0 && lease <= now() ? "expired" : "unregistered";
-        else view = status === "quarantined" ? "quarantined" : "active";
+        else view = status === "quarantined" ? "quarantined" : status === "paused" ? "paused" : "active";
         // Restrictive defaults when records are unusable: an agent with unreadable rules gets no rights.
         return {
           label, ens: name, wallet, registered, leaseExpiresAt: lease, status: view, recordsOk,
           vendor: (VENDORS.includes(vendor as Vendor) ? vendor : "human") as Vendor,
           role: (ROLES.includes(role as Role) ? role : "observer") as Role,
           scope: scope ?? "", payCap: USDC.test(payCap ?? "") ? payCap! : "0", payDaily: USDC.test(payDaily ?? "") ? payDaily! : "0",
+          // v2 writes per day: unset → no limit; unreadable or malformed → 0 (fail closed)
+          ...(writeDaily === undefined || writeDaily === null ? {} : { writeDaily: /^\d{1,9}$/.test(writeDaily) ? String(Number(writeDaily)) : "0" }),
         };
       });
+    },
+
+    invalidate(label) {
+      cache.delete(`agent:${label}`);
     },
 
     async resolveEns(name) {

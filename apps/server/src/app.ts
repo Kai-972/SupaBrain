@@ -48,6 +48,8 @@ export function createApp({ config, payments, ens, runtime, tokenSecret, publicB
     mountMcp(app, { config, service: runtime.service, continuity: runtime.continuity, clients: runtime.clients, payments, tokenSecret, publicBaseUrl, log, legacyTools: legacyTools ?? true });
     const admin = adminAuth({ secret: tokenSecret, passphrase: adminPassphrase, sessionHours: config.app.server.adminSessionHours, secureCookie: !!publicBaseUrl?.startsWith("https://") }); // hardcode-ok: protocol prefix check, not an endpoint
     const undo = createUndo({ config, runtime, payments, log });
+    // v2 Stop: injected content is revoked at once (a team-signed revocation on Arkiv), so no AI receives it
+    runtime.continuity.onStop(async (key, reason) => ({ arkivUrl: (await undo.revoke({ type: "memory", id: key }, reason)).arkivUrl }));
     mountApi(app, { config, ens, runtime, admin, payments, undo });
     mountBrainApi(app, { config, ens, runtime, undo, owner: admin.require });
     mountPairing(app, { config, tokenSecret, publicBaseUrl, webBaseUrl: webBaseUrl ?? config.app.web.baseUrl, owner: admin.require });

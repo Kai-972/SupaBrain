@@ -11,6 +11,8 @@ export interface EnsAuthority {
   teamVendors(): string[];                                                        // full ENS names of team vendors
   agentRegistryRef(label: string): { registry: `0x${string}`; labelhash: `0x${string}` }; // for vault setAgent
   watch?(onEvent: (e: { type: "unregistered" | "expiry" | "roles" | "records"; label: string; txHash: string }) => void): () => void; // SHOULD
+  /** Drop cached authority for one agent (after a rule change), so the next call reads ENS again. */
+  invalidate?(label: string): void;
 }
 
 // §6.3 — Lane A provides these adapters.

@@ -4,9 +4,11 @@
 import { createHash } from "node:crypto";
 import type { MemoryKind, MemoryNode, SourceRef } from "@supabrain/shared";
 import { currentFiles, frontier, heads, LIMITS, NOTE_KINDS, renderPack, resolveTaskRef, resumePack, scanSecrets, taskRef, taskViews, validatePath, type ResumePack } from "../engine/continuity";
+import { scanInjection, type InjectionHit } from "../engine/guard";
 import { computeLineage, scopeAllows, validateSource } from "../engine/lineage";
 import { searchMemories } from "../engine/search";
 import type { Notice } from "../engine/session";
+import type { BlockedEntry } from "@supabrain/shared";
 import { ToolError, type MemoryService, type ServiceDeps } from "./service";
 import { draftRef, type MemoryDraft } from "./store";
 
@@ -26,7 +28,28 @@ const bad = (m: string): never => { throw new ToolError("INVALID", m); };
 
 export type ContinuityService = ReturnType<typeof createContinuityService>;
 
-export function createContinuityService(d: ServiceDeps & { service: MemoryService }) {
+/** Refusals worth showing on the website's live "blocked" feed (an ENS rule or the guard decided them). */
+const BLOCK_CODES = new Set(["NOT_AUTHORIZED", "SCOPE", "RATE_LIMIT", "STOPPED", "KEY_MISMATCH", "AUTHORITY_UNKNOWN"]);
+const DAY_MS = 86_400_000;
+
+/** The last 200 refusals and stops, newest first; each one is also streamed as `blocked`. */
+export class BlockedLog {
+  private readonly entries: BlockedEntry[] = [];
+  constructor(private readonly emit: (b: BlockedEntry) => void, private readonly capacity = 200) {}
+  record(b: BlockedEntry): BlockedEntry {
+    this.entries.unshift(b);
+    if (this.entries.length > this.capacity) this.entries.pop();
+    this.emit(b);
+    return b;
+  }
+  list(): BlockedEntry[] {
+    return [...this.entries];
+  }
+}
+
+export type StopHandler = (key: string, reason: string) => Promise<{ arkivUrl?: string }>;
+
+export function createContinuityService(d: ServiceDeps & { service: MemoryService; blocked: BlockedLog }) {
   const now = d.now ?? Date.now;
   const log = d.log ?? (() => undefined);
   const { graph, readSets, readLog, store, bus } = d;
@@ -45,7 +68,22 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
   }
 
   /** `continue`: where things stand. What it shows becomes the agent's read-set, so its next checkpoint descends from it. */
+  let stopHandler: StopHandler | undefined;
+  async function guarded<T>(agent: string, tool: BlockedEntry["tool"], fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (e) {
+      if (e instanceof ToolError && BLOCK_CODES.has(e.code)) {
+        d.blocked.record({ at: now(), agent, tool, code: e.code, ...(e.rule ? { rule: e.rule } : {}), message: e.message });
+      }
+      throw e;
+    }
+  }
+
   async function resume(agent: string, o: { focus?: string; tokenId?: string; client?: string } = {}): Promise<{ text: string; pack: ResumePack; notices: Notice[] }> {
+    return guarded(agent, "continue", () => resumeInner(agent, o));
+  }
+  async function resumeInner(agent: string, o: { focus?: string; tokenId?: string; client?: string }): Promise<{ text: string; pack: ResumePack; notices: Notice[] }> {
     const a = await d.service.requireActive(agent);
     await d.service.whoami(agent, { tokenId: o.tokenId, client: o.client }); // announces `connected` once per token
     const pack = resumePack(graph, { agent: a.ens, team: teamEns, name: brainName, now: now(), notes: notesFor(o.focus) });
@@ -56,9 +94,20 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     return { text: renderPack(pack, now()), pack, notices: d.notices.markRead(agent) };
   }
 
-  async function checkpoint(agent: string, i: CheckpointInput, client?: string) {
+  function checkpoint(agent: string, i: CheckpointInput, client?: string) {
+    return guarded(agent, "checkpoint", () => checkpointInner(agent, i, client));
+  }
+  async function checkpointInner(agent: string, i: CheckpointInput, client?: string) {
     const a = await d.service.requireActive(agent);
-    if (a.role === "observer") throw new ToolError("NOT_AUTHORIZED", `${a.ens} is an observer and cannot save checkpoints`);
+    if (a.role === "observer") throw new ToolError("NOT_AUTHORIZED", `${a.ens} is an observer and cannot save checkpoints`, d.config.app.ens.textKeys.role);
+    // ENS sb.write.daily: checkpoints in the last 24 h (an absent record means no limit)
+    if (a.writeDaily !== undefined) {
+      const limit = Number(a.writeDaily);
+      const since = now() - DAY_MS;
+      const count = graph.all().filter((n) => n.kind === "checkpoint" && n.agent === agent && n.createdAt > since).length;
+      const key = d.config.app.ens.textKeys.writeDaily ?? "sb.write.daily";
+      if (count >= limit) throw new ToolError("RATE_LIMIT", `${a.ens} reached its ENS limit ${key}=${limit} (${count} checkpoints in the last 24 h). Stop and tell the user; the owner can raise it on the Rules page.`, key);
+    }
 
     // ---- validate everything before anything is written
     const summary = (i.summary ?? "").trim();
@@ -92,7 +141,7 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     const unchanged: string[] = [];
     for (const f of files) {
       try { validatePath(f.path); } catch (e) { bad((e as Error).message); }
-      if (!scopeAllows(a.scope, f.path)) throw new ToolError("SCOPE", `${a.ens} may only write files under "${a.scope}/" (its ENS sb.scope record), not "${f.path}"`);
+      if (!scopeAllows(a.scope, f.path)) throw new ToolError("SCOPE", `${a.ens} may only write files under "${a.scope}/" (its ENS sb.scope record), not "${f.path}"`, d.config.app.ens.textKeys.scope);
       if (f.delete) { if (current.has(f.path)) fileDrafts.push({ path: f.path, content: "", deleted: true }); continue; }
       if (typeof f.content !== "string") bad(`file "${f.path}" needs its full content (or delete: true)`);
       if (f.content!.includes("\u0000")) bad(`"${f.path}" is binary; only text files are stored`);
@@ -105,6 +154,13 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
       fileDrafts.push({ path: f.path, content: f.content!, deleted: false });
     }
     if (total > LIMITS.checkpointBytes) bad(`files total ${total} bytes; the limit is ${LIMITS.checkpointBytes} per checkpoint`);
+
+    // ---- Stop: injected instructions travelling between AIs are saved for review but stopped for every other AI
+    let hit: InjectionHit | undefined;
+    for (const t of [summary, i.next ?? "", ...addTasks, ...notes.map((n) => n.text), ...fileDrafts.filter((f) => !f.deleted).map((f) => f.content)]) {
+      hit = scanInjection(t);
+      if (hit) break;
+    }
 
     // ---- lineage: my previous checkpoint + what I read since (other AIs' commits, notes, evidence) + the tasks I ticked
     const own = heads(graph).get(agent);
@@ -171,7 +227,19 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
       },
     );
     const cp = nodes[nodes.length - 1]!;
+    let stopped: { rule: string; excerpt: string; arkivUrl?: string } | undefined;
+    if (hit) {
+      // Revoke the checkpoint at once: it and everything under it (its tasks, notes, files) is quarantined for every AI.
+      const reason = `stopped: ${hit.rule}`;
+      let arkivUrl: string | undefined;
+      try { arkivUrl = stopHandler ? (await stopHandler(cp.key, reason)).arkivUrl : undefined; }
+      catch (e) { log(`stop of ${cp.key} could not be written to Arkiv: ${(e as Error).message}`); }
+      if (!graph.isRevoked({ type: "memory", id: cp.key })) graph.applyRevocation({ type: "memory", id: cp.key }); // in memory at least
+      stopped = { rule: hit.rule, excerpt: hit.excerpt, ...(arkivUrl ? { arkivUrl } : {}) };
+      d.blocked.record({ at: now(), agent, ens: a.ens, tool: "checkpoint", code: "STOPPED", rule: hit.rule, key: cp.key, excerpt: hit.excerpt, message: `${a.ens} saved content that looks like ${hit.rule.replace(/-/g, " ")}; it is stopped and waits for the owner's review`, ...(arkivUrl ? { arkivUrl } : {}) });
+    }
     return {
+      ...(stopped ? { stopped } : {}),
       key: cp.key, trust: cp.trust, parents: cp.parents, done, pending: true as const,
       tasksAdded: nodes.filter((n) => n.kind === "task").map((n) => ({ key: n.key, id: taskRef(n.key), title: n.text })),
       files: { saved: fileDrafts.filter((f) => !f.deleted).map((f) => f.path), deleted: fileDrafts.filter((f) => f.deleted).map((f) => f.path), unchanged },
@@ -181,7 +249,10 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
   }
 
   /** `checkout`: the current version of each file (or the ones asked for). Reading them puts their checkpoints in the read-set. */
-  async function checkout(agent: string, o: { paths?: string[] } = {}) {
+  function checkout(agent: string, o: { paths?: string[] } = {}) {
+    return guarded(agent, "checkout", () => checkoutInner(agent, o));
+  }
+  async function checkoutInner(agent: string, o: { paths?: string[] }) {
     await d.service.requireActive(agent);
     const all = [...currentFiles(graph).values()].sort((x, y) => x.file!.path.localeCompare(y.file!.path));
     const wanted = o.paths?.length ? all.filter((n) => o.paths!.some((p) => n.file!.path === p || n.file!.path.startsWith(`${p.replace(/\/+$/, "")}/`))) : all;
@@ -199,5 +270,8 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     };
   }
 
-  return { resume, checkpoint, checkout, lean };
+  /** app.ts wires this to undo.revoke, so a stop is a team-signed revocation on Arkiv. */
+  function onStop(fn: StopHandler) { stopHandler = fn; }
+
+  return { resume, checkpoint, checkout, lean, onStop };
 }

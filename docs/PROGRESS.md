@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS: steps 1–2 ✅ → step 3 register team | 🔨 in progress | – (all wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World live · S5 policy ✅ · attestation + vault client ✅ (anvil). Next: `createPayments` + pending-human | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 ✅ World live · S5 `createPayments` ✅ (engine + pending-human, anvil e2e). Next: vault deploy on Sepolia (needs ASK go) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -59,7 +59,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S5: Money
 - [ ] A: acme vendor ENS (own resolver) · `EnsAuthority` vendor fns · `GraphView`/`ArkivWriter` · `pay`/`pay_status` mounted
-- [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · attestation ✓ f59b6b9 · vault client ✓ 1973e38 · createPayments · pending-human)
+- [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · attestation ✓ f59b6b9 · vault client ✓ 1973e38 · engine + pending-human ✓ 26d47f0 · createPayments ✓ 30a54e6 · Sepolia deploy ☐)
 - [ ] C: payments page
 - [ ] **Gate:** P1 BLOCKED (ENS mismatch) from a real client · paid tx on Etherscan
 
@@ -83,10 +83,11 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
 - [x] B → A (done by A, 2026-11-06): World moved to IDKit 4. Please add to `.env.example`: `WORLD_APP_ID=` (public), `WORLD_RP_ID=` (public), `WORLD_SIGNING_KEY=` (secret, B). `WORLD_CLIENT_ID/SECRET` stay as the OIDC fallback. Also make `check-secrets.mjs` flag a non-empty `WORLD_SIGNING_KEY=` value (2026-11-06)
+- [ ] B → A: **`createPayments` is ready** (30a54e6). In `apps/server/src/index.ts`, mount it instead of the disabled stub: `try { payments = createPayments(deps) } catch { payments = createPaymentsDisabled() }`. It throws until `config/deployments/vault.sepolia.json` exists (I write it at deploy), and every call fails closed with a clear error if the chain checks fail. Extra method for tests only: `createPaymentsEngine(...).settled(intentId)`. MCP `pay` returns `pending_human` immediately; `pay_status` = `payments.status(intentId)` (2026-11-06)
 - [ ] B → A: `GraphView` has no `get(key)`. `decidePayment` takes attestation roots from a cited memory's ancestors, so a cite that is itself a root (evidence/human memory) adds nothing. Please add `get(key): MemoryNode | undefined` (or `roots(key)`) to the interface (2026-11-06)
 - [ ] B → C: blocked/pending decisions list **all** reasons, hard first (P1 = ENS_MISMATCH, OUTSIDE_CONTENT_PAYEE, NEW_PAYEE, OVER_CAP). `path` is the offending lineage (cite → payee memory → evidence), e.g. P1 `["0xM2","0xM1","0xE1"]` (2026-11-06)
 - [ ] B → C: the approval card shows `ApprovalView.verificationUri` (the IDKit `connectorURI`) as a QR plus a "open in World App" link, with `userCode` as a short reference. The URI carries the bridge key, so render it **only** on the owner-authenticated dashboard and never log it. Deny/expire/cancel come back as `PayDecision` statuses (2026-11-06)
-- [ ] B → A: vault pay() calls `getOwner(labelhash)` on the team UserRegistry; `ens.sepolia.json` needs per-agent `labelhash` (uint256 of keccak(label)) + `registry` + `wallet` for `set-agents` (2026-11-06)
+- [x] B → A (done by A): vault pay() calls `getOwner(labelhash)` on the team UserRegistry; `ens.sepolia.json` needs per-agent `labelhash` + `registry` + `wallet` for `set-agents` (2026-11-06) → `teamRegistry.address` + `agents.<label>.{labelhash,wallet}` landed
 - [x] B → A: `config/app.json` needs `payments.eip712 {name, version}` for the vault domain (vault takes them as constructor args) (2026-11-06) → done: `{ "name": "BrainVault", "version": "1" }` (matches your tests), zod-validated as `config.app.payments.eip712`
 - [x] A → B, C: **S0 pushed: B and C can pull** (1f0390c, 2026-11-06 04:42). Notes for you:
   - Import types/interfaces from `@supabrain/shared` (browser-safe). Node config loader: `@supabrain/shared/config` (`loadConfig()`, `requireEnv()`). Fakes: `@supabrain/shared/testing` (`FakeEns`, `FakeGraph`, `FakeArkivWriter`), unit tests only.
@@ -132,6 +133,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S5 / createPayments + pending-human
+- did: `engine.ts` (policy → intent snapshot → World approval bound to `intentHash` → live hard re-check → fresh attestation → vault pay → Arkiv + SSE; deny/expire/cancel/fail → nothing moves; `onRevoke` cancels intents whose supporting lineage is hit, guardian `revokeRoot`/`pauseAgent`, vault errors returned as data); `runtime.ts` + real `createPayments` (config + env, fail-closed chain checks: chainId, code, USDC decimals, on-chain policySigner)
+- proof: 30 engine tests; 12 engine mutants: 11 caught, the 12th (a duplicate guard) is covered by its twin; a mutant exposed a cancel-during-vault-call race → fixed (in-flight payments can't be cancelled). Anvil e2e through the engine: allow → paid, over cap → approved → paid, `Paid` event `humanApproved=true`. 194 workspace tests green
+- result: PASS
+- commit: 00caf00 (tests), 26d47f0, 30a54e6
+- next: `scripts/vault/deploy` + `set-agents` + fork test against the real `supabrain.eth` registry, then the Sepolia deploy (ASK go) and a 1-USDC pay
+- asks/blockers: need `SEPOLIA_RPC_URL`, `POLICY_SIGNER_PRIVATE_KEY`, `GUARDIAN_PRIVATE_KEY`, the lead agent key, test USDC; A: mount `createPayments` (Request)
 
 ### 2026-11-06 IST · B · S5 / attestation + vault client
 - did: EIP-712 policy-signer attestation + `intentHash` (`packages/payments/src/vault/attestation.ts`); generated ABI (`scripts/vault/gen-abi.sh`); typed `createVaultClient` (simulate-then-write, revert names, per-signer serialisation)

@@ -47,7 +47,9 @@
     "e2e:continue": "tsx scripts/demo/e2e-continue.ts",
     "ens:provision-brains": "tsx scripts/ens/provision-brains.ts",
     "ens:brains-status": "tsx scripts/ens/brains-status.ts",
-    "ens:brain-rules": "tsx scripts/ens/brain-rules.ts"
+    "ens:brain-rules": "tsx scripts/ens/brain-rules.ts",
+    "brains:write-cost": "tsx scripts/brains/write-cost.ts",
+    "brains:fund": "tsx scripts/brains/fund-brains.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

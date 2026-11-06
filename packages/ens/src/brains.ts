@@ -36,6 +36,16 @@ export const BrainsConfigSchema = z
       agentContext: z.string().min(1),
     }),
     brains: z.array(z.object({ label: Label, index: z.number().int().min(1).max(2 ** 31 - 1) })).min(1),
+    /** B2: tGLM per AI wallet on Arkiv Rabdi, sized from measured write costs. */
+    funding: z
+      .object({
+        perWalletGlm: z.string().regex(/^\d+(\.\d+)?$/),
+        writesPerWallet: z.number().int().positive(),
+        bytesPerWrite: z.number().int().positive(),
+        topUpBelowFraction: z.number().min(0).max(1),
+        sizing: z.string().min(1),
+      })
+      .optional(),
   })
   .superRefine((c, ctx) => {
     const labels = new Set<string>();

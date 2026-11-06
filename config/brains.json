@@ -1,11 +1,19 @@
 {
   "source": "docs/PLAN.md §3.3–3.4 and docs/DECISIONS.md 2026-11-06 19:30 (Kai): pre-made brains, one AI name per family, rules as ENS text records, wallets derived from BRAIN_AGENT_MNEMONIC",
   "verifiedAt": "2026-11-06",
-  "families": ["claude", "gemini", "openai"],
+  "families": [
+    "claude",
+    "gemini",
+    "openai"
+  ],
   "leaseDays": 14,
   "writeDailyKey": "sb.write.daily",
   "records": {
-    "role": { "claude": "lead", "gemini": "worker", "openai": "worker" },
+    "role": {
+      "claude": "lead",
+      "gemini": "worker",
+      "openai": "worker"
+    },
     "scope": "*",
     "writeDaily": "200",
     "status": "active",
@@ -14,15 +22,52 @@
     "agentContext": "Supabrain AI {ens}: the {family} AI of the brain {brain} ({role}). Its checkpoints are signed by its own wallet on Arkiv; its rules are these ENS records, set by the Supabrain server for the brain's owner."
   },
   "brains": [
-    { "label": "otter", "index": 1 },
-    { "label": "maple", "index": 2 },
-    { "label": "comet", "index": 3 },
-    { "label": "cedar", "index": 4 },
-    { "label": "ember", "index": 5 },
-    { "label": "fjord", "index": 6 },
-    { "label": "heron", "index": 7 },
-    { "label": "lotus", "index": 8 },
-    { "label": "prism", "index": 9 },
-    { "label": "tundra", "index": 10 }
-  ]
+    {
+      "label": "otter",
+      "index": 1
+    },
+    {
+      "label": "maple",
+      "index": 2
+    },
+    {
+      "label": "comet",
+      "index": 3
+    },
+    {
+      "label": "cedar",
+      "index": 4
+    },
+    {
+      "label": "ember",
+      "index": 5
+    },
+    {
+      "label": "fjord",
+      "index": 6
+    },
+    {
+      "label": "heron",
+      "index": 7
+    },
+    {
+      "label": "lotus",
+      "index": 8
+    },
+    {
+      "label": "prism",
+      "index": 9
+    },
+    {
+      "label": "tundra",
+      "index": 10
+    }
+  ],
+  "funding": {
+    "perWalletGlm": "0.35",
+    "writesPerWallet": 200,
+    "bytesPerWrite": 20000,
+    "topUpBelowFraction": 0.5,
+    "sizing": "pnpm brains:write-cost on 2026-11-06: 24 Rabdi receipts fit gasUsed ≈ 13k + 81 gas per input byte at a flat 1 gwei. A 20 KB checkpoint ≈ 1.63M gas ≈ 0.0016 tGLM; 200 of them ≈ 0.33 tGLM, plus ~0.015 tGLM so one maximum-size write's upfront gas limit (≤ half the 30M block) still passes the balance check"
+  }
 }

@@ -89,3 +89,14 @@ describe("Stop: prompt injection relayed between AIs", () => {
     expect(stops).toHaveLength(1);
   });
 });
+
+describe("the blocked log survives a restart (persisted next to the server)", () => {
+  it("loads what was saved and saves each new entry, newest first", async () => {
+    const { BlockedLog } = await import("./continuity-service");
+    let saved: unknown[] = [{ at: 1, agent: "gem-research", tool: "checkpoint", code: "SCOPE", rule: "sb.scope", message: "old" }];
+    const log = new BlockedLog(() => {}, 200, { load: () => saved as never, save: (e) => { saved = e; } });
+    expect(log.list()).toHaveLength(1);
+    log.record({ at: 2, agent: "gem-research", tool: "checkpoint", code: "STOPPED", rule: "remote-code", message: "new" });
+    expect((saved as { at: number }[]).map((b) => b.at)).toEqual([2, 1]);
+  });
+});

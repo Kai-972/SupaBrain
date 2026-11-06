@@ -43,7 +43,7 @@ describe("ENS heads", () => {
     const graph = new MemoryGraph();
     const bus = new EventBus();
     const sent: string[] = [];
-    const stopping = new Set([key(7)]);
+    const stopping = new Set<string>([key(7)]);
     const pub = createHeadPublisher({ writer: { async setHead(_e, k) { sent.push(k); return { txHash: "0x1", txUrl: "t" }; } }, bus, graph, ensOf: (a) => a, skip: (k) => stopping.has(k) });
     graph.upsert(cp(key(7)));
     bus.emit({ t: "confirmed", key: key(7), proofUrl: "x" });

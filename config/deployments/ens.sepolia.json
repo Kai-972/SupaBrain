@@ -98,11 +98,16 @@
           "hash": "0x33abd6ef77cb9a881f6c368ee71f7ac736dffb88eff538e2e1ebaea905147190",
           "url": "https://sepolia.etherscan.io/tx/0x33abd6ef77cb9a881f6c368ee71f7ac736dffb88eff538e2e1ebaea905147190",
           "at": "2026-11-06T03:28:29.643Z"
+        },
+        "setRecord:sb.scope": {
+          "hash": "0xa9e72fd88285b62d45dd4db3c6d8f941ff1b742a6530944efe8a1ad01a3baf5d",
+          "url": "https://sepolia.etherscan.io/tx/0xa9e72fd88285b62d45dd4db3c6d8f941ff1b742a6530944efe8a1ad01a3baf5d",
+          "at": "2026-11-06T14:02:34.810Z"
         }
       },
       "records": {
         "sb.role": "worker",
-        "sb.scope": "research",
+        "sb.scope": "*",
         "sb.pay.cap": "2",
         "sb.pay.daily": "4",
         "sb.status": "active",

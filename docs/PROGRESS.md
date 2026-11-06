@@ -181,7 +181,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - result: PASS. Fixed during the run: a note saved inside Claude's commit hid that commit from Gemini's parents (commits now link to commits; notes stay extra parents); old retraction notices repeated in every reply (continue now delivers them once)
 - commit: 31b522e + this commit
 - next: Kai tests Antigravity (write + "continue") and the Claude phone app on the live server; then step 3
-- asks/blockers: Gemini's ENS scope is "research", so Antigravity can only write files under research/ until sb.scope is set to "*" (one owner tx, needs a go)
+- asks/blockers: none. Done after Kai's go: `sb.scope` of gem-research.supabrain.eth set to "*" (so Antigravity can write src/ files): https://sepolia.etherscan.io/tx/0xa9e72fd88285b62d45dd4db3c6d8f941ff1b742a6530944efe8a1ad01a3baf5d
 
 ### 2026-11-06 19:30 IST · A · v2 plan
 - did: after the mentor/judge talks, rewrote the plan as "GitHub for your AIs' memory" (docs/PLAN.md) with Kai; wrote the website contract (docs/API_V2.md); logged the decisions; reverted the old UI (f10e981, Kai's call); started step 1 groundwork (types, continuity engine, one-write checkpoints)

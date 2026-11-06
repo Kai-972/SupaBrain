@@ -6,6 +6,7 @@ import { HeadsTable } from "@/components/Charts";
 import { useStore } from "@/lib/store";
 import { short } from "@/lib/format";
 import { Copy, Ext } from "@/components/ui";
+import { OnChain } from "@/components/OnChain";
 
 function Verify() {
   const id = useBrainId();
@@ -44,6 +45,8 @@ function Verify() {
           </div>
         </div>
         <div data-tour="heads"><HeadsTable id={id} heads={heads} /></div>
+        <h2 className="h2">What&apos;s on chain, and why</h2>
+        <OnChain />
         <h2 className="h2">Why ENS</h2>
         <div className="why4">
           <div><b>A registry per project</b><p>Each brain is its own ENSv2 registry; each AI has its own name, resolver and expiry. End the project and its identities end.</p></div>

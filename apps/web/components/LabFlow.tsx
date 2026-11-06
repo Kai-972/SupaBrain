@@ -6,11 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import presetsRaw from "@/content/lab-presets.json";
 import { api, ApiError, type LabAction, type LabResponse, type LiveAgent, type RuleRow } from "@/lib/api";
 import { brainId, getState, refreshRules, runLab, toast, useStore, type LabEntry } from "@/lib/store";
-import { blockLabel, GUARD_RULES, short, vendorOf } from "@/lib/format";
+import { blockLabel, denyList, GUARD_IDS, GUARD_PLAIN, GUARD_RULES, guardList, short, vendorOf } from "@/lib/format";
 import { writesToday } from "./BrainParts";
 import { Ext } from "./ui";
 
-interface Preset { id: string; mode: "normal" | "attack"; label: string; asAgent: string; action: LabAction; input: Record<string, unknown>; teaches: string; setup?: string; expected?: string }
+interface Preset { id: string; mode: "normal" | "attack"; label: string; asAgent: string; action: LabAction; input: Record<string, unknown>; teaches: string; setup?: string; expected?: string; rule?: string }
 const PRESETS = presetsRaw as unknown as Preset[];
 
 interface Note { text: string; kind: string; sourceId: string }
@@ -42,7 +42,7 @@ function decidingGate(r?: LabResponse): { gate: number; ok: boolean } {
   if (!r) return { gate: -1, ok: true };
   if (r.outcome === "stopped") return { gate: 2, ok: false };
   if (r.outcome === "refused") {
-    if (r.code === "SCOPE" || r.code === "RATE_LIMIT" || (r.code === "NOT_AUTHORIZED" && r.rule === "sb.status")) return { gate: 1, ok: false };
+    if (r.code === "SCOPE" || r.code === "DENIED" || r.code === "RATE_LIMIT" || (r.code === "NOT_AUTHORIZED" && r.rule === "sb.status")) return { gate: 1, ok: false };
     if (r.code === "INVALID") return { gate: 2, ok: false };
     return { gate: 0, ok: false };
   }
@@ -66,7 +66,8 @@ export function WhoActs({ agents, rules, value, onPick, onRules }: { agents: Liv
             <button className="tile4-main" onClick={() => onPick(a.label)} aria-pressed={value === a.label}>
               <span className="row"><i className={`dot4 big ${v.cls}`} /><b>{v.name}</b>{paused && <span className="tag4 bad">PAUSED</span>}</span>
               <span className="mono small ell">{a.ens}</span>
-              <span className="plain">{paused ? "Paused: every call is refused" : <>May write {plainScope(r?.scope ?? a.scope)} · {writesToday(checkpoints, a.label)} of {daily || "∞"} writes today</>}</span>
+              <span className="plain">{paused ? "Paused: every call is refused" : <>May write {plainScope(r?.scope ?? a.scope)}{denyList(r?.deny).length ? `, never ${denyList(r?.deny).join(", ")}` : ""}</>}</span>
+              {!paused && <span className="plain">Blocks {guardList(r?.guard).length} of 6 attack types · {writesToday(checkpoints, a.label)} of {daily || "∞"} commits today</span>}
             </button>
             <button className="tile4-link" onClick={() => onRules(a.label)}>Change {v.name}&apos;s rules</button>
           </div>
@@ -83,6 +84,7 @@ export function WhatToTry({ picked, onPick }: { picked?: string; onPick: (p?: Pr
   const card = (p: Preset) => (
     <button key={p.id} className={`card4${picked === p.id ? " on" : ""}${p.mode === "attack" ? " atk" : ""}`} onClick={() => onPick(p)} aria-pressed={picked === p.id}>
       <b>{p.label}</b><span>{p.teaches}</span>
+      {p.rule && <em className="rule4">Decided by {p.rule}</em>}
     </button>
   );
   return (
@@ -133,8 +135,8 @@ export function Editor({ d, set }: { d: Draft; set: (d: Draft) => void }) {
 // ---------------------------------------------------------------- step 3
 const GATES = [
   { t: "Identity", q: "Is this AI's ENS name live, and is the server's key its ENS address?" },
-  { t: "ENS rules", q: "Status, scope and writes per day, read live from ENS." },
-  { t: "Content", q: "A tripwire for injection shapes; real secrets are refused." },
+  { t: "ENS rules", q: "Status, scope, protected paths (sb.deny) and commits per day, read live from ENS." },
+  { t: "Content", q: "The attack checks this AI's ENS rule sb.guard requires. Real secrets are always refused." },
   { t: "Record", q: "Signed on Arkiv by the AI's own wallet." },
 ];
 
@@ -162,7 +164,7 @@ export function Gates({ e, agent, draftAction }: { e?: LabEntry; agent?: LiveAge
             <span className="gn">{i + 1}</span>
             <b>{g.t}</b>
             <span className="gq">{skip ? "Not used by this tool" : g.q}</span>
-            {settled && i === gate && <span className="gv">{ok ? (action === "checkpoint" ? `SAVED · signed by ${agent?.ens ?? e?.agent}` : "ANSWERED") : e?.res?.outcome === "stopped" ? "STOPPED · INJECTION" : e?.res?.outcome === "refused" ? blockLabel(e.res.code, e.res.rule) : ""}</span>}
+            {settled && i === gate && <span className="gv">{ok ? (action === "checkpoint" ? `SAVED · signed by ${agent?.ens ?? e?.agent}` : "ANSWERED") : e?.res?.outcome === "stopped" ? `STOPPED · sb.guard · ${e.res.result.stopped.rule}` : e?.res?.outcome === "refused" ? blockLabel(e.res.code, e.res.rule) : ""}</span>}
           </div>
         );
       })}
@@ -203,6 +205,7 @@ export function Result({ e, agent, other }: { e?: LabEntry; agent?: LiveAgent; o
     return (
       <div className="res4 bad">
         <b>STOPPED · {GUARD_RULES[r.result.stopped.rule] ?? r.result.stopped.rule}</b>
+        <p className="explain4">Forbidden by {agent?.ens}&apos;s ENS rule <code>sb.guard</code>: it may not pass on {GUARD_PLAIN[r.result.stopped.rule] ?? r.result.stopped.rule}.</p>
         <blockquote>“{ex}”</blockquote>
         <p>Saved for the owner&apos;s review, signed by {agent?.ens}, and revoked on Arkiv at once. {r.result.stopped.arkivUrl && <Ext href={r.result.stopped.arkivUrl}>The revocation on Arkiv</Ext>}</p>
         {other && (
@@ -221,6 +224,9 @@ export function Result({ e, agent, other }: { e?: LabEntry; agent?: LiveAgent; o
     return (
       <div className="res4 ok">
         <b>SAVED · signed by {agent?.ens ?? e.agent}</b>
+        {(r.result as { flagged?: { rule: string; excerpt: string } }).flagged && (() => { const f = (r.result as { flagged: { rule: string; excerpt: string } }).flagged; return (
+          <p className="explain4 warn">The content check found {GUARD_PLAIN[f.rule] ?? f.rule} (“{f.excerpt}”), but {agent?.ens}&apos;s ENS rule <code>sb.guard</code> doesn&apos;t include <code>{f.rule}</code>, so the owner&apos;s rule allowed it.</p>
+        ); })()}
         <p>{n && !n.pending && n.proofUrl ? <Ext href={n.proofUrl}>Open the signed entity on Arkiv</Ext> : <span className="row"><span className="spinner" /> Arkiv is confirming…</span>}</p>
         <p className="small">{head ? <>HEAD ON ENS: {agent?.ens} now points at {short(key)} · <Ext href={head.txUrl}>Sepolia tx</Ext></> : "Its ENS name is updated to point at it once Arkiv confirms (sb.memory.head)."}</p>
       </div>
@@ -238,6 +244,9 @@ export function RulesSheet({ agent, onClose, preset }: { agent: LiveAgent; onClo
   const [scopeMode, setScopeMode] = useState<"all" | "docs" | "custom">(() => { const s = preset?.scope ?? row?.scope ?? agent.scope; return s === "*" ? "all" : s === "docs/" || s === "docs" ? "docs" : "custom"; });
   const [custom, setCustom] = useState(() => { const s = preset?.scope ?? row?.scope ?? ""; return s === "*" || s === "docs/" ? "" : s; });
   const [daily, setDaily] = useState(Number(row?.writeDaily ?? agent.writeDaily ?? 200));
+  const [guard, setGuard] = useState<string[]>(() => guardList(row?.guard));
+  const [deny, setDeny] = useState<string[]>(() => denyList(row?.deny));
+  const [newDeny, setNewDeny] = useState("");
   const [phase, setPhase] = useState<{ step: 0 | 1 | 2 | 3; txUrl?: string; readBack?: string; error?: string }>({ step: 0 });
   const v = vendorOf(agent.vendor);
   const scope = scopeMode === "all" ? "*" : scopeMode === "docs" ? "docs/" : custom.trim();
@@ -245,11 +254,11 @@ export function RulesSheet({ agent, onClose, preset }: { agent: LiveAgent; onClo
   const save = async () => {
     setPhase({ step: 1 });
     try {
-      const res = await api.setRules(brainId(), { agent: agent.label, status, scope, writeDaily: String(daily) });
+      const res = await api.setRules(brainId(), { agent: agent.label, status, scope, writeDaily: String(daily), guard: guard.length === GUARD_IDS.length ? "*" : guard.length ? guard.join(",") : "none", deny: deny.length ? deny.join(",") : "none" });
       setPhase({ step: 2, txUrl: res.txUrl });
       await refreshRules();
       const back = getState().rules?.agents.find((r) => r.agent === agent.label);
-      setPhase({ step: 3, txUrl: res.txUrl, readBack: back ? `status ${back.status} · may write ${plainScope(back.scope)} · ${back.writeDaily} a day` : "read back" });
+      setPhase({ step: 3, txUrl: res.txUrl, readBack: back ? `status ${back.status} · may write ${plainScope(back.scope)} · never ${denyList(back.deny).join(", ") || "—"} · blocks ${guardList(back.guard).length} of 6 attacks · ${back.writeDaily} a day` : "read back" });
       toast(res.txHash ? `${agent.ens}'s rules are on ENS` : "Nothing changed", "ok");
     } catch (e) {
       setPhase({ step: 0, error: e instanceof ApiError ? e.message : "The ENS write failed" });
@@ -263,14 +272,14 @@ export function RulesSheet({ agent, onClose, preset }: { agent: LiveAgent; onClo
         <div className="p-body">
           {!editable && <div className="callout warn">{admin ? "This server's rules are owner-key only (team mode)." : "Owner sign-in is needed to change rules: each change is a real Sepolia transaction."}</div>}
           <section>
-            <h4>Status</h4>
+            <h4>Status <code>sb.status</code></h4>
             <div className="seg4">
               <button aria-pressed={status === "active"} onClick={() => setStatus("active")}>Active</button>
               <button aria-pressed={status === "paused"} onClick={() => setStatus("paused")}>Paused</button>
             </div>
           </section>
           <section>
-            <h4>May write</h4>
+            <h4>May write <code>sb.scope</code></h4>
             <div className="seg4">
               <button aria-pressed={scopeMode === "all"} onClick={() => setScopeMode("all")}>Everything</button>
               <button aria-pressed={scopeMode === "docs"} onClick={() => setScopeMode("docs")}>Only docs/</button>
@@ -279,7 +288,26 @@ export function RulesSheet({ agent, onClose, preset }: { agent: LiveAgent; onClo
             {scopeMode === "custom" && <input className="mono" value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="src/app/" aria-label="Path prefix" />}
           </section>
           <section>
-            <h4>Writes per day</h4>
+            <h4>May not pass on <code>sb.guard</code></h4>
+            <div className="chips4">
+              {GUARD_IDS.map((id) => (
+                <button key={id} aria-pressed={guard.includes(id)} onClick={() => setGuard(guard.includes(id) ? guard.filter((x) => x !== id) : [...guard, id])}>
+                  {guard.includes(id) ? "✕ " : "○ "}{GUARD_PLAIN[id]}
+                </button>
+              ))}
+            </div>
+            <p className="small muted">Checked items are attacks this AI is stopped from passing on. Untick one and the same attack is saved, flagged as allowed by your rule.</p>
+          </section>
+          <section>
+            <h4>May never write <code>sb.deny</code></h4>
+            <div className="chips4">
+              {deny.map((d) => <button key={d} aria-pressed onClick={() => setDeny(deny.filter((x) => x !== d))}>{d} ×</button>)}
+              {[".github/", "scripts/"].filter((d) => !deny.includes(d)).map((d) => <button key={d} onClick={() => setDeny([...deny, d])}>+ {d}</button>)}
+            </div>
+            <div className="row"><input className="mono" value={newDeny} onChange={(e) => setNewDeny(e.target.value)} placeholder="infra/" aria-label="Add a protected path" /><button className="btn g sm" disabled={!newDeny.trim()} onClick={() => { setDeny([...new Set([...deny, newDeny.trim()])]); setNewDeny(""); }}>Add</button></div>
+          </section>
+          <section>
+            <h4>Commits per day <code>sb.write.daily</code></h4>
             <div className="step4">
               <button onClick={() => setDaily(Math.max(0, daily - (daily > 20 ? 10 : 1)))} aria-label="Fewer">−</button>
               <input type="number" min={0} value={daily} onChange={(e) => setDaily(Math.max(0, Number(e.target.value) || 0))} aria-label="Writes per day" />
@@ -340,11 +368,11 @@ export function LabFlow({ initialRules }: { initialRules?: string }) {
 
   return (
     <div className="flow4">
-      <section className="step-4" data-tour="lab-who">
+      <section className="step-4" data-tour="lab-who" data-reveal>
         <h2><span>1</span> Who acts?</h2>
         <WhoActs agents={agents} rules={rules?.agents} value={who} onPick={setWho} onRules={(l) => setSheet({ agent: l })} />
       </section>
-      <section className="step-4" data-tour="lab-attack">
+      <section className="step-4" data-tour="lab-attack" data-reveal>
         <h2><span>2</span> What does it do?</h2>
         <WhatToTry picked={preset} onPick={pick} />
         {(preset || draft.summary) && (
@@ -354,7 +382,7 @@ export function LabFlow({ initialRules }: { initialRules?: string }) {
           </div>
         )}
       </section>
-      <section className="step-4" ref={stage} data-tour="lab-result">
+      <section className="step-4" ref={stage} data-tour="lab-result" data-reveal>
         <h2><span>3</span> Send it and watch</h2>
         <div className="row wrapr">
           <button className="btn p big4" disabled={!canSend} onClick={send}>Send as {actor ? vendorOf(actor.vendor).name : "…"}</button>

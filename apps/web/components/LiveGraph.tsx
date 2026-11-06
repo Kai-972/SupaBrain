@@ -69,12 +69,13 @@ export function LiveGraph({ nodes, blocked, lanes, heads, selected, hot, recent,
 
   // Geometry: lanes on the left (≥ 220px apart on desktop), the text column to their right.
   const padL = narrow ? 28 : 56;
-  const gap = lanes.length > 1 ? (narrow ? Math.max(44, Math.min(90, (W * 0.42) / (lanes.length - 1))) : Math.max(150, Math.min(240, (W * 0.5) / (lanes.length - 1)))) : 0;
+  const gap = lanes.length > 1 ? (narrow ? Math.max(44, Math.min(90, (W * 0.42) / (lanes.length - 1))) : Math.max(170, Math.min(280, (W * 0.52) / (lanes.length - 1)))) : 0;
   const laneX = useMemo(() => Object.fromEntries(lanes.map((l, i) => [l.id, padL + i * gap])), [lanes, padL, gap]);
   const textX = padL + Math.max(0, lanes.length - 1) * gap + (narrow ? 30 : 64);
   const maxCh = Math.max(14, Math.floor((W - textX - 12) / 8.6));
   const fitText = (t: string) => (t.length > maxCh ? `${t.slice(0, maxCh - 1)}…` : t);
-  const ROW = fit ? Math.max(40, Math.min(88, Math.floor((vh - 320) / Math.max(1, rows.length)))) : narrow ? 72 : 88;
+  // Fit: every row in one screen (the scroll area is one viewport tall), never tighter than 46px.
+  const ROW = fit ? Math.max(46, Math.min(narrow ? 72 : 96, Math.floor((vh - 130 - HEADER - 40) / Math.max(1, rows.length)))) : narrow ? 72 : 88;
   const TOP = ROW / 2 + 22;
   const H = TOP + Math.max(1, rows.length) * ROW;
   const y = (i: number) => TOP + i * ROW;

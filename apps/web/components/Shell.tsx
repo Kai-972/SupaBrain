@@ -8,6 +8,20 @@ import { boot, brainId, refreshAdmin, refreshRules, toast, useStore } from "@/li
 import { Logo, Modal } from "./ui";
 import { startTour, Tour } from "./Tour";
 
+/** Reveal-on-scroll for [data-reveal] (and late-rendered ones). No-op with reduced motion: they show at once. */
+export function useReveal() {
+  const path = usePathname();
+  useEffect(() => {
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
+    const scan = () => document.querySelectorAll("[data-reveal]:not(.in)").forEach((el) => (reduce ? el.classList.add("in") : io.observe(el)));
+    scan();
+    const mo = new MutationObserver(scan);
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => { io.disconnect(); mo.disconnect(); };
+  }, [path]);
+}
+
 export function useBoot() {
   const sp = useSearchParams();
   const mock = sp.get("mock") === "1";
@@ -130,6 +144,7 @@ function MoreMenu({ id, href, path }: { id: string; href: (p: string) => string;
 
 export function Shell({ children, right, wide }: { children: ReactNode; right?: ReactNode; wide?: boolean }) {
   const mock = useBoot();
+  useReveal();
   const href = useHref();
   const path = usePathname();
   const health = useStore((s) => s.health);

@@ -11,6 +11,8 @@ import { LiveLog, Meters, useCounts, useHeadMap, writesToday } from "@/component
 import { Funnel, OutcomesPerAI, RuleHits, Timeline } from "@/components/Charts";
 import { useBrainId, useHref } from "@/components/Shell";
 import { Copy, Ext, useNow } from "@/components/ui";
+import { Rulebook } from "@/components/Rulebook";
+import { explorerFromTx } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { vendorOf } from "@/lib/format";
 
@@ -30,18 +32,19 @@ function LanePopover({ lane, rect, onClose }: { lane: Lane; rect: DOMRect; onClo
       <div className="scrim4 clear" onClick={onClose} />
       <div className="pop4" style={{ top: rect.bottom + 10, left }} role="dialog" aria-label={`${lane.ens} rules`}>
         <div className="row"><span className={`dot4 big ${vendorOf(lane.vendor).cls}`} /><div className="grow"><b className="mono">{lane.ens}</b><div className="small muted">{a?.connectedClient ? `Connected via ${a.connectedClient}` : "Not connected right now"}</div></div><Copy text={lane.ens} /></div>
-        {a ? (
-          <dl className="rules4">
-            <dt>Status</dt><dd>{a.status === "active" ? "Active" : a.status === "paused" ? "Paused: every call is refused" : a.status}</dd>
-            <dt>May write</dt><dd>{(r?.scope ?? a.scope) === "*" ? "Everywhere in the project" : `Only ${r?.scope ?? a.scope}`}</dd>
-            <dt>Writes today</dt><dd>{used} of {daily || "no limit"}</dd>
-            <dt>Role</dt><dd>{r?.role ?? a.role}</dd>
-            <dt>HEAD on ENS</dt><dd>{head?.match ? <>✓ points at its newest commit {head.txUrl && <Ext href={head.txUrl}>tx</Ext>}</> : head?.ensHead ? "points at an older commit" : "not set yet"}</dd>
-          </dl>
+        {a && r ? (
+          <>
+            <Rulebook r={r} compact explorer={explorerFromTx(head?.txUrl)} />
+            <dl className="rules4">
+              <dt>Commits today</dt><dd>{used} of {daily || "no limit"}</dd>
+              <dt>HEAD on ENS</dt><dd>{head?.match ? <>✓ points at its newest commit {head.txUrl && <Ext href={head.txUrl}>tx</Ext>}</> : head?.ensHead ? "points at an older commit" : "not set yet"}</dd>
+            </dl>
+          </>
         ) : <p className="muted">The brain owner, through the website.</p>}
-        <p className="small muted" style={{ margin: 0 }}>These are ENS text records on {lane.ens}. The server reads them on every call.</p>
+        <p className="small muted" style={{ margin: 0 }}>Each line is an ENS text record on {lane.ens}&apos;s own resolver. The server reads them on every call.</p>
         <div className="row">
-          <Link className="btn p sm" href={href(`/b/${id}/lab?rules=${lane.id}`)}>Change rules</Link>
+          <Link className="btn p sm" href={href(`/b/${id}/rules`)}>Full rulebook</Link>
+          <Link className="btn g sm" href={href(`/b/${id}/lab?rules=${lane.id}`)}>Change rules</Link>
           <Link className="btn g sm" href={href("/connect")}>Connect an app</Link>
         </div>
       </div>
@@ -72,7 +75,7 @@ function BrainPage() {
   const [details, setDetails] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [newestFirst, setNewestFirst] = useState(false);
-  const [fit, setFit] = useState(false);
+  const [fit, setFit] = useState(true);
   const all = useMemo(() => Object.values(nodes), [nodes]);
 
   const lanes: Lane[] = useMemo(() => {
@@ -95,11 +98,11 @@ function BrainPage() {
     <BrainFrame>
       <section className="live4-head wrapx" data-tour="graph-head">
         <h1 className="headline4">
-          <span className="n">{c.saved}</span> commit{c.saved === 1 ? "" : "s"} signed <span className="sep">·</span>{" "}
-          <span className="n bad">{c.stopped}</span> injection{c.stopped === 1 ? "" : "s"} stopped <span className="sep">·</span>{" "}
-          <span className="n bad">{c.ens}</span> blocked by ENS
+          <span className="n" key={`s${c.saved}`}>{c.saved}</span> commit{c.saved === 1 ? "" : "s"} signed <span className="sep">·</span>{" "}
+          <span className="n bad" key={`q${c.stopped}`}>{c.stopped}</span> injection{c.stopped === 1 ? "" : "s"} stopped <span className="sep">·</span>{" "}
+          <span className="n bad" key={`e${c.ens}`}>{c.ens}</span> blocked by ENS
         </h1>
-        <p className="lede4">Each column is one AI with its own ENS name. Each dot is a commit signed by that AI on Arkiv. Click a dot for its proof, or a column header for that AI&apos;s rules.</p>
+        <p className="lede4" data-reveal>Each column is one AI with its own ENS name and its own rulebook. Each dot is a commit signed by that AI on Arkiv. Click a dot for its proof, or a column header for that AI&apos;s rules.</p>
         <div className="row wrapr">
           <Link className="btn p" href={href(`/b/${id}/lab`)} data-tour="try">Try to break it →</Link>
           <button className="btn g" aria-expanded={details} onClick={() => setDetails(!details)}>{details ? "Hide details" : "Details"}</button>

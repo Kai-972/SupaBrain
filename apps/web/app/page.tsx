@@ -8,7 +8,7 @@ import { HandoffHero } from "@/components/landing/HandoffHero";
 import { Intro } from "@/components/Intro";
 import { startTour, Tour, TOUR_SECONDS } from "@/components/Tour";
 import { Logo } from "@/components/ui";
-import { LiveDot, useBoot, useBrainId, useHref } from "@/components/Shell";
+import { LiveDot, useBoot, useBrainId, useHref, useReveal } from "@/components/Shell";
 import { Pipeline } from "@/components/Charts";
 import { useCounts } from "@/components/BrainParts";
 import { useStore } from "@/lib/store";
@@ -18,6 +18,7 @@ const WORKS = [["C", "v-claude", "Claude Code"], ["C", "v-claude", "Claude app"]
 
 function Landing() {
   useBoot();
+  useReveal();
   const href = useHref();
   const id = useBrainId();
   const root = useRef<HTMLDivElement>(null);
@@ -77,10 +78,10 @@ function Landing() {
 
       <main>
         <section className="blk" id="problem"><div className="wrap sect">
-          <div className="num">01</div>
+          <div className="num" data-reveal>01</div>
           <div>
             <span className="eyebrow bad"><i />The problem</span>
-            <h2>One poisoned file. Three AIs. One of them acts on it.</h2>
+            <h2 data-reveal>One poisoned file. Three AIs. One of them acts on it.</h2>
             <p className="lead"><b>Teams now run Claude Code, Gemini and Codex on one codebase.</b> When one AI reads a README, issue or web page with an instruction hidden for AIs, it writes it into shared memory. The next AI, from a different company, treats it as a teammate&apos;s note and pushes a key, runs a script, or pays an address.</p>
             <div className="evid">
               {evidence.map((e) => (
@@ -111,10 +112,10 @@ function Landing() {
           </div>
         </section>
         <section className="layers dark" id="layers" data-tour="layers"><div className="wrap sect">
-          <div className="num">02</div>
+          <div className="num" data-reveal>02</div>
           <div>
             <span className="eyebrow"><i />Why MCP isn&apos;t enough</span>
-            <h2>MCP connects agents. It doesn&apos;t make them accountable.</h2>
+            <h2 data-reveal>MCP connects agents. It doesn&apos;t make them accountable.</h2>
             <p className="lead"><b>MCP is the cable.</b> ENS is the badge and the access rules. Arkiv is the log nobody can edit, not even us.</p>
             <div className="bands">
               <div className="band mcp"><b>MCP</b><span>How does an AI call a tool?</span><em>On its own, nothing about who the AI is or what it may do.</em></div>
@@ -125,10 +126,10 @@ function Landing() {
         </div></section>
 
         <section className="blk" data-tour="gates"><div className="wrap sect">
-          <div className="num">03</div>
+          <div className="num" data-reveal>03</div>
           <div>
             <span className="eyebrow"><i />How a handoff is checked · live counts</span>
-            <h2>Four gates on every call.</h2>
+            <h2 data-reveal>Four gates on every call.</h2>
             <p className="lead"><b>Gates one, two and four are guarantees.</b> Gate three is a tripwire for known injection shapes; if new wording slips past it, the ENS rule still limits what the AI can do.</p>
             <div style={{ marginTop: 40 }}><Pipeline /></div>
           </div>

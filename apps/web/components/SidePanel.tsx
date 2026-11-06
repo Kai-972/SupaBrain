@@ -15,6 +15,8 @@ export function SidePanel({ k, onClose, onSelect, onHot }: { k: string; onClose:
   const mode = useStore((s) => s.mode);
   const brain = useStore((s) => s.brain);
   const blocked = useStore((s) => s.blocked);
+  const headEvents = useStore((s) => s.headEvents);
+  const heads = useStore((s) => s.heads);
   const [d, setD] = useState<MemoryDetail>();
   const [err, setErr] = useState<string>();
   const [file, setFile] = useState<{ path: string; key: string }>();
@@ -40,6 +42,9 @@ export function SidePanel({ k, onClose, onSelect, onHot }: { k: string; onClose:
   const done = (node.checkpoint?.done ?? []).map((t) => tasks.find((x) => x.key === t)?.title ?? short(t));
   const signerOk = agent && node.creator ? agent.wallet.toLowerCase() === node.creator.toLowerCase() : undefined;
   const stop = blocked.find((b) => b.code === "STOPPED" && b.key === k);
+  const headEv = headEvents[node.agent];
+  const headRow = heads.find((h) => h.agent === node.agent);
+  const head = headEv?.key === k ? headEv : headRow?.ensHead === k ? { txUrl: headRow.txUrl } : undefined;
   const chain = (d?.lineage ?? []).filter((p) => p.length > 1).sort((a, b) => b.length - a.length)[0] ?? [];
   const client = node.checkpoint?.client;
 
@@ -119,9 +124,27 @@ export function SidePanel({ k, onClose, onSelect, onHot }: { k: string; onClose:
           )}
 
           <section>
-            <h4>Proof</h4>
+            <h4>Proof, and why it exists</h4>
             <div className="p-proof">
-              {node.pending ? <span className="row"><span className="spinner" /> Arkiv is confirming…</span> : <Ext href={node.proofUrl}>{node.proofUrl ? "Open the signed entity on Arkiv" : "—"}</Ext>}
+              <div className="proofrow4">
+                <b>Arkiv entity</b>
+                <span>This commit itself, created by {agent?.ens ?? node.agent}&apos;s own wallet. It isn&apos;t a smart contract: it&apos;s a signed record anyone can check, nobody can edit, and it expires with the project.</span>
+                {node.pending ? <span className="row"><span className="spinner" /> Arkiv is confirming…</span> : <Ext href={node.proofUrl}>{node.proofUrl ? "Open it on Arkiv" : "—"}</Ext>}
+              </div>
+              {head && (
+                <div className="proofrow4">
+                  <b>ENS transaction (HEAD)</b>
+                  <span>{agent?.ens}&apos;s text record <code>sb.memory.head</code> now holds this commit&apos;s Arkiv key, like a git branch pointing at its newest commit. Anyone who resolves the name finds it without our server.</span>
+                  {head.txUrl && <Ext href={head.txUrl}>Open it on Etherscan</Ext>}
+                </div>
+              )}
+              {stop?.arkivUrl && (
+                <div className="proofrow4">
+                  <b>Arkiv revocation</b>
+                  <span>Signed by the team wallet because the content broke {agent?.ens}&apos;s ENS rule <code>sb.guard</code>. The original stays as evidence; no AI receives it.</span>
+                  <Ext href={stop.arkivUrl}>Open it on Arkiv</Ext>
+                </div>
+              )}
               <div className="mono small">pnpm verify:memory {short(node.key, 8, 6)} <Copy text={`pnpm verify:memory ${node.key}`} label="Copy" /></div>
               <div className="small muted">Checks the signer against ENS using Arkiv and ENS only, without trusting our server.</div>
             </div>

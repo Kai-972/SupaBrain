@@ -19,7 +19,7 @@ export interface BrainView {
   agents: LiveAgent[];
   counts: { checkpoints: number; tasksOpen: number; tasksDone: number; files: number; notices: number };
 }
-export interface RuleRow { agent: string; vendor: string; ens: string; resolver?: string; status: string; scope: string; writeDaily?: string; role: string }
+export interface RuleRow { agent: string; vendor: string; ens: string; resolver?: string; status: string; scope: string; writeDaily?: string; role: string; guard?: string | null; deny?: string | null }
 export interface RulesResponse { editable: boolean; agents: RuleRow[] }
 export interface RuleChange { agent: string; ens: string; txHash: string | null; txUrl?: string; changed: Record<string, { from: string; to: string }> }
 export interface HeadRow { agent: string; ens: string; serverHead: string | null; ensHead: string | null; match: boolean; txUrl?: string; error?: string }
@@ -82,7 +82,7 @@ export const api = {
   fileContent: (id: string, path: string, key?: string) => call<FileContent>(`${b(id)}/files/content?path=${encodeURIComponent(path)}${key ? `&key=${encodeURIComponent(key)}` : ""}`),
   notes: (id: string) => call<MemoryNode[]>(`${b(id)}/notes`),
   rules: (id: string) => call<RulesResponse>(`${b(id)}/rules`),
-  setRules: (id: string, body: { agent: string; status?: string; scope?: string; writeDaily?: string; role?: string }) => call<RuleChange>(`${b(id)}/rules`, { json: body }),
+  setRules: (id: string, body: { agent: string; status?: string; scope?: string; writeDaily?: string; role?: string; guard?: string; deny?: string }) => call<RuleChange>(`${b(id)}/rules`, { json: body }),
   blocked: (id: string) => call<BlockedEntry[]>(`${b(id)}/blocked`),
   review: (id: string) => call<ReviewItem[]>(`${b(id)}/review`),
   heads: (id: string) => call<HeadRow[]>(`${b(id)}/heads`),

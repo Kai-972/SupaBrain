@@ -264,3 +264,87 @@ body { line-height: 1.55; }
   .p-sign > div > span { grid-column: 1 / -1; }
 }
 @media (max-width: 420px) { .navlink { padding: 0 8px; } .topbar4 .logo svg { width: 18px; } }
+
+/* ---------- rulebook ---------- */
+.rules4page { display: grid; gap: 40px; padding-top: 18px; padding-bottom: 120px; }
+.books4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; }
+.bookcard4 { border: 1.5px solid var(--line2); border-radius: 22px; background: var(--panel); padding: 20px 22px; display: grid; gap: 14px; align-content: start; transition: transform .25s, box-shadow .25s, border-color .25s; }
+.bookcard4:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--muted); }
+.bookcard4 header { display: flex; align-items: center; gap: 12px; }
+.bookcard4 header b { display: block; font-size: 1.25rem; font-weight: 600; }
+.bookcard4 header .mono { font-size: 14px; color: var(--muted); word-break: break-all; }
+.book4 { display: grid; gap: 14px; }
+.book4 > ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.book4 > ul > li { display: grid; gap: 2px; padding: 10px 12px 10px 14px; border-left: 3px solid var(--line2); border-radius: 0 10px 10px 0; transition: background .2s, border-color .2s; }
+.book4 > ul > li:hover { background: var(--panel2); border-left-color: var(--fg); }
+.book4 > ul > li.ok { border-left-color: var(--flow); }
+.book4 > ul > li.bad { border-left-color: var(--lie); }
+.bk-plain { font-size: 16px; }
+.book4 code, .rule4, .explain4 code, .step-4 code, .panel4 code, .proofrow4 code { font: 500 13px var(--mono); color: var(--muted); }
+.book4.compact > ul > li { padding: 6px 10px; }
+.book4.compact .bk-plain { font-size: 15px; }
+.bk-guard { padding: 14px; border-radius: 14px; background: var(--panel2); display: grid; gap: 8px; }
+.bk-guard b { font-size: 15px; font-weight: 600; }
+.bk-guard ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.bk-guard li { font-size: 15px; }
+.bk-guard li.on { color: var(--fg); } .bk-guard li.off { color: var(--dim); text-decoration: line-through; }
+.bk-proof { margin: 0; font-size: 14px; color: var(--muted); }
+.sect4 { display: grid; gap: 16px; }
+.onchain4 { border: 1.5px solid var(--line2); border-radius: 20px; overflow: hidden; background: var(--panel); }
+.oc-row { display: grid; grid-template-columns: 1.1fr .8fr 1.6fr; gap: 18px; padding: 16px 20px; border-top: 1px solid var(--line); font-size: 15px; transition: background .2s; }
+.oc-row:hover:not(.head) { background: var(--panel2); }
+.oc-row.head { border-top: 0; font: 600 13px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--panel2); }
+.oc-row b { display: block; font-weight: 600; }
+.oc-row em { font-style: normal; font-size: 13px; color: var(--muted); font-family: var(--mono); }
+.oc-note { margin: 0; padding: 16px 20px; border-top: 1px solid var(--line); background: var(--amber-soft); font-size: 15px; }
+@media (max-width: 760px) { .oc-row { grid-template-columns: 1fr; gap: 4px; } .oc-row.head { display: none; } }
+.chips4 { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips4 button { padding: 8px 12px; border-radius: 12px; border: 1.5px solid var(--line2); font-size: 14px; text-align: left; color: var(--muted); transition: border-color .2s, background .2s, color .2s, transform .15s; }
+.chips4 button:hover { transform: translateY(-1px); }
+.chips4 button[aria-pressed="true"] { border-color: var(--fg); color: var(--fg); background: var(--panel2); }
+.rule4 { font-style: normal; margin-top: 4px; color: var(--amber) !important; }
+.card4.atk .rule4 { color: var(--lie) !important; }
+.explain4 { margin: 0; font-size: 16px; }
+.explain4.warn { padding: 12px 14px; border-radius: 12px; background: var(--amber-soft); }
+.proofrow4 { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; background: var(--panel2); }
+.proofrow4 b { font-size: 15px; } .proofrow4 > span { font-size: 15px; color: var(--muted); }
+
+/* ---------- motion and hover (all of it respects reduced motion) ---------- */
+.js [data-reveal] { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.2, .8, .2, 1), transform .7s cubic-bezier(.2, .8, .2, 1); }
+.js [data-reveal].in { opacity: 1; transform: none; }
+.headline4 .n { display: inline-block; animation: numpop .6s cubic-bezier(.2, .9, .3, 1.3); }
+@keyframes numpop { 0% { transform: translateY(40%) scale(.7); opacity: 0 } 100% { transform: none; opacity: 1 } }
+a.link, .lede4 a, .p-proof a, .bk-proof a, .res4 a { background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat; transition: background-size .35s ease; text-decoration: none; }
+a.link:hover, .lede4 a:hover, .p-proof a:hover, .bk-proof a:hover, .res4 a:hover { background-size: 100% 1.5px; }
+.btn { transition: transform .2s cubic-bezier(.2, .8, .2, 1), box-shadow .25s, filter .2s, background .2s, border-color .2s; }
+.btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(20, 20, 19, .12); }
+.btn.p:hover:not(:disabled) { box-shadow: 0 10px 26px color-mix(in srgb, var(--yellow) 45%, transparent); }
+.card4, .tile4, .gate4 { transition: transform .25s cubic-bezier(.2, .8, .2, 1), box-shadow .25s, border-color .2s, background .2s; }
+.card4:hover, .tile4:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.gate4:hover { transform: translateY(-2px); }
+.navlink { position: relative; }
+.navlink::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 6px; height: 2px; border-radius: 2px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+.navlink:hover::after { transform: scaleX(1); }
+.navlink[aria-current="page"]::after { display: none; }
+.lane-h::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -3px; height: 3px; background: var(--fg); transform: scaleX(0); transition: transform .3s; }
+.lane-h:hover::after { transform: scaleX(1); }
+.row4 .dot, .row4 .qring { transition: r .25s cubic-bezier(.2, .9, .3, 1.4); }
+.row4:hover .dot:not(.hollow) { r: 15; }
+.row4:hover .dot.hollow { r: 11; }
+.row4 .lb4 { transition: fill .2s; }
+.row4:hover .lb4:not(.bad) { fill: var(--fg); font-weight: 500; }
+.edge4 { transition: stroke-opacity .3s, stroke-width .3s; }
+.lg4:hover .edge4 { stroke-opacity: .45; }
+.h1-4, .headline4, .h2-4 { transition: letter-spacing .4s; }
+.page4-head .h1-4 { animation: rise .7s cubic-bezier(.2, .8, .2, 1); }
+@keyframes rise { from { opacity: 0; transform: translateY(16px) } }
+.lg4-scroll { height: calc(100vh - 130px); max-height: none; }
+.edge4 { stroke-opacity: .38; }
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .headline4 .n, .page4-head .h1-4 { animation: none !important; }
+  .btn:hover, .card4:hover, .tile4:hover, .bookcard4:hover, .gate4:hover, .chips4 button:hover { transform: none !important; }
+}
+
+.book4 > ul > li.ok, .book4 > ul > li.bad { color: var(--fg); }
+.ensline { font-size: 14px; color: var(--muted); margin-top: -8px; }

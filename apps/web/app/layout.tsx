@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#FAF9F5", width: "device-width", initialScale: 1 };
 
 // Applies the saved theme and projector size before first paint, so there's no flash.
-const prefs = `try{var t=localStorage.getItem('sb-theme');if(t==='dark')document.documentElement.dataset.theme='dark';if(localStorage.getItem('sb-big')==='1')document.documentElement.dataset.big='1'}catch(e){}`;
+const prefs = `document.documentElement.classList.add('js');try{var t=localStorage.getItem('sb-theme');if(t==='dark')document.documentElement.dataset.theme='dark';if(localStorage.getItem('sb-big')==='1')document.documentElement.dataset.big='1'}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

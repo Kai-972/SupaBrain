@@ -46,13 +46,31 @@ export const GUARD_RULES: Record<string, string> = {
   "rule-tampering": "Tries to rewrite an AI's own ENS rules",
   "agent-to-agent-command": "Orders another AI to act",
 };
-export const ENS_RULES = ["sb.status", "sb.scope", "sb.write.daily", "sb.role"];
+/** What each content check forbids, as the rulebook says it ("may not pass on …"). */
+export const GUARD_PLAIN: Record<string, string> = {
+  "instruction-override": "poisoned instructions (“ignore all previous instructions…”)",
+  "remote-code": "remote install scripts (curl … | sh)",
+  "payment-redirect": "money redirected to an address",
+  "secret-exfiltration": "requests for keys, .env files or tokens",
+  "rule-tampering": "attempts to change its own ENS rules",
+  "agent-to-agent-command": "orders to another AI (“tell Claude to…”)",
+};
+export const GUARD_IDS = Object.keys(GUARD_PLAIN);
+/** sb.guard as the server reads it: absent / "*" → every check; "none" → none; a list → those. */
+export function guardList(raw?: string | null): string[] {
+  if (!raw || raw.trim() === "*") return GUARD_IDS;
+  if (raw.trim() === "none") return [];
+  const l = raw.split(",").map((x) => x.trim()).filter(Boolean);
+  return l.every((x) => GUARD_IDS.includes(x)) ? l : GUARD_IDS;
+}
+export const denyList = (raw?: string | null) => (!raw || raw.trim() === "none" ? [] : raw.split(",").map((x) => x.trim()).filter(Boolean));
+export const ENS_RULES = ["sb.status", "sb.scope", "sb.deny", "sb.guard", "sb.write.daily", "sb.role"];
 
 export type Klass = "stopped" | "ens" | "identity" | "refused" | "saved";
 /** Counting rules from docs/FRONTEND_CONTENT.md §6. */
 export function classOf(b: Pick<BlockedEntry, "code" | "rule">): Klass {
   if (b.code === "STOPPED") return "stopped";
-  if (b.code === "SCOPE" || b.code === "RATE_LIMIT" || (b.code === "NOT_AUTHORIZED" && b.rule === "sb.status")) return "ens";
+  if (b.code === "SCOPE" || b.code === "DENIED" || b.code === "RATE_LIMIT" || (b.code === "NOT_AUTHORIZED" && b.rule === "sb.status")) return "ens";
   if (b.code === "KEY_MISMATCH" || b.code === "AUTHORITY_UNKNOWN" || b.code === "NOT_AUTHORIZED") return "identity";
   return "refused";
 }
@@ -60,8 +78,9 @@ export function classOf(b: Pick<BlockedEntry, "code" | "rule">): Klass {
 /** The label for one refusal or stop, from FRONTEND_V2.md §5.3. */
 export function blockLabel(code: string, rule?: string): string {
   switch (code) {
-    case "STOPPED": return `STOPPED · INJECTION${rule ? ` · ${rule}` : ""}`;
+    case "STOPPED": return `STOPPED · sb.guard${rule ? ` · ${rule}` : ""}`;
     case "SCOPE": return "BLOCKED BY ENS · sb.scope";
+    case "DENIED": return "BLOCKED BY ENS · sb.deny";
     case "RATE_LIMIT": return "BLOCKED BY ENS · sb.write.daily";
     case "NOT_AUTHORIZED":
       if (rule === "sb.status") return "BLOCKED BY ENS · PAUSED";

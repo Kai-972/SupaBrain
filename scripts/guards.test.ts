@@ -48,9 +48,9 @@ describe("check-secrets", () => {
     expect(scanSecrets("fails on a `WORLD_CLIENT_SECRET=` value or `NOTION_TOKEN=secret_…`")).toEqual([]);
   });
 
-  it("catches a local secret value pasted anywhere, never NEXT_PUBLIC values", () => {
-    const secrets = secretValues(["ARKIV_ACCESS_KEY=sk_live_abcdefghijkl  # note", "NEXT_PUBLIC_SERVER_URL=https://public.example.org"].join("\n"));
-    expect(secrets.map((s) => s.name)).toEqual(["ARKIV_ACCESS_KEY"]);
+  it("catches a local secret value pasted anywhere, never public values (NEXT_PUBLIC_*, PUBLIC_BASE_URL)", () => {
+    const secrets = secretValues(["ARKIV_ACCESS_KEY=sk_live_abcdefghijkl  # note", "NEXT_PUBLIC_SERVER_URL=https://public.example.org", "PUBLIC_BASE_URL=https://tunnel.example.org", "NGROK_AUTHTOKEN=abcdefghijklmnop"].join("\n"));
+    expect(secrets.map((s) => s.name)).toEqual(["ARKIV_ACCESS_KEY", "NGROK_AUTHTOKEN"]);
     expect(scanSecrets("const rpc = base + 'sk_live_abcdefghijkl'", secrets)).toEqual([{ line: 1, rule: "value of ARKIV_ACCESS_KEY" }]);
   });
 

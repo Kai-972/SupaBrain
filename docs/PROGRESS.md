@@ -16,7 +16,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
-| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅, S1 Arkiv ✅ → S1 MCP spike (needs a public host) | 🔨 in progress | host choice for the MCP spike (Render likely; ngrok fallback) |
+| A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ✅ (ENS, Arkiv, MCP) → S2 memory core | 🔨 | – |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), S2 ✅ Sepolia · S8 docs ✅ (SECURITY, SPONSORS World/Vault, WORLD_DEBRIEF) · V3 red team ✅ (3 holes fixed). Waiting on A S5 mount for live P1/P3 | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
@@ -34,7 +34,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ### S1: Spikes
 - [x] A · S1 ENS: team name + registry · agent + own resolver · `sb.memory.head` ✓ · `sb.pay.cap` revert tx · UR read-back · unregister → null · transfer revert · **handoff `ens.sepolia.json` to B** (cff14b9; proofs in the A log)
 - [x] A · S2 Arkiv: batch ok · `$creator ≠ $owner` in ONE tx · queries ok · **extend-on-readonly: WORKS (owner extends; nobody patches; Keep = 1 batch)** · watcher fires · expiry exact · friction logged (8 entries) (proofs in the A log; `pnpm arkiv:query`)
-- [ ] A · S3 MCP: public URL · Claude Code ✓ · Claude.ai ✓ · Antigravity ✓ · bad token 401
+- [x] A · S3 MCP: public URL (ngrok static domain) · Claude Code ✓ · Claude.ai ✓ (path token) · Antigravity ✓ · bad token 401 ✓ (fafbe3a; quirks in the A log)
 - [x] B · S4 World: IDKit 4 live: approve ×3 · deny (`verification_rejected`) · cancel (85c358a; runs logged in WORLD_DEBRIEF.md)
 - [x] B · S5 Vault: `forge test` green (mock registry) · 47 passed · V1 review done (0 crit/high/med; L-2/L-3/L-4 fixed) · 34f9228
 - [ ] C: static graph with all encodings + list view (screenshot)
@@ -119,6 +119,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane A (Brain)
 <!-- newest first; format in CLAUDE.md §3.4 -->
+
+### 2026-11-06 10:12 IST · A · S1 MCP spike (all pass criteria)
+- did: stateless MCP endpoint in `apps/server` (`POST /mcp` Bearer, `POST /mcp/t/:token` path token; new McpServer + transport per request, SDK 1.32.2); HMAC agent tokens (tests first: tampering, wrong secret, expiry, unknown agent, malformed); 401 + `WWW-Authenticate`; Host allowlist from `PUBLIC_BASE_URL`; 405 for GET/DELETE; MCP returns 503 unless a token secret and ENS are configured; `whoami` reads the live `EnsAuthority` and fails closed; `pnpm mcp:token <agent>` prints per-client snippets; Sepolia chain setup moved into `packages/ens`; `docs/ARCHITECTURE.md` written. Funded the guardian 0.01 ETH for Lane B https://sepolia.etherscan.io/tx/0x9ec1a367d37b1eb72465dc5ddb2e09ea7362d6edcba1a67d07e2447273a12e11
+- proof: public URL https://swear-commend-everybody.ngrok-free.dev (laptop + ngrok static domain). Server log: Claude Code `claude-code/2.1.294` → `tools/call whoami` 200 (real headless Claude answer: lead-claude.supabrain.eth, lead, active); Claude.ai `Anthropic/ClaudeAI/1.0.0` via path token → `whoami` 200 in 630 ms (Kai's screenshot); Antigravity `antigravity-client/v1.0.0` (Gemini 3.8 Flash) → `whoami` 200 in 602 ms (gem-research.supabrain.eth, worker, research); missing/bad token → 401 on both routes over the public URL
+- result: PASS. Client quirks: (1) all three speak protocol `2025-11-25` and first probe `server/discover`, which SDK 1.32.2 answers 400; each then falls back to `initialize` cleanly (no action needed; revisit if we upgrade the SDK); (2) Claude.ai cannot send headers, so the path token is required; it connects from Anthropic's servers as three clients (`Anthropic/1.0.0` setup check, `Anthropic/Toolbox`, `Anthropic/ClaudeAI`) and ngrok's free browser warning page did not interfere; (3) Claude Code shows the model the tool's structured output rather than the text line, so both must carry the facts; (4) Antigravity sends `notifications/roots/list_changed` and saved the tool schema to a local `whoami.json` before calling; (5) Antigravity's global config is `~/.gemini/config/mcp_config.json` with `serverUrl` (not `httpUrl`) and does not expand env variables; (6) first `whoami` in a burst took ~5 s (live ENS reads over public Sepolia RPC), later ones ~0.6 s (10 s cache). Fix: a dedicated Sepolia RPC before demo day. Infra: the default ngrok config on this laptop belongs to another account, so the project uses its own `~/.config/ngrok/supabrain.yml` (token in `.env.local` as `NGROK_AUTHTOKEN`)
+- commit: fafbe3a (endpoint), this commit (docs)
+- next: S2 memory core (recall/remember/explain, lineage + trust, Arkiv writes per call, startup rebuild + watcher, SSE, `/api/team` `/api/graph` `/api/memory/:key`)
+- asks/blockers: before hosting: a Render account and a free Alchemy/Infura Sepolia key (not blocking S2)
 
 ### 2026-11-06 09:19 IST · A · S1 Arkiv spike (all pass criteria)
 - did: new `packages/arkiv` (6 `sb.*` schemas, guarded writer, per-signer queue, body codec; 34 tests written first); `scripts/arkiv/spike.ts` (dry run by default, `--yes` to broadcast, `--only sN`), `query.ts`, `revert-probe.ts`; Rabdi spike under the separate app `supabrain-mumbai26-spike`

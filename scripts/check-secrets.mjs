@@ -29,7 +29,10 @@ export function isForbiddenPath(path) {
   return /(^|\/)\.env(\.[^/]+)?$/.test(path) && !path.endsWith(".env.example");
 }
 
-/** Secret values from .env.local (never NEXT_PUBLIC_*), used to catch a pasted secret anywhere. */
+// Env values that are public by design (every client and doc shows them).
+const PUBLIC_ENV = new Set(["PORT", "PUBLIC_BASE_URL"]);
+
+/** Secret values from .env.local (never NEXT_PUBLIC_* or PUBLIC_ENV), used to catch a pasted secret anywhere. */
 export function secretValues(envText) {
   const vals = [];
   for (const raw of envText.split("\n")) {
@@ -37,7 +40,7 @@ export function secretValues(envText) {
     if (!m) continue;
     const [, name, rest] = m;
     const value = rest.replace(/\s+#.*$/, "").trim().replace(/^["']|["']$/g, "");
-    if (name.startsWith("NEXT_PUBLIC_") || name === "PORT" || value.length < 12) continue;
+    if (name.startsWith("NEXT_PUBLIC_") || PUBLIC_ENV.has(name) || value.length < 12) continue;
     vals.push({ name, value });
   }
   return vals;

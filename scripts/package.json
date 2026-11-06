@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@arkiv-network/sdk": "1.0.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@supabrain/arkiv": "workspace:*",
     "@supabrain/ens": "workspace:*",
     "@supabrain/server": "workspace:*",

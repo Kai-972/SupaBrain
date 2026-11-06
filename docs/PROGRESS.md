@@ -17,7 +17,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 | Lane | Person | Claude | Current stage / step | Status | Blocked on |
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S2 ✅ S3 ✅ S4 ✅ S5 mounted (live run waits for keys) | 🔨 | B's 5 env values on Kai's laptop; a dedicated Sepolia RPC key |
-| C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
+| C: Face (dashboard, onboarding, demo) | Kai (UI built by Srijit's session) | #2 | S1–S6 screens on the **real** API (e2f08b9): `/t` live graph + drawer + dry run/revoke cascade + pitch guide, `/t/payments` + World approval card, `/connect`, `/t/rules`, `/how`, landing. Next: DEMO_SCRIPT, video, owner-flow rehearsal on real data | 🔨 | A: `/healthz` CORS (Requests) |
 | B: Money & Security (policy, vault, World) | Srijit | #3 | **S5/S6 ✅ live**: P1 BLOCKED, revoke → vault revokeRoot + on-chain RootRevoked, P3 World-approved PAID, deny + cancel → nothing moved. QA cycle ✅ (graph.walk, payment history, per-namespace seed fixed; docs/QA_PLAN.md) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
@@ -82,6 +82,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] C → A: `/healthz` is outside the `/api` CORS scope (`app.use("/api", cors(...))`), so the browser on :3000 gets a CORS error and can't read `payments: enabled|disabled`. Ask: mount `cors()` on `/healthz` too (or add `GET /api/health`). Until then the web app skips health and always shows the Payments nav (2026-11-06 16:00 IST)
 - [ ] B → C: **read `docs/PROJECT_REFERENCE.md` first**: one file with the whole current picture for the UI build (story beats → API/SSE → what to render, the `dispute` field, payments reasons and approval card, every live endpoint, namespaces, proof links, rules). Pitch story page (plain English, 8 pictures): https://claude.ai/artifact/Y97gb3sEWrZegkKAgfEYU5 (2026-11-06)
 - [ ] B → C: **new `dispute` field** on nodes in `GET /api/graph` and on `GET /api/memory/:key`: `{state:"disputed", subject, ensAddress, claimed[]}` or `{state:"unverified", subject, reason}`. Please show an amber "Disputed by ENS" chip (text label, not only colour) on those memories; QUARANTINED styling wins when both apply. Narrative for DEMO_SCRIPT: *"Gemini saves the email and is told at once it disagrees with Acme's ENS (machines flag in milliseconds); the AIs build on it anyway; pay is BLOCKED; one revoke cleans it (humans decide in minutes)."* README: add `pnpm verify:memory <key>` as the "verify without trusting us" command next to `pnpm arkiv:query` (2026-11-06)
 - [x] B → A (fixed by B at Srijit's request, b7e449b + 606f216): **/api/payments forgets decisions across a server restart.** Live: P1 (blocked) disappeared from \`GET /api/payments\` after I restarted the server; it is on Arkiv as \`sb.payment\`. The engine keeps intents in memory and \`ArkivWriter\` is write-only. Ask: add \`loadPayments(): Promise<Payment[]>\` to the adapter (read this namespace's \`sb.payment\` rows by the team wallet, newest per intentId); B will seed \`list()\` and the "paid before" set from it at startup (shared interface change, so A's call) (2026-11-06)
@@ -438,3 +439,11 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane C (Face)
 <!-- newest first -->
+
+### 2026-11-06 16:00 IST · C · S1–S6 screens on real data
+- did: built `apps/web` against the live API + SSE (namespace `supabrain-mumbai26-b`): `/t` swimlane lineage graph (one lane per author, one row per memory; focus family, "why" path, blast-radius preview, ~120 ms/hop revoke cascade, DISPUTED BY ENS / QUARANTINED / STALE / EXPIRED / PENDING / KEPT tags in words), list view, agents rail (live ENS caps, AUTHORITY UNKNOWN fail-closed), drawer (lineage, readers, signer, Arkiv proof, Keep 7/30, Correct this, This is wrong → source/memory/agent scope), dry-run/revoke side panel with proof steps, live feed, Add context (with private ref), Before/After (recall log), pitch guide (8 demo beats, each ✓ computed from live data); `/t/payments` (all reasons hard-first, path → "show in graph", World approval card with QR only for the owner, countdown, cancel); `/connect` (pair → snippet + prompt + QR → waits for SSE `connected`); `/t/rules` (ENS records live); `/how` (architecture, life of a memory, 15 judge questions, honest limits); `/` landing ported from the Night reference + live proof strip + 9 threat scenarios + comparison. `?mock=1` replays `fixtures/demo.json` (a snapshot of the live namespace) behind a MOCK DATA banner
+- proof: e2f08b9; `next build` 7 routes OK; `lint:hardcode` + `check:secrets` OK; checked in the browser at 1440, 1280 and 375 px, dark + light; dry run → revoke → cascade exercised in `?mock=1` (no Arkiv writes)
+- result: PASS (owner actions against the real server not exercised yet: they need the owner passphrase and write to Arkiv)
+- commit: e2f08b9
+- next: rehearse dry run / revoke / Keep / Correct / pair on the judging namespace after `demo:seed`; DEMO_SCRIPT.md; video
+- asks/blockers: C → A `/healthz` CORS (Requests)

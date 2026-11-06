@@ -29,6 +29,8 @@ function reasonText(r: PayReason): string {
       return `this would exceed your daily limit of ${r.daily} USDC (already spent ${r.spentToday} today)`;
     case "AGENT_NOT_AUTHORIZED":
       return r.detail;
+    case "PROTECTED_PAYEE":
+      return `the payee is a team-controlled wallet (${r.label}); money sent there would leave the vault's controls, so it is never a payee`;
     default:
       return JSON.stringify(r);
   }

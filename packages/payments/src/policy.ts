@@ -134,11 +134,9 @@ async function decide(ctx: PolicyContext, req: PolicyRequest, amountUnits: bigin
   }
 
   // Never a payee: the zero address, or anything the team's own infrastructure controls (V3 red team R1/R2).
-  if (payee === zeroAddress) return blockedEarly(notAuthorized("payee is the zero address"), amountUnits, a);
-  const guarded = ctx.protectedPayees?.get(payee.toLowerCase());
-  if (guarded) {
-    return blockedEarly(notAuthorized(`payee is a team-controlled wallet (${guarded}): money sent there would leave the vault's controls`), amountUnits, a);
-  }
+  // Money sent there would leave the vault's controls (ceilings, kill switch, revocations). No approval overrides it.
+  const guarded = payee === zeroAddress ? "zero address" : ctx.protectedPayees?.get(payee.toLowerCase());
+  if (guarded) return blockedEarly({ code: "PROTECTED_PAYEE", label: guarded }, amountUnits, a);
 
   const addrNodes = graph.memoriesByAddress(payee);
   const subjects = new Set<string>();

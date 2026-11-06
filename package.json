@@ -39,7 +39,8 @@
     "ens:add-vendor": "tsx scripts/ens/add-vendor.ts",
     "demo:step": "tsx scripts/demo/step.ts",
     "e2e:memory": "tsx scripts/demo/e2e-memory.ts",
-    "dev:public": "bash scripts/dev-public.sh"
+    "dev:public": "bash scripts/dev-public.sh",
+    "e2e:undo": "tsx scripts/demo/e2e-undo.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

@@ -169,6 +169,53 @@
         "sb.vendor": "openai",
         "agent-context": "Supabrain agent gpt-writer.supabrain.eth: worker (openai) writing to \"comms\". Rules are ENS records only the team owner can change."
       }
+    },
+    "test-agent": {
+      "label": "test-agent",
+      "ens": "test-agent.supabrain.eth",
+      "labelhash": "0x69beb84d0a4b36af8383d81fc0b9e6442af9d3b3d03bddb4deed92e74bcbfe1a",
+      "wallet": "0x2348Db5F1b8ed2158ef65FD2b601949574390190",
+      "resolver": "0x1e6a79A3cE022543b23c47CC2febcb1DbA2B9d02",
+      "resolverSalt": "76596131848004554548093236869315030081457396266955524735583223828586392176340",
+      "expiry": 1794538008,
+      "txs": {
+        "deployResolver": {
+          "hash": "0xd89bee0c93220a42616990111c00d84507d24679013e1dfeaf5fd479a15e3765",
+          "url": "https://sepolia.etherscan.io/tx/0xd89bee0c93220a42616990111c00d84507d24679013e1dfeaf5fd479a15e3765",
+          "at": "2026-11-06T02:47:22.538Z"
+        },
+        "grantMemoryHead": {
+          "hash": "0x1b65e985ef15ba341b059afdc85176352339a4f6e3d1e867fc13538fc1898d57",
+          "url": "https://sepolia.etherscan.io/tx/0x1b65e985ef15ba341b059afdc85176352339a4f6e3d1e867fc13538fc1898d57",
+          "at": "2026-11-06T02:47:36.388Z"
+        },
+        "register": {
+          "hash": "0x22ac828a1bf5e8a7b4a85ccca94bdf7aee0ab9465369d0ec45b6bb14f9d8ecf5",
+          "url": "https://sepolia.etherscan.io/tx/0x22ac828a1bf5e8a7b4a85ccca94bdf7aee0ab9465369d0ec45b6bb14f9d8ecf5",
+          "at": "2026-11-06T02:47:47.804Z"
+        },
+        "revokeGrant": {
+          "hash": "0x802ed7350edfa08e3b46e709160551b791d35b0332c154b15eb248e73b2bc160",
+          "url": "https://sepolia.etherscan.io/tx/0x802ed7350edfa08e3b46e709160551b791d35b0332c154b15eb248e73b2bc160",
+          "at": "2026-11-06T02:50:14.211Z"
+        },
+        "unregister": {
+          "hash": "0x444058d439c7b13f820b6d0d15af582e6bdfb2cc2f9ef41da5bc4787be7eb050",
+          "url": "https://sepolia.etherscan.io/tx/0x444058d439c7b13f820b6d0d15af582e6bdfb2cc2f9ef41da5bc4787be7eb050",
+          "at": "2026-11-06T02:49:00.000Z"
+        }
+      },
+      "records": {
+        "sb.role": "worker",
+        "sb.scope": "test",
+        "sb.pay.cap": "0",
+        "sb.pay.daily": "0",
+        "sb.status": "active",
+        "sb.vendor": "claude",
+        "agent-context": "Supabrain agent test-agent.supabrain.eth: worker (claude) writing to \"test\". Rules are ENS records only the team owner can change."
+      },
+      "throwaway": true,
+      "unregisteredAt": "2026-11-06T02:50:15.621Z"
     }
   },
   "vendors": {}

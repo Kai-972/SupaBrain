@@ -13,7 +13,7 @@ import { permissionedRegistryAbi, permissionedResolverAbi, userRegistryAbi, veri
 import type { Hex } from "../lib/chain";
 import { nowIso, readEnsDeployment, updateEnsDeployment } from "../lib/deployments";
 import { ensContext, hasFlag, positional, walletFor } from "../lib/ensctx";
-import { requireOk, type TxStep } from "../lib/tx";
+import { readAt, requireOk, type TxStep } from "../lib/tx";
 
 async function main() {
   const ctx = await ensContext();
@@ -67,27 +67,32 @@ async function main() {
   if (!steps.length) console.log("\nnothing to do: already set up.");
 
   const txs: Record<string, { hash: Hex; url: string; at: string }> = {};
+  let lastBlock = 0n;
   let i = 0;
   for (const step of steps) {
     i++;
     const r = requireOk(await runner.run(owner, "owner", step, `${i}/${steps.length}`));
     if (r.hash) txs[step.id] = { hash: r.hash, url: r.url!, at: nowIso() };
+    if (r.receipt && r.receipt.blockNumber > lastBlock) lastBlock = r.receipt.blockNumber;
   }
   if (!ctx.broadcast) { if (steps.length) console.log("\nnothing sent. Re-run with --yes to broadcast."); return; }
 
-  // --- verify from chain state, through the Universal Resolver where possible
+  // --- verify from chain state, through the Universal Resolver where possible. Reads are pinned to the block of
+  // our last tx (or head, when nothing was sent) so a lagging RPC node cannot show pre-transaction state.
+  const at = lastBlock || (await pub.getBlockNumber());
   const problems: string[] = [];
-  const after = await pub.readContract({ address: registry, abi: userRegistryAbi, functionName: "getState", args: [labelhashId(label)] }) as { status: number; latestOwner: Hex; expiry: bigint };
-  const liveOwner = await pub.readContract({ address: registry, abi: userRegistryAbi, functionName: "getOwner", args: [labelhashId(label)] }) as Hex;
+  const after = await readAt(at, (blockNumber) => pub.readContract({ address: registry, abi: userRegistryAbi, functionName: "getState", args: [labelhashId(label)], blockNumber })) as { status: number; latestOwner: Hex; expiry: bigint };
+  const liveOwner = await readAt(at, (blockNumber) => pub.readContract({ address: registry, abi: userRegistryAbi, functionName: "getOwner", args: [labelhashId(label)], blockNumber })) as Hex;
   if (liveOwner.toLowerCase() !== wallet.address.toLowerCase()) problems.push(`getOwner = ${liveOwner}, expected ${wallet.address}`);
-  const rolesOnName = await pub.readContract({ address: registry, abi: permissionedRegistryAbi, functionName: "roles", args: [labelhashId(label), wallet.address] }) as bigint;
+  const rolesOnName = await readAt(at, (blockNumber) => pub.readContract({ address: registry, abi: permissionedRegistryAbi, functionName: "roles", args: [labelhashId(label), wallet.address], blockNumber })) as bigint;
   if (rolesOnName !== 0n) problems.push(`agent holds roles ${rolesOnName.toString(16)} on its name; expected none`);
-  const canSetHead = await pub.readContract({ address: predicted, abi: permissionedResolverAbi, functionName: "hasRoles", args: [memoryHeadResource, RESOLVER_ROLES.SET_TEXT, wallet.address] }) as boolean;
+  const canSetHead = await readAt(at, (blockNumber) => pub.readContract({ address: predicted, abi: permissionedResolverAbi, functionName: "hasRoles", args: [memoryHeadResource, RESOLVER_ROLES.SET_TEXT, wallet.address], blockNumber })) as boolean;
   if (!canSetHead) problems.push(`agent cannot set ${keys.memoryHead}`);
   const canSetCap = await pub.readContract({ address: predicted, abi: permissionedResolverAbi, functionName: "hasRoles", args: [BigInt(labelhashOf(keys.payCap)), RESOLVER_ROLES.SET_TEXT, wallet.address] }) as boolean;
   const rootText = await pub.readContract({ address: predicted, abi: permissionedResolverAbi, functionName: "hasRoles", args: [0n, RESOLVER_ROLES.SET_TEXT, wallet.address] }) as boolean;
   if (canSetCap || rootText) problems.push("agent can set more than its memory head key");
-  const viaUr = { addr: await pub.getEnsAddress({ name }).catch((e) => `error: ${e.shortMessage ?? e.message}`), role: await pub.getEnsText({ name, key: keys.role }).catch((e) => `error: ${e.shortMessage ?? e.message}`), cap: await pub.getEnsText({ name, key: keys.payCap }).catch((e) => `error: ${e.shortMessage ?? e.message}`) };
+  const urRead = <T>(f: (blockNumber: bigint) => Promise<T>) => readAt(at, f).catch((e) => `error: ${e.shortMessage ?? e.message}`);
+  const viaUr = { addr: await urRead((blockNumber) => pub.getEnsAddress({ name, blockNumber })), role: await urRead((blockNumber) => pub.getEnsText({ name, key: keys.role, blockNumber })), cap: await urRead((blockNumber) => pub.getEnsText({ name, key: keys.payCap, blockNumber })) };
   console.log(`\nUniversal Resolver read-back: addr=${viaUr.addr} · ${keys.role}=${viaUr.role} · ${keys.payCap}=${viaUr.cap}`);
   if (String(viaUr.addr).toLowerCase() !== wallet.address.toLowerCase()) problems.push(`UR addr ${viaUr.addr} != wallet ${wallet.address}`);
   if (viaUr.cap !== agent.payCap) problems.push(`UR ${keys.payCap} ${viaUr.cap} != ${agent.payCap}`);

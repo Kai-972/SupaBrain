@@ -68,6 +68,9 @@ export function decodeRevertData(data: Hex): string | undefined {
 }
 
 export class Runner {
+  /** Next nonce per sender, tracked locally: a lagging RPC node can report a stale count right after a mined tx. */
+  private readonly nextNonce = new Map<string, number>();
+
   constructor(
     readonly config: AppConfig,
     readonly pub: PublicClient,
@@ -122,12 +125,14 @@ export class Runner {
     const gas = step.gas ?? (estimate !== undefined ? (estimate * 125n) / 100n : undefined);
     if (gas === undefined) throw new Error(`${step.id}: no gas limit (simulation skipped or failed and no fixed gas set)`);
     const gasPrice = (await pub.getGasPrice()) * 2n;
-    const nonce = await pub.getTransactionCount({ address: account.address, blockTag: "latest" });
+    const fetched = await pub.getTransactionCount({ address: account.address, blockTag: "latest" });
+    const nonce = Math.max(fetched, this.nextNonce.get(account.address) ?? 0);
     const wallet = createWalletClient({ account, chain: this.chain, transport: http(this.rpcUrl) });
     const hash = await wallet.writeContract({
       address: step.address, abi: step.abi, functionName: step.functionName, args: step.args as unknown[],
       value: step.value, gas, gasPrice, nonce, chain: this.chain,
     });
+    this.nextNonce.set(account.address, nonce + 1);
     const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 180_000 });
     const url = txUrl(this.config, hash);
     const success = receipt.status === "success";
@@ -154,4 +159,20 @@ export class Runner {
 export function requireOk(r: StepResult): StepResult {
   if (!r.ok) throw new Error(`step "${r.step.id}" failed${r.revert ? `: ${r.revert}` : ""}`);
   return r;
+}
+
+/**
+ * Run a read pinned to `blockNumber`, retrying while a lagging node says it has not seen that block yet.
+ * Public RPCs are load-balanced: an unpinned read right after a mined tx can return pre-tx state.
+ */
+export async function readAt<T>(blockNumber: bigint, read: (blockNumber: bigint) => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await read(blockNumber);
+    } catch (e) {
+      const behind = e instanceof Error && /not found|header|returned no data|unknown block|too new|missing trie/i.test(e.message);
+      if (!behind || attempt >= 8) throw e;
+      await new Promise((r) => setTimeout(r, 2_500));
+    }
+  }
 }

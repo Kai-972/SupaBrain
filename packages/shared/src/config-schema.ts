@@ -117,6 +117,7 @@ const EnsAgentDeployment = z.object({
   txs: z.record(z.string(), Tx),
   records: z.record(z.string(), z.string()), // text records written at initialisation
   throwaway: z.boolean().optional(),
+  unregisteredAt: z.string().optional(), // set by scripts/ens/unregister.ts (the kill switch)
 });
 /** config/deployments/ens.sepolia.json: written step by step by scripts/ens/*, read by packages/ens and Lane B. */
 export const EnsDeploymentSchema = z.object({

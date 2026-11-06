@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S0 ✅ → S1 ENS step 1 | 🔨 in progress | ASK: team label, SEPOLIA_RPC_URL, OWNER_PRIVATE_KEY, keygen OK |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · World spike: client + tests done, live approve/deny waiting on credentials | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | S1 · World spike: switched to IDKit 4 (OIDC portal needs enterprise Google); client + 46 tests done, live approve/deny waiting on WORLD_RP_ID + WORLD_SIGNING_KEY | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -35,7 +35,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] A · S1 ENS: team name + registry · agent + own resolver · `sb.memory.head` ✓ · `sb.pay.cap` revert tx · UR read-back · unregister → null · transfer revert · **handoff `ens.sepolia.json` to B**
 - [ ] A · S2 Arkiv: batch ok · `$creator ≠ $owner` · queries ok · **extend-on-readonly result: ___** · watcher fires · friction logged
 - [ ] A · S3 MCP: public URL · Claude Code ✓ · Claude.ai ✓ · Antigravity ✓ · bad token 401
-- [ ] B · S4 World: discovery logged ✓ (52c950e) · approve · deny · expire/cancel  ← needs WORLD_CLIENT_ID/SECRET
+- [ ] B · S4 World: OIDC discovery ✓ (52c950e) · IDKit 4 client ✓ (e46d944) · approve · deny · expire/cancel  ← needs WORLD_APP_ID / WORLD_RP_ID / WORLD_SIGNING_KEY
 - [x] B · S5 Vault: `forge test` green (mock registry) · 47 passed · V1 review done (0 crit/high/med; L-2/L-3/L-4 fixed) · 34f9228
 - [ ] C: static graph with all encodings + list view (screenshot)
 
@@ -82,6 +82,8 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Requests (cross-lane; format: `- [ ] FROM → TO: ask (time)`)
+- [ ] B → A: World moved to IDKit 4. Please add to `.env.example`: `WORLD_APP_ID=` (public), `WORLD_RP_ID=` (public), `WORLD_SIGNING_KEY=` (secret, B). `WORLD_CLIENT_ID/SECRET` stay as the OIDC fallback. Also make `check-secrets.mjs` flag a non-empty `WORLD_SIGNING_KEY=` value (2026-11-06)
+- [ ] B → C: the approval card shows `ApprovalView.verificationUri` (the IDKit `connectorURI`) as a QR plus a "open in World App" link, with `userCode` as a short reference. The URI carries the bridge key, so render it **only** on the owner-authenticated dashboard and never log it. Deny/expire/cancel come back as `PayDecision` statuses (2026-11-06)
 - [ ] B → A: vault pay() calls `getOwner(labelhash)` on the team UserRegistry; `ens.sepolia.json` needs per-agent `labelhash` (uint256 of keccak(label)) + `registry` + `wallet` for `set-agents` (2026-11-06)
 - [x] B → A: `config/app.json` needs `payments.eip712 {name, version}` for the vault domain (vault takes them as constructor args) (2026-11-06) → done: `{ "name": "BrainVault", "version": "1" }` (matches your tests), zod-validated as `config.app.payments.eip712`
 - [x] A → B, C: **S0 pushed: B and C can pull** (1f0390c, 2026-11-06 04:42). Notes for you:
@@ -112,6 +114,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S1 / S4 World: switch to IDKit 4 (Human-in-the-loop)
+- did: OIDC route blocked (pasted creds were IDKit app id + portal API key → `invalid_client`; the auth.world.org portal returns `account_not_eligible` for non-enterprise Google). Built World ID 4 approval on `@worldcoin/idkit-core@4.6.0`: per-intent action `supabrain-pay:<intentHash>` signed server-side, signal = intent hash, bridge polled from Node, local checks (action, nonce, env pin, signal_hash, credential) then `/api/v4/verify/{rp_id}`, one-time `(action, nullifier)`. OIDC kept as `world:oidc-spike`
+- proof: 46 new tests (83 in payments, 108 workspace); mutants on the action/signal/replay checks each caught; live probe: `IDKit.request` + `pollOnce` from plain Node → `waiting_for_connection` (throwaway key, staging)
+- result: PASS (code); live approve/deny pending
+- commit: 1abe309 (tests), e46d944 (feat)
+- next: live approve + deny + cancel once `WORLD_APP_ID`, `WORLD_RP_ID`, `WORLD_SIGNING_KEY` are in .env.local; then `decidePayment`
+- asks/blockers: ASK WORLD_RP_ID + WORLD_SIGNING_KEY (Developer Portal → app, "Enable World ID 4.0" if shown). Booth: which product the prize means
 
 ### 2026-11-06 IST · B · S1 / S4 World spike (client, tests, live discovery)
 - did: World device-flow client in `packages/payments/src/world/` (discovery, client_secret_basic start/poll, RFC 8628 interval + slow_down, 503 keep-waiting, 429 terminal, cancel, local expiry); backend `id_token` validation with jose (iss, aud, exp, sig, auth_time freshness, one-time jti, optional enrolled sub); `config/world.json`; `world:spike` script; WORLD_DEBRIEF.md started

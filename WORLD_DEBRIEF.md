@@ -8,36 +8,34 @@ Agents can spend money. The payment policy decides when a human must approve. Th
 2. paying over the agent's ENS-set cap (**approved** live: Acme's real 5 USDC invoice → paid on chain).
 
 ## How we integrate
-- **Flow:** OIDC Device Authorization Grant (RFC 8628). The server starts it, the dashboard shows the user code and QR, the human approves in World App, and the server polls.
-  - Code: `packages/payments/src/world/deviceFlow.ts`.
-- **Discovery only:** endpoints are never hard-coded. They come from `${issuer}/.well-known/openid-configuration`.
-  - The issuer is in `config/world.json`.
-  - We stop if the device grant or `client_secret_basic` isn't advertised.
-  - Code: `packages/payments/src/world/discovery.ts`.
-- **Backend validation** (`packages/payments/src/world/idToken.ts`) with `jose`:
-  - signature against the discovered JWKS, with `alg: none` never allowed;
-  - `iss` and `aud == client_id`;
-  - `exp`, plus `auth_time` no older than the request (minus a configured skew);
-  - a one-time `jti`;
-  - optionally `sha256(iss|sub)` equal to the enrolled approver.
-- **Never client-side:** only a validated `id_token` from the token endpoint counts as approval. HTTP 503 means keep waiting, and an invalid token is a failure, never an approval.
+**Primary: World ID 4 through IDKit core, following World's Human-in-the-loop pattern** (`packages/payments/src/world/humanApproval.ts`, wiring in `idkitAdapter.ts`, `@worldcoin/idkit-core@4.6.0`).
+- **Action = the payment.** Every intent gets its own action, `supabrain-pay:<intentHash>`. The server signs `rp_context` for that action with the RP signing key (`signRequest`), so World App only accepts a proof for this exact payment. The signal is the intent hash too.
+- **Server-side from Node:** `IDKit.request(...).constraints(...)` gives a `connectorURI`, which the dashboard shows as a QR on the owner-only approval card. The server polls the bridge with `pollOnce()`. No browser widget is needed.
+- **Backend validation, fail closed.** Before calling World, we check:
+  - `protocol_version`;
+  - `action` equals this intent's action;
+  - `nonce` equals the one we signed;
+  - `environment` equals the pinned one (staging and sandbox accept test proofs);
+  - every response's `signal_hash == hashSignal(intentHash)`;
+  - the credential is in the allowed list.
 
-## Denied / expired / cancelled paths
-- `access_denied` → **denied**. `expired_token`, or our local expiry → **expired**. An app-side cancel → **cancelled**.
-- On each of these, the intent is cancelled and nothing moves.
-- Tests: `packages/payments/src/world/world.test.ts` (`waitForDecision` suite).
-- Live proof: _pending_ (the S4 spike needs client credentials).
+  Then `POST /api/v4/verify/{rp_id}` with the result forwarded as-is, and we require `success: true` with the same environment and action. Last, the `(action, nullifier)` pair is consumed once. Only after all of that does the policy signer sign the EIP-712 attestation with `humanApproved=true`, which BrainVault checks on chain.
+- **Config:** `config/world.json` → `idkit` block (environment, verify base URL, RP signature TTL, credentials, action prefix). `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_SIGNING_KEY` come from env.
+
+**Fallback: OIDC device flow at auth.world.org** (`deviceFlow.ts`, `discovery.ts`, `idToken.ts`, `world:oidc-spike`). It's built and tested (discovery-only endpoints, `client_secret_basic`, `id_token` checked with jose: signature, iss, aud, exp, `auth_time` freshness, one-time `jti`). We couldn't use it because its portal needs an enterprise Google Workspace account.
 
 ## Timeline
 | When (IST) | What |
 |---|---|
 | 2026-11-06 | Read docs; live discovery against `auth.world.org` ✓ (device grant, `client_secret_basic`, RS256). Sandbox issuer discovery ✓ |
+| 2026-11-06 | OIDC portal → `account_not_eligible` (enterprise Google Workspace only). Switched to IDKit 4; confirmed `IDKit.request` + `pollOnce` run from plain Node against the bridge |
 | _pending_ | First approval with validated claims (time to first success: ___) |
 | _pending_ | Deny path live · expire/cancel path live |
 
 ## Friction (as it happened)
 - **The name "Agent Pass" doesn't appear in the public docs** (auth.world.org/docs). The closest is the "Human checkpoints" (step-up) guide. We asked the booth which product the prize means.
-- **No native action binding.** The device profile marks `binding_message` and action terms as unsupported: they aren't shown on the approval page or signed into the ID token. The human sees only the requester and the user code. Our workaround:
+- **Two different "verified human" products, and only one was open to us.** The OIDC portal at auth.world.org returns `{"error":"account_not_eligible"}` unless you sign in with an enterprise Google Workspace account. Hackathon teams on personal Gmail can't register a client at all. We moved to IDKit 4 (Developer Portal), which works with any account.
+- **(OIDC only) No native action binding.** The device profile marks `binding_message` and action terms as unsupported: they aren't shown on the approval page or signed into the ID token. The human sees only the requester and the user code. Our workaround:
   - the server binds `device_code → hash(intent)`;
   - only after validation does it sign the EIP-712 attestation, with `humanApproved=true` and the same `intentId`;
   - the vault checks that attestation on chain.
@@ -50,4 +48,4 @@ Agents can spend money. The payment policy decides when a human must approve. Th
   - `claims_supported` omits `email`.
 
 ## The single most important improvement
-**Native action binding:** an approval token that carries a hash of the approved action, shown to the human and signed into the `id_token` (or a separate signed receipt). Then "a human approved *this exact payment*" would be verifiable without trusting our server's `device_code → intent` mapping.
+**Show the bound action to the human in a structured way.** IDKit 4 does bind the proof to our action and signal, so "a human approved *this exact intent*" is verifiable. But World App shows only the free-text `action_description`, and the human can't check that `supabrain-pay:0x…` is the 5 USDC invoice they think it is. A typed "payment" display (amount, payee, chain), signed into the proof, would close the last gap. Second: make the OIDC portal usable without an enterprise Google account, or say so on the landing page.

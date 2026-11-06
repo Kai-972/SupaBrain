@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅ → S1 Arkiv spike | 🔨 in progress | – (wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), 3 agents set. Next: fund (needs test USDC) → 1-USDC pay → step-kill | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), 3 agents set, funded 10 USDC. Next: 1-USDC pay → step-kill | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -153,6 +153,13 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S2 / vault funded
+- did: `pnpm vault:fund 10 --yes` after the ASK go (owner → vault, Circle test USDC from the faucet)
+- proof: https://sepolia.etherscan.io/tx/0x79be7f8eef5000b6c36cd92a4bc8a83e476faf44a44de34bc3e667991f7f327b
+- result: PASS
+- next: 1-USDC `vault:pay-proof lead-claude <owner> 1` (dry run simulated ok)
+- asks/blockers: guardian 0 ETH
 
 ### 2026-11-06 IST · B · S2 / set-agents on Sepolia
 - did: `pnpm vault:set-agents --yes` after the ASK go (owner key)

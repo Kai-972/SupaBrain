@@ -43,7 +43,8 @@
     "e2e:undo": "tsx scripts/demo/e2e-undo.ts",
     "demo:seed": "tsx scripts/demo/seed.ts",
     "arkiv:reach": "tsx scripts/arkiv/reach.ts",
-    "verify:memory": "tsx scripts/arkiv/verify-memory.ts"
+    "verify:memory": "tsx scripts/arkiv/verify-memory.ts",
+    "e2e:continue": "tsx scripts/demo/e2e-continue.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

@@ -58,9 +58,9 @@ describe("continue / checkpoint / checkout (v2 step 1)", () => {
 
   it("Gemini continues: sees where Claude left off, checks out the files, finishes a task; its commit descends from Claude's", async () => {
     const { c, rt } = setup();
-    const claude = await c.checkpoint("lead-claude", { summary: "Scaffolded the app", next: "filters", add_tasks: ["Add filters"], files: [{ path: "src/App.tsx", content: APP }] });
+    const claude = await c.checkpoint("lead-claude", { summary: "Scaffolded the app", next: "filters", add_tasks: ["Add filters"], files: [{ path: "src/App.tsx", content: APP }], notes: [{ text: "filters live in the URL hash", kind: "decision" }] });
     await flush();
-    const r = await c.resume("gem-research");
+    const r = await c.resume("gem-research", { focus: "filters" });
     expect(r.text).toMatch(/lead-claude \(claude\): "Scaffolded the app" · next: "filters"/);
     expect(r.text).toMatch(/\[ \] t:[0-9a-f]{8} Add filters/);
     expect(r.text).toMatch(/src\/App\.tsx/);
@@ -69,7 +69,8 @@ describe("continue / checkpoint / checkout (v2 step 1)", () => {
     const task = r.pack.tasks.open[0]!;
     const g = await c.checkpoint("gem-research", { summary: "Added filters (all/active/done)", done: [`t:${task.key.slice(2, 10)}`], files: [{ path: "src/App.tsx", content: APP + "// filters\n" }] }, "antigravity 1.0");
     await flush();
-    expect(g.parents).toContain(claude.key);
+    expect(g.parents).toContain(claude.key); // a note Claude saved in that commit does not hide the commit
+    expect(g.parents).toContain(claude.notes[0]);
     expect(taskViews(rt.graph).find((t) => t.key === task.key)).toMatchObject({ status: "done", doneBy: "gem-research" });
     expect(currentFiles(rt.graph).get("src/App.tsx")).toMatchObject({ agent: "gem-research", text: APP + "// filters\n" });
     // and Claude, on its next continue, sees Gemini's work
@@ -117,6 +118,13 @@ describe("continue / checkpoint / checkout (v2 step 1)", () => {
     await flush();
     const r = await c.resume("gem-research", { focus: "drag-and-drop libraries" });
     expect(r.pack.notes[0]!.text).toMatch(/drag-and-drop/);
+  });
+
+  it("continue shows notices once, then they are read", async () => {
+    const { c, rt } = setup();
+    rt.notices.add("gem-research", { toAgent: "gem-research", revocation: "0xrev", text: "RETRACTED: the README", affected: [], at: Date.now() });
+    expect((await c.resume("gem-research")).notices).toHaveLength(1);
+    expect((await c.resume("gem-research")).notices).toHaveLength(0);
   });
 
   it("a failed write removes everything it added", async () => {

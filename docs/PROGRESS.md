@@ -27,11 +27,11 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ## v2 checklist (docs/PLAN.md §4; tick with a proof link or commit hash)
 
 ### Step 1: continuity in the demo brain (A)
-- [ ] shared types: kinds task/checkpoint/file, TaskView/FileView/CheckpointView
-- [ ] engine: task done rule, current file versions, heads, summary with focus (unit tests)
-- [ ] Arkiv: one write per checkpoint (tasks + files, keys predicted, checkpoint last)
-- [ ] MCP: continue / checkpoint / checkout, server instructions, `continue` prompt; v1 tools hidden
-- [ ] website API: summary, checkpoints, tasks (+ add), files (+ content), notes
+- [x] shared types: kinds task/checkpoint/file, TaskView/FileView/CheckpointView (3cbbf50)
+- [x] engine: task done rule, current file versions, heads, summary with focus (unit tests) (3cbbf50, 31b522e)
+- [x] Arkiv: one write per checkpoint (tasks + files, keys predicted, checkpoint last) (3cbbf50; live: 31 KB file confirmed in 7.6 s)
+- [x] MCP: continue / checkpoint / checkout, server instructions, `continue` prompt; v1 tools hidden (31b522e)
+- [x] website API: summary, checkpoints, tasks (+ add), files (+ content), notes (31b522e)
 - [ ] live: Claude Code → Antigravity in an empty folder, "continue" finishes a task
 
 ### Step 2: app check (Kai, B, A)
@@ -173,6 +173,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 ---
 
 ## Log: Lane A (Brain)
+
+### 2026-11-06 19:25 IST · A · v2 step 1 (tools + live run)
+- did: `continue` / `checkpoint` / `checkout` over MCP (v1 tools hidden in production, `continue` prompt, v2 server instructions); one Arkiv write per checkpoint (tasks, notes, file versions, checkpoint last, keys predicted); website API for the demo brain (`/api/brains`, summary, checkpoints, tasks + add, files + content/versions, notes; file contents never in lists or SSE); `/healthz` CORS (C's request); live harness `pnpm e2e:continue`
+- proof: run mw51a6ng through the public tunnel, 13/13 checks: Claude's checkpoint (2 tasks, 2 files incl. 31 KB, 1 note) confirmed in 7.6–9.7 s → Gemini's continue shows it, checkout returns Claude's App.tsx, Gemini's checkpoint ticks the task and descends from Claude's commit → Claude's continue shows Gemini's work. Gemini's checkpoint tx https://rabdi.explorer.arkiv.network/tx/0xea7667f777b0b46c3adf7dbb31740052abd496080f051d8d4587fb41b667ad34 (verified with the Arkiv MCP verify_tx: success, block 293644). Server restart: checkpoints (with the app that made each), task status and files rebuilt from Arkiv alone
+- result: PASS. Fixed during the run: a note saved inside Claude's commit hid that commit from Gemini's parents (commits now link to commits; notes stay extra parents); old retraction notices repeated in every reply (continue now delivers them once)
+- commit: 31b522e + this commit
+- next: Kai tests Antigravity (write + "continue") and the Claude phone app on the live server; then step 3
+- asks/blockers: Gemini's ENS scope is "research", so Antigravity can only write files under research/ until sb.scope is set to "*" (one owner tx, needs a go)
 
 ### 2026-11-06 19:30 IST · A · v2 plan
 - did: after the mentor/judge talks, rewrote the plan as "GitHub for your AIs' memory" (docs/PLAN.md) with Kai; wrote the website contract (docs/API_V2.md); logged the decisions; reverted the old UI (f10e981, Kai's call); started step 1 groundwork (types, continuity engine, one-write checkpoints)

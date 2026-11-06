@@ -51,7 +51,9 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     const pack = resumePack(graph, { agent: a.ens, team: teamEns, name: brainName, now: now(), notes: notesFor(o.focus) });
     readSets.add(agent, pack.readKeys);
     readLog.record(agent, pack.readKeys);
-    return { text: renderPack(pack, now()), pack, notices: d.notices.unread(agent) };
+    // `continue` delivers unread notices once and marks them read (v1's check_notices is hidden from the AIs);
+    // checkpoint and checkout still carry any that arrive later.
+    return { text: renderPack(pack, now()), pack, notices: d.notices.markRead(agent) };
   }
 
   async function checkpoint(agent: string, i: CheckpointInput, client?: string) {
@@ -108,8 +110,11 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     const own = heads(graph).get(agent);
     const read = readSets.parentsFor(agent);
     const readKeys = (read.ok ? read.parents : []).filter((k) => { const n = graph.get(k); return !!n && n.status === "active" && n.kind !== "task" && n.kind !== "file"; });
-    // Ticked tasks are parents too, but they never hide the commit they came from (the commit graph stays readable).
-    let parentKeys = [...new Set([...frontier(graph, [...(own ? [own.key] : []), ...readKeys]), ...done])];
+    // Commits link to commits (the commit graph stays readable); what else was read (notes, evidence) and the ticked
+    // tasks are parents too, so stopping one of them still reaches this work. Each group is reduced on its own.
+    const isCp = (k: string) => graph.get(k)?.kind === "checkpoint";
+    const cpKeys = [...(own ? [own.key] : []), ...readKeys.filter(isCp)];
+    let parentKeys = [...new Set([...frontier(graph, cpKeys), ...frontier(graph, readKeys.filter((k) => !isCp(k))), ...done])];
     const max = d.config.app.readSet.maxParents + 4;
     if (parentKeys.length > max) parentKeys = [...parentKeys.filter((k) => k === own?.key || done.includes(k)), ...parentKeys.filter((k) => k !== own?.key && !done.includes(k)).slice(-max)].slice(0, max);
     const parents = parentKeys.map((k) => graph.get(k)!).filter(Boolean);

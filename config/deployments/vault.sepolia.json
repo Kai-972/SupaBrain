@@ -1,0 +1,18 @@
+{
+  "chainId": 11155111,
+  "address": "0x2da794b8dd00afc970b372d7cf960ecd1f190ec8",
+  "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  "owner": "0xFcf02A7aaf14e83ff1296A771f89d6A2A520E198",
+  "guardian": "0x27828568758C5108f2D25bD241D99c0EAfB04D51",
+  "policySigner": "0x4F248F30D6148e59aD29847c946094EDd8fd26d0",
+  "maxRoots": 8,
+  "eip712": {
+    "name": "BrainVault",
+    "version": "1"
+  },
+  "txHash": "0x782509e09202ec6d2b59a0457e5083abf7717483b51e3ab85ffdb1432a04f25e",
+  "deployedAt": "2026-11-06T03:13:06.717Z",
+  "txUrl": "https://sepolia.etherscan.io/tx/0x782509e09202ec6d2b59a0457e5083abf7717483b51e3ab85ffdb1432a04f25e",
+  "addressUrl": "https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8",
+  "blockNumber": 12073833
+}

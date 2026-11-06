@@ -1,0 +1,160 @@
+"use client";
+// The frame every page shares: nav, live status, owner sign-in, theme and projector size, banners, toasts.
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
+import { api, ApiError } from "@/lib/api";
+import { boot, brainId, refreshAdmin, refreshRules, toast, useStore } from "@/lib/store";
+import { Logo, Modal } from "./ui";
+
+export function useBoot() {
+  const sp = useSearchParams();
+  const mock = sp.get("mock") === "1";
+  useEffect(() => { boot(mock); }, [mock]);
+  return mock;
+}
+
+/** Keep ?mock=1 on internal links so a mock session never silently becomes live data, or the reverse. */
+export function useHref() {
+  const sp = useSearchParams();
+  const mock = sp.get("mock") === "1";
+  return (path: string) => (mock ? `${path}${path.includes("?") ? "&" : "?"}mock=1` : path);
+}
+
+export function useBrainId() {
+  return useStore((s) => s.brain?.id ?? s.health?.team ?? "");
+}
+
+function Pref() {
+  const [theme, setTheme] = useState("dark");
+  const [big, setBig] = useState(false);
+  useEffect(() => { setTheme(document.documentElement.dataset.theme ?? "dark"); setBig(document.documentElement.dataset.big === "1"); }, []);
+  const save = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
+  return (
+    <>
+      <button className="iconbtn hide-sm" aria-pressed={big} title="Projector size (bigger text)" onClick={() => {
+        const n = !big; setBig(n); if (n) document.documentElement.dataset.big = "1"; else delete document.documentElement.dataset.big; save("sb-big", n ? "1" : "0");
+      }}>Aa</button>
+      <button className="iconbtn" title={theme === "light" ? "Dark theme" : "Light theme"} aria-label="Toggle theme" onClick={() => {
+        const n = theme === "light" ? "dark" : "light"; setTheme(n); document.documentElement.dataset.theme = n; save("sb-theme", n);
+      }}>{theme === "light" ? "☾" : "☀"}</button>
+    </>
+  );
+}
+
+export function OwnerButton() {
+  const admin = useStore((s) => s.admin);
+  const mode = useStore((s) => s.mode);
+  const [open, setOpen] = useState(false);
+  if (mode === "mock") return <span className="chip warn">READ-ONLY (MOCK)</span>;
+  return (
+    <>
+      {admin
+        ? <button className="btn g sm" title="Signed in as the brain owner" onClick={async () => { await api.logout().catch(() => {}); await refreshAdmin(); toast("Signed out"); }}><span className="dot ok" /> Owner</button>
+        : <button className="btn g sm" onClick={() => setOpen(true)}>Owner sign-in</button>}
+      {open && <OwnerLogin onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+export function OwnerLogin({ onClose }: { onClose: () => void }) {
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <Modal onClose={onClose} label="Owner sign-in">
+      <h2>Owner sign-in</h2>
+      <p className="muted small" style={{ margin: 0 }}>The owner can drive the attack lab, edit ENS rules, add tasks and pair apps. The passphrase sets an httpOnly cookie on the Supabrain server; this page never stores it.</p>
+      <form onSubmit={async (e) => {
+        e.preventDefault(); setBusy(true); setErr("");
+        try { await api.login(pass); await refreshAdmin(); await refreshRules().catch(() => {}); toast("Signed in as the brain owner", "ok"); onClose(); }
+        catch (x) { setErr(x instanceof ApiError ? x.message : "Sign-in failed"); }
+        finally { setBusy(false); }
+      }} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <input type="password" autoFocus autoComplete="current-password" placeholder="Owner passphrase" value={pass} onChange={(e) => setPass(e.target.value)} aria-label="Owner passphrase" />
+        {err && <div className="callout bad">{err}</div>}
+        <div className="row" style={{ justifyContent: "flex-end" }}>
+          <button type="button" className="btn g sm" onClick={onClose}>Cancel</button>
+          <button className="btn p sm" disabled={!pass || busy}>{busy ? "Checking…" : "Sign in"}</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+export function LiveDot() {
+  const conn = useStore((s) => s.conn);
+  const label = { connecting: "connecting…", open: "LIVE", reconnecting: "reconnecting…", noserver: "OFFLINE", mock: "MOCK" }[conn];
+  const tone = conn === "open" ? "ok pulse" : conn === "noserver" ? "bad" : "warn";
+  return <span className="live" role="status"><span className={`dot ${tone}`} />{label}</span>;
+}
+
+export function Toasts() {
+  const t = useStore((s) => s.toast);
+  const [shown, setShown] = useState<typeof t>();
+  useEffect(() => { if (!t) return; setShown(t); const h = setTimeout(() => setShown(undefined), 4500); return () => clearTimeout(h); }, [t]);
+  if (!shown) return null;
+  return <div className={`toast ${shown.tone}`} role="status">{shown.text}<button className="iconbtn" style={{ width: 26, height: 26 }} onClick={() => setShown(undefined)} aria-label="Dismiss">×</button></div>;
+}
+
+export function Shell({ children, right, wide }: { children: ReactNode; right?: ReactNode; wide?: boolean }) {
+  const mock = useBoot();
+  const href = useHref();
+  const path = usePathname();
+  const health = useStore((s) => s.health);
+  const conn = useStore((s) => s.conn);
+  const error = useStore((s) => s.error);
+  const id = useBrainId();
+  const nav = [
+    { p: id ? `/b/${id}` : "/", l: "Live brain", match: (x: string) => /^\/b\/[^/]+$/.test(x) || /\/(history|files|tasks|review)$/.test(x) },
+    { p: id ? `/b/${id}/lab` : "/", l: "Attack lab", match: (x: string) => x.endsWith("/lab") },
+    { p: id ? `/b/${id}/rules` : "/", l: "Rules", match: (x: string) => x.endsWith("/rules") },
+    { p: "/brains", l: "Registry", match: (x: string) => x === "/brains" },
+    { p: "/verify", l: "Verify", match: (x: string) => x === "/verify" },
+    { p: "/connect", l: "Connect", match: (x: string) => x === "/connect" },
+  ];
+  return (
+    <div className={`app${wide ? " wide" : ""}`}>
+      {mock && <div className="banner mock" role="alert">MOCK DATA · a saved snapshot is replaying · nothing here is live · remove ?mock=1 for the real system</div>}
+      {!mock && conn === "noserver" && <div className="banner off" role="alert">SERVER OFFLINE · {error} · retrying</div>}
+      {!mock && conn === "reconnecting" && <div className="banner warn" role="status">Reconnecting to the live stream…</div>}
+      <header className="topbar">
+        <div className="in">
+          <Link className="logo" href={href("/")}><Logo /> <span>Supabrain</span></Link>
+          {health && <span className="teamname hide-sm"><b className="mono">{health.ens}</b><span>{health.mode === "brain" ? "brain" : "team"} · {brainId() || health.team}</span></span>}
+          <nav className="tabs hide-sm" aria-label="Sections">
+            {nav.map((n) => <Link key={n.l} href={href(n.p)} aria-current={n.match(path) ? "page" : undefined}>{n.l}</Link>)}
+          </nav>
+          <span className="spacer" />
+          {right}
+          <LiveDot />
+          <Pref />
+          <OwnerButton />
+        </div>
+        <div className="mnav">
+          <nav className="tabs" aria-label="Sections">
+            {nav.map((n) => <Link key={n.l} href={href(n.p)} aria-current={n.match(path) ? "page" : undefined}>{n.l}</Link>)}
+          </nav>
+        </div>
+      </header>
+      {children}
+      <Toasts />
+    </div>
+  );
+}
+
+/** Second-level tabs inside a brain. */
+export function BrainTabs() {
+  const href = useHref();
+  const path = usePathname();
+  const id = useBrainId();
+  const review = useStore((s) => s.review.length);
+  const tabs = [
+    ["", "Graph"], ["/lab", "Attack lab"], ["/rules", "Rules"], ["/history", "History"], ["/files", "Files"], ["/tasks", "Tasks"], ["/review", `Review${review ? ` · ${review}` : ""}`],
+  ];
+  return (
+    <nav className="subtabs" aria-label="Brain sections">
+      {tabs.map(([p, l]) => { const to = `/b/${id}${p}`; return <Link key={p} href={href(to)} aria-current={path === to ? "page" : undefined}>{l}</Link>; })}
+    </nav>
+  );
+}

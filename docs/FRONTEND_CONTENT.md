@@ -420,7 +420,7 @@ The data is always from the API, and the charts are hand-written SVG in the desi
 
 **Counting rules (so the charts never double-count or invent data):**
 - **Saved** = `/checkpoints` with `status` not `quarantined`.
-- **Stopped** = `/blocked` entries with `code = STOPPED`. Each one is also a quarantined checkpoint, so don't count it twice.
+- **Stopped** = `/checkpoints` with `status = quarantined`. These persist on Arkiv, while `/blocked` is the server's in-memory log since it started. Use `/blocked` STOPPED entries only for the rule name and excerpt.
 - **Blocked at identity** = `KEY_MISMATCH`, `AUTHORITY_UNKNOWN`, or `NOT_AUTHORIZED` whose `rule` is not `sb.status`.
 - **Blocked by ENS rules** = `SCOPE`, `RATE_LIMIT`, or `NOT_AUTHORIZED` with `rule = sb.status`.
 - **Attempts** (top of Fig. 2) = saved + stopped + both blocked groups. Label it "actions the server decided on".

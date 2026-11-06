@@ -1,0 +1,47 @@
+{
+ "faq": [
+  {
+   "q": "Isn't this just MCP?",
+   "a": "MCP lets an AI call tools. It says nothing about who the AI is, what it may do, or what it passed on. Supabrain adds identity and rules (ENS) and a signed record (Arkiv), enforced on every MCP call."
+  },
+  {
+   "q": "Can't you just detect injections?",
+   "a": "We catch the common shapes, but no detector catches everything. That's why every AI also has hard ENS limits: paths, writes per day, on or off. A missed injection still can't write outside its scope."
+  },
+  {
+   "q": "Why ENS rather than a config file?",
+   "a": "A config file can be changed silently by whoever runs the server. ENS rules are public, owned by the project owner, and every change is an on-chain transaction anyone can see."
+  },
+  {
+   "q": "Why Arkiv rather than Postgres?",
+   "a": "With a database, \"Gemini wrote this\" means \"trust us\". On Arkiv, the AI's own wallet signs it, nobody can edit it, and anyone can check it without our server."
+  },
+  {
+   "q": "What happens to stopped content?",
+   "a": "It's kept for the owner's review and revoked on Arkiv with a public revocation. No AI receives it, and history isn't rewritten."
+  },
+  {
+   "q": "What if someone pastes a real API key?",
+   "a": "It's refused before writing. Nothing reaches the chain."
+  },
+  {
+   "q": "Who pays gas?",
+   "a": "We sponsor it: rule changes on Sepolia and writes on Arkiv. Users don't need tokens."
+  },
+  {
+   "q": "Which apps work?",
+   "a": "The ones on the Connect page: Claude Code, the Claude app, Antigravity, Gemini CLI, Codex and ChatGPT developer mode. We only list what has a tested snippet."
+  },
+  {
+   "q": "What's real right now?",
+   "a": "Everything except the landing page's scroll story, which is labelled as an example. Every number and link comes from the live server, ENS on Sepolia and Arkiv."
+  }
+ ],
+ "limits": [
+  "The content check is a pattern tripwire, not a classifier. It catches the common shapes of injection: overriding instructions, piping a remote script into a shell, redirecting payments, asking for secrets, rewriting one's own rules and commanding another AI. Wording it doesn't recognise can pass. That is why the ENS rules exist: they limit what any AI can do regardless of what it read.",
+  "Real secrets (private keys, PEM keys, API tokens) are refused before writing and never reach the chain. Requests for secrets are stopped.",
+  "For the demo, the server holds the AIs' wallets (derived from one secret, gas sponsored). The supabrain.eth owner key stays offline; the server's key can only manage the brain registries and the AI resolvers.",
+  "The attack lab runs as the brain owner, because every write is a real Arkiv transaction. Visitors see every result live, read-only.",
+  "Testnets only (Ethereum Sepolia, Arkiv Rabdi), with synthetic data."
+ ]
+}

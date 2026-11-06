@@ -1,0 +1,26 @@
+[
+ {
+  "stat": "98.2%",
+  "text": "of memory-injection attempts succeeded through normal queries in lab tests.",
+  "source": "MINJA, arXiv 2503.03704",
+  "url": "https://arxiv.org/abs/2503.03704"
+ },
+ {
+  "stat": "~80%",
+  "text": "attack success after poisoning under 0.1% of an agent's memory.",
+  "source": "AgentPoison, NeurIPS 2024",
+  "url": "https://arxiv.org/abs/2407.12784"
+ },
+ {
+  "stat": "1 web page",
+  "text": "planted long-term instructions in a production agent's memory.",
+  "source": "Palo Alto Networks Unit 42, Oct 2025",
+  "url": "https://unit42.paloaltonetworks.com/indirect-prompt-injection-poisons-ai-longterm-memory/"
+ },
+ {
+  "stat": "ASI06",
+  "text": "Memory and context poisoning is a named risk in the OWASP Top 10 for agentic applications.",
+  "source": "OWASP Agentic Top 10",
+  "url": "https://www.promptfoo.dev/docs/red-team/owasp-agentic-ai/"
+ }
+]

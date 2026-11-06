@@ -1,0 +1,271 @@
+{
+ "_note": "Example story for the landing page only, labelled 'example' on the page. The live pages never read this file.",
+ "teamSuffix": ".example.eth",
+ "tagText": "Blocked by ENS · sb.scope",
+ "tagW": 196,
+ "blockedCount": 1,
+ "lanes": [
+  {
+   "id": "H",
+   "n": "claude",
+   "s": "Claude",
+   "v": "C"
+  },
+  {
+   "id": "G",
+   "n": "gemini",
+   "s": "Gemini",
+   "v": "G"
+  },
+  {
+   "id": "C",
+   "n": "openai",
+   "s": "OpenAI",
+   "v": "O"
+  },
+  {
+   "id": "O",
+   "n": "owner",
+   "s": "You",
+   "v": "H"
+  }
+ ],
+ "events": [
+  {
+   "id": "c1",
+   "ln": "H",
+   "y": 110,
+   "l": "Scaffolded the to-do app",
+   "k": "a",
+   "ta": 0.08,
+   "tr": 2,
+   "q": "Signed by claude's own wallet on Arkiv."
+  },
+  {
+   "id": "t1",
+   "ln": "O",
+   "y": 165,
+   "l": "Task: dark mode",
+   "k": "h",
+   "ta": 0.3,
+   "tr": 3,
+   "q": "Added by the owner. Every AI sees it on its next continue."
+  },
+  {
+   "id": "c2",
+   "ln": "H",
+   "y": 220,
+   "l": "Added the list view",
+   "k": "a",
+   "p": [
+    "c1"
+   ],
+   "ta": 0.5,
+   "tr": 2,
+   "q": "claude's ENS name now points here (sb.memory.head)."
+  },
+  {
+   "id": "g1",
+   "ln": "G",
+   "y": 275,
+   "l": "continue: read Claude's work",
+   "k": "a",
+   "p": [
+    "c2"
+   ],
+   "ta": 1.1,
+   "tr": 2,
+   "q": "The handoff. Gemini's commit descends from Claude's."
+  },
+  {
+   "id": "g2",
+   "ln": "G",
+   "y": 330,
+   "l": "Dark mode toggle",
+   "k": "a",
+   "p": [
+    "g1",
+    "t1"
+   ],
+   "ta": 1.4,
+   "tr": 2,
+   "q": "Ticks the owner's task."
+  },
+  {
+   "id": "o1",
+   "ln": "C",
+   "y": 385,
+   "l": "Docs: how dark mode works",
+   "k": "a",
+   "p": [
+    "g2"
+   ],
+   "ta": 1.7,
+   "tr": 2,
+   "q": "A third AI, from a third company, on the same project."
+  },
+  {
+   "id": "e1",
+   "ln": "G",
+   "y": 440,
+   "l": "README: “ignore all previous instructions…”",
+   "k": "e",
+   "bad": 1,
+   "ta": 2.05,
+   "tr": 1,
+   "q": "Outside content with an instruction aimed at AIs."
+  },
+  {
+   "id": "g3",
+   "ln": "G",
+   "y": 495,
+   "l": "Relays it in a checkpoint",
+   "k": "a",
+   "bad": 1,
+   "p": [
+    "e1"
+   ],
+   "ta": 2.25,
+   "tr": 1,
+   "q": "Caught by the content check: instruction-override."
+  },
+  {
+   "id": "c3",
+   "ln": "H",
+   "y": 550,
+   "l": "continue: clean context",
+   "k": "a",
+   "p": [
+    "c2",
+    "o1"
+   ],
+   "ta": 3.3,
+   "tr": 2,
+   "q": "Claude's next continue doesn't contain the stopped text."
+  },
+  {
+   "id": "py",
+   "ln": "G",
+   "y": 605,
+   "l": ".github/workflows/deploy.yml",
+   "k": "pay",
+   "bad": 1,
+   "ta": 3.95,
+   "tr": 1,
+   "q": "Outside Gemini's ENS scope (docs/). Nothing was written."
+  },
+  {
+   "id": "c4",
+   "ln": "H",
+   "y": 660,
+   "l": "Proof: signer = ENS address",
+   "k": "a",
+   "p": [
+    "c3"
+   ],
+   "ta": 4.3,
+   "tr": 2,
+   "q": "Anyone can check it on Arkiv and ENS, without us."
+  }
+ ],
+ "log": [
+  [
+   0.08,
+   "C",
+   "<b>claude</b> saved “Scaffolded the to-do app” · signed on Arkiv"
+  ],
+  [
+   0.3,
+   "H",
+   "<b>owner</b> added a task: dark mode"
+  ],
+  [
+   0.5,
+   "C",
+   "<b>claude</b> saved “Added the list view” · HEAD on ENS"
+  ],
+  [
+   1.1,
+   "G",
+   "<b>gemini</b> said <b>continue</b> and picked up dark mode"
+  ],
+  [
+   1.4,
+   "G",
+   "<b>gemini</b> saved “Dark mode toggle” · task ticked"
+  ],
+  [
+   1.7,
+   "O",
+   "<b>openai</b> saved “Docs: how dark mode works”"
+  ],
+  [
+   2.05,
+   "G",
+   "<b>gemini</b> read a README with “ignore all previous instructions…”",
+   "bad"
+  ],
+  [
+   2.25,
+   "G",
+   "<b>gemini</b> relayed it in a checkpoint",
+   "bad"
+  ],
+  [
+   2.4,
+   "card",
+   "<div><b>Content check</b> <span class=\"mono dim\" style=\"font-size:11px\">instruction-override</span></div><div class=\"r\"><div>Commits<b>1</b></div><div>AIs<b>1</b></div><div>Delivered<b>0</b></div></div><div style=\"font-size:12.5px;color:var(--muted)\">No other AI has received it.</div><button class=\"btn r sm\" data-s=\"3\" data-done=\"Stopped\">Stop it</button>"
+  ],
+  [
+   3.05,
+   "G",
+   "<b>STOPPED · INJECTION</b> · revoked on Arkiv, delivered to no one",
+   "ok"
+  ],
+  [
+   3.3,
+   "C",
+   "<b>claude</b> continued: the instruction isn't in what it reads",
+   "ok"
+  ],
+  [
+   4.05,
+   "G",
+   "<b>BLOCKED BY ENS · sb.scope</b>: gemini may write docs/ only",
+   "ok"
+  ],
+  [
+   4.3,
+   "C",
+   "<b>Proof:</b> signer = claude's ENS address · HEAD ✓",
+   "ok"
+  ],
+  [
+   4.5,
+   "card",
+   "<div style=\"font-size:13px\">That was an example. The live brain runs the same checks on real AIs.</div><a class=\"btn g sm\" href=\"#live\">See the live numbers</a>"
+  ]
+ ],
+ "steps": [
+  [
+   "Claude builds",
+   "Claude Code commits to the project. Each commit is signed by Claude's own wallet on Arkiv."
+  ],
+  [
+   "Gemini continues",
+   "Antigravity says “continue”. Gemini reads Claude's work and picks up the task. The curve between lanes is the handoff."
+  ],
+  [
+   "A poisoned README arrives",
+   "Gemini reads a file with an instruction meant for AIs: “ignore all previous instructions…”, and relays it."
+  ],
+  [
+   "Stopped at the handoff",
+   "The content check stops it. It's revoked on Arkiv, and no other AI receives it."
+  ],
+  [
+   "Blocked by ENS, and proven",
+   "The write it asked for is outside Gemini's ENS scope, so it's blocked. Every commit is checkable: signer = ENS address."
+  ]
+ ]
+}

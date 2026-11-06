@@ -1,6 +1,6 @@
 // The boundary between the memory service and Arkiv. Real implementation: ../arkiv/store.ts. Test fake: ./fake-store.ts.
 import type { Hex } from "viem";
-import type { DryRun, MemoryKind, MemoryNode, Payment, PrivateRef, RevocationTarget, SourceRef, Trust, Vendor } from "@supabrain/shared";
+import type { CheckpointInfo, DryRun, FileInfo, MemoryKind, MemoryNode, Payment, PrivateRef, RevocationTarget, SourceRef, Trust, Vendor } from "@supabrain/shared";
 
 /** A memory about to be written. `roots` may contain SELF_ROOT (human memories), replaced by the store with the key. */
 export interface MemoryDraft {
@@ -19,9 +19,18 @@ export interface MemoryDraft {
   source?: SourceRef;
   ref?: PrivateRef;
   supersedes?: string;
+  checkpoint?: CheckpointInfo;
+  file?: FileInfo;
 }
 
-export interface WriteReceipt { txHash: Hex; proofUrl: string; expiresAt: number }
+/** In `writeMemories`, a parent written as "@<i>" is draft i of the same call (the store swaps in its key). */
+export const draftRef = (i: number) => `@${i}`;
+
+export interface WriteReceipt {
+  txHash: Hex; proofUrl: string; expiresAt: number;
+  /** writeMemories with several drafts: the tx and expiry of each draft, in order */
+  proofUrls?: string[]; expiresAts?: number[];
+}
 
 /** A retraction notice for one agent (stored on Arkiv as sb.notice, owned by the team). */
 export interface NoticeRecord { toAgent: string; revocation: string; text: string; affected: string[]; at: number }
@@ -43,6 +52,12 @@ export interface MemoryStore {
    * Resolves as soon as the key is known (optimistic); `committed` settles when the receipt lands.
    */
   writeMemory(signer: string, draft: MemoryDraft): Promise<{ key: Hex; roots: string[]; committed: Promise<WriteReceipt> }>;
+  /**
+   * Several memories in one write, in order (the last draft lands last: put the checkpoint there), each signed by
+   * `signer` and owned by the team. Parents may name earlier or later drafts of the call with draftRef(i). File
+   * versions get edges but no taint rows (their checkpoint carries them). Keys are known before anything is sent.
+   */
+  writeMemories(signer: string, drafts: MemoryDraft[]): Promise<{ keys: Hex[]; roots: string[][]; committed: Promise<WriteReceipt> }>;
   /** Team wallet writes a revocation (max lifetime: it must outlive whatever it revokes). Resolves after the receipt. */
   writeRevocation(r: RevocationRecord): Promise<{ key: Hex } & WriteReceipt>;
   /** Team wallet records a payment decision (sb.payment): pending intents live 15 min, decisions 30 days. */

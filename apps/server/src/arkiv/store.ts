@@ -6,12 +6,14 @@ import { and, eq } from "@arkiv-network/sdk/query";
 import type { Hex } from "viem";
 import type { PrivateKeyAccount } from "viem/accounts";
 import { createArkivWriter, decodeBody, Edge, encodeBody, Memory, Notice, Payment as PaymentSchema, Revocation, SignerQueue, Taint, type ArkivConnection } from "@supabrain/arkiv";
-import { explorerLink, redactUrls, type MemoryKind, type MemoryNode, type PayDecision, type Payment, type PrivateRef, type RevocationTarget, type SourceRef, type Trust, type Vendor } from "@supabrain/shared";
+import { explorerLink, redactUrls, type CheckpointInfo, type FileInfo, type MemoryKind, type MemoryNode, type PayDecision, type Payment, type PrivateRef, type RevocationTarget, type SourceRef, type Trust, type Vendor } from "@supabrain/shared";
 import { SELF_ROOT } from "../engine/lineage";
 import type { MemoryDraft, MemoryStore, NoticeRecord, RevocationRecord, StoreWatchHandlers, WriteReceipt } from "../memory/store";
 
 /** 17 creates + 17 ownership transfers = 34 ops → gas floor 1M + 33×400k = 14.2M, within half of Rabdi's 30M block. */
 const MAX_CREATES_PER_BATCH = 17;
+/** File contents ride in memory bodies: keep each transaction's bodies small (Arkiv caps bytes at 128 KiB per create). */
+const MAX_BODY_BYTES_PER_TX = 100 * 1024;
 const PAGE = 100;
 
 export interface ArkivStoreDeps {
@@ -30,7 +32,7 @@ export interface ArkivStoreDeps {
   log?: (line: string) => void;
 }
 
-interface Body { text: string; parents: string[]; roots: string[]; createdAt: number; source?: SourceRef; ref?: PrivateRef; supersedes?: string }
+interface Body { text: string; parents: string[]; roots: string[]; createdAt: number; source?: SourceRef; ref?: PrivateRef; supersedes?: string; checkpoint?: CheckpointInfo; file?: FileInfo }
 
 const val = (x: unknown): unknown => (x && typeof x === "object" && "value" in (x as object) ? (x as { value: unknown }).value : x);
 const lower = (s: string) => s.toLowerCase();
@@ -82,6 +84,8 @@ export function createArkivMemoryStore(d: ArkivStoreDeps): MemoryStore {
     if (body.source) n.source = body.source;
     if (body.ref) n.ref = body.ref;
     if (body.supersedes) n.supersedes = body.supersedes;
+    if (body.checkpoint) n.checkpoint = body.checkpoint;
+    if (body.file) n.file = body.file;
     return n;
   }
 
@@ -112,6 +116,95 @@ export function createArkivMemoryStore(d: ArkivStoreDeps): MemoryStore {
       d.conn.arkiv.select({ $key: true, $expiresAt: true }).from(Taint).where(and(eq("app", d.app), eq("team", d.team), eq("memory", k))).ownedBy(team.address).limit(PAGE).fetch(),
     ]);
     return [...(edges.entities as unknown as Row[]), ...(taints.entities as unknown as Row[])];
+  }
+
+  /**
+   * One or more memories (+ edges, + taint rows except for file versions) signed by `signer`, owned by the team, in
+   * order. Every key is predicted up front (owner, entity nonce + index, salt), so drafts can name each other with
+   * "@<i>" and the caller gets all keys before anything is sent. Split into transactions of at most
+   * MAX_CREATES_PER_BATCH creates and MAX_BODY_BYTES_PER_TX of bodies; the last draft lands last.
+   */
+  async function writeMemories(signer: string, drafts: MemoryDraft[]): Promise<{ keys: Hex[]; roots: string[][]; committed: Promise<WriteReceipt> }> {
+    const account = d.signers[signer];
+    const writer = writers[signer];
+    if (!account || !writer) throw new Error(`no signing key for ${signer}`);
+    if (!drafts.length) throw new Error("writeMemories needs at least one draft");
+    let resolveKeys!: (v: { keys: Hex[]; roots: string[][] }) => void;
+    let rejectKeys!: (e: unknown) => void;
+    const known = new Promise<{ keys: Hex[]; roots: string[][] }>((res, rej) => { resolveKeys = res; rejectKeys = rej; });
+
+    const committed = planQueue.run(signer, async (): Promise<WriteReceipt> => {
+      const flags = { readonly: true };
+      const counts = drafts.map((dr) => 1 + dr.parents.length + (dr.kind === "file" ? 0 : dr.roots.length));
+      let predicted;
+      try {
+        predicted = await d.conn.arkiv.predictEntityKeys({ owner: account.address, count: counts.reduce((x, y) => x + y, 0) });
+      } catch (e) {
+        rejectKeys(e);
+        throw e;
+      }
+      const offsets = counts.map((_, i) => counts.slice(0, i).reduce((x, y) => x + y, 0));
+      const keys = offsets.map((o) => predicted[o]!.key as Hex);
+      const swap = (x: string) => (/^@\d+$/.test(x) ? keys[Number(x.slice(1))]! : x);
+      const roots = drafts.map((dr, i) => dr.roots.map((r) => (r === SELF_ROOT ? keys[i]! : swap(r))));
+      resolveKeys({ keys, roots });
+
+      type Item = { schema: unknown; values: unknown; bytes: number; expiration: ReturnType<typeof ExpirationTime.fromSeconds>; draft?: number };
+      const items: Item[] = [];
+      const lifetimes = drafts.map((dr) => (dr.kind === "evidence" ? d.lifetimeSec.evidence : d.lifetimeSec.memory));
+      drafts.forEach((dr, i) => {
+        const expiration = ExpirationTime.fromSeconds(lifetimes[i]!);
+        const parents = dr.parents.map(swap);
+        const body = encodeBody({
+          text: dr.text, parents, roots: roots[i]!, createdAt: dr.createdAt, ...(dr.source ? { source: dr.source } : {}), ...(dr.ref ? { ref: dr.ref } : {}),
+          ...(dr.supersedes ? { supersedes: dr.supersedes } : {}), ...(dr.checkpoint ? { checkpoint: dr.checkpoint } : {}), ...(dr.file ? { file: dr.file } : {}),
+        } satisfies Body);
+        items.push({
+          schema: Memory, bytes: body.length, expiration, draft: i,
+          values: {
+            app: d.app, team: d.team, kind: dr.kind, folder: dr.folder, trust: i32(dr.trust), agent: dr.agent, vendor: dr.vendor, seq: u64(dr.seq),
+            ...(dr.source ? { source: dr.source.id } : {}), ...(dr.subject ? { subject: dr.subject } : {}),
+            ...(dr.address ? { address: addr(dr.address) } : {}), ...(dr.ref ? { refKind: dr.ref.kind } : {}), body,
+          },
+        });
+        for (const parent of parents) items.push({ schema: Edge, bytes: 0, expiration, values: { app: d.app, team: d.team, parent: keyValue(parent as Hex), child: keyValue(keys[i]!) } });
+        if (dr.kind !== "file") for (const root of roots[i]!) items.push({ schema: Taint, bytes: 0, expiration, values: { app: d.app, team: d.team, root, memory: keyValue(keys[i]!) } });
+      });
+
+      type Placed = Item & { key: Hex; salt: unknown };
+      const parts: Placed[][] = [];
+      let cur: Placed[] = [];
+      let curBytes = 0;
+      items.forEach((it, idx) => {
+        if (cur.length && (cur.length >= MAX_CREATES_PER_BATCH || curBytes + it.bytes > MAX_BODY_BYTES_PER_TX)) { parts.push(cur); cur = []; curBytes = 0; }
+        cur.push({ ...it, key: predicted[idx]!.key as Hex, salt: predicted[idx]!.salt });
+        curBytes += it.bytes;
+      });
+      if (cur.length) parts.push(cur);
+
+      const txOf: Hex[] = [];
+      for (const part of parts) {
+        const params = {
+          creates: part.map((it) => ({ schema: it.schema, values: it.values, expiration: it.expiration, flags, salt: it.salt })),
+          ...(signer === "team" ? {} : { ownershipChanges: part.map((it) => ({ entityKey: it.key, newOwner: team.address as Hex })) }),
+        } as unknown as ExecuteBatchParameters;
+        const r = await writer.executeBatch(params);
+        const minted = r.createdEntities.map((k) => lower(String(k)));
+        if (minted.length !== part.length || part.some((it, j) => lower(it.key) !== minted[j])) {
+          throw new Error(`entity keys moved (predicted ${part[0]!.key}, minted ${minted[0]}): another writer used this wallet`);
+        }
+        for (const it of part) if (it.draft !== undefined) txOf[it.draft] = r.txHash as Hex;
+        log(`arkiv: ${signer} wrote ${part.length} entities (${r.ops} ops, gas ${r.gasUsed}) in ${r.totalMs} ms tx ${r.txHash}`);
+      }
+      const lastI = drafts.length - 1;
+      return {
+        txHash: txOf[lastI]!, proofUrl: txUrl(txOf[lastI]!), expiresAt: drafts[lastI]!.createdAt + lifetimes[lastI]! * 1000,
+        ...(drafts.length > 1 ? { proofUrls: txOf.map(txUrl), expiresAts: drafts.map((dr, i) => dr.createdAt + lifetimes[i]! * 1000) } : {}),
+      };
+    });
+    committed.catch((e: Error) => log(`arkiv: write by ${signer} failed: ${redactUrls(e.message)}`));
+    const { keys, roots } = await known;
+    return { keys, roots, committed };
   }
 
   return {
@@ -193,61 +286,10 @@ export function createArkivMemoryStore(d: ArkivStoreDeps): MemoryStore {
       }),
     entityUrl: (key) => explorerLink(d.explorer.entity, { key }),
 
+    writeMemories,
     async writeMemory(signer: string, draft: MemoryDraft) {
-      const account = d.signers[signer];
-      const writer = writers[signer];
-      if (!account || !writer) throw new Error(`no signing key for ${signer}`);
-      let resolveKey!: (v: { key: Hex; roots: string[] }) => void;
-      let rejectKey!: (e: unknown) => void;
-      const keyKnown = new Promise<{ key: Hex; roots: string[] }>((res, rej) => { resolveKey = res; rejectKey = rej; });
-
-      const committed = planQueue.run(signer, async (): Promise<WriteReceipt> => {
-        const lifetime = draft.kind === "evidence" ? d.lifetimeSec.evidence : d.lifetimeSec.memory;
-        const expiration = ExpirationTime.fromSeconds(lifetime);
-        const flags = { readonly: true };
-        const total = 1 + draft.parents.length + draft.roots.length;
-        let firstKeys;
-        try {
-          firstKeys = await d.conn.arkiv.predictEntityKeys({ owner: account.address, count: Math.min(total, MAX_CREATES_PER_BATCH) });
-        } catch (e) {
-          rejectKey(e);
-          throw e;
-        }
-        const memoryKey = firstKeys[0]!.key;
-        const roots = draft.roots.map((r) => (r === SELF_ROOT ? memoryKey : r));
-        resolveKey({ key: memoryKey, roots });
-
-        const memoryValues = {
-          app: d.app, team: d.team, kind: draft.kind, folder: draft.folder, trust: i32(draft.trust), agent: draft.agent, vendor: draft.vendor, seq: u64(draft.seq),
-          ...(draft.source ? { source: draft.source.id } : {}), ...(draft.subject ? { subject: draft.subject } : {}),
-          ...(draft.address ? { address: addr(draft.address) } : {}), ...(draft.ref ? { refKind: draft.ref.kind } : {}),
-          body: encodeBody({ text: draft.text, parents: draft.parents, roots, createdAt: draft.createdAt, ...(draft.source ? { source: draft.source } : {}), ...(draft.ref ? { ref: draft.ref } : {}), ...(draft.supersedes ? { supersedes: draft.supersedes } : {}) } satisfies Body),
-        };
-        const items: { schema: unknown; values: unknown }[] = [
-          { schema: Memory, values: memoryValues },
-          ...draft.parents.map((parent) => ({ schema: Edge, values: { app: d.app, team: d.team, parent: keyValue(parent as Hex), child: keyValue(memoryKey) } })),
-          ...roots.map((root) => ({ schema: Taint, values: { app: d.app, team: d.team, root, memory: keyValue(memoryKey) } })),
-        ];
-
-        let first: Awaited<ReturnType<typeof writer.executeBatch>> | undefined;
-        for (const [i, part] of chunk(items, MAX_CREATES_PER_BATCH).entries()) {
-          const keys = i === 0 ? firstKeys : await d.conn.arkiv.predictEntityKeys({ owner: account.address, count: part.length });
-          const params = {
-            creates: part.map((it, j) => ({ ...it, expiration, flags, salt: keys[j]!.salt })),
-            ...(signer === "team" ? {} : { ownershipChanges: keys.map((k) => ({ entityKey: k.key, newOwner: team.address as Hex })) }),
-          } as unknown as ExecuteBatchParameters;
-          const r = await writer.executeBatch(params);
-          if (i === 0) {
-            if (lower(r.createdEntities[0] ?? "") !== lower(memoryKey)) throw new Error(`memory key moved (predicted ${memoryKey}, minted ${r.createdEntities[0]}): another writer used this wallet`);
-            first = r;
-          }
-          log(`arkiv: ${signer} wrote ${part.length} entities (${r.ops} ops, gas ${r.gasUsed}) in ${r.totalMs} ms tx ${r.txHash}`);
-        }
-        return { txHash: first!.txHash, proofUrl: explorerLink(d.explorer.tx, { hash: first!.txHash }), expiresAt: draft.createdAt + lifetime * 1000 };
-      });
-      committed.catch((e: Error) => log(`arkiv: write by ${signer} failed: ${redactUrls(e.message)}`));
-      const { key, roots } = await keyKnown;
-      return { key, roots, committed };
+      const r = await writeMemories(signer, [draft]);
+      return { key: r.keys[0]!, roots: r.roots[0]!, committed: r.committed };
     },
 
     async loadPayments() {

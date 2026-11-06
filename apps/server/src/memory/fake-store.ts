@@ -40,6 +40,23 @@ export class FakeMemoryStore implements MemoryStore {
     return { key, roots, committed };
   }
 
+  async writeMemories(signer: string, drafts: MemoryDraft[]) {
+    if (this.failNextWrite) { const m = this.failNextWrite; this.failNextWrite = undefined; throw new Error(m); }
+    const keys = drafts.map(() => keccak256(toHex(`fake-${++this.n}`)));
+    const swap = (x: string) => (/^@\d+$/.test(x) ? keys[Number(x.slice(1))]! : x);
+    const roots = drafts.map((d, i) => d.roots.map((r) => (r === SELF_ROOT ? keys[i]! : swap(r))));
+    drafts.forEach((d, i) => this.written.push({ signer, key: keys[i]!, draft: { ...d, parents: d.parents.map(swap), roots: roots[i]! } }));
+    const fail = this.failNextCommit;
+    this.failNextCommit = undefined;
+    const last = drafts[drafts.length - 1]!;
+    const committed = new Promise<WriteReceipt>((resolve, reject) => {
+      const done = () => (fail ? reject(new Error(fail)) : resolve({ txHash: keccak256(toHex(`tx-${keys[0]}`)), proofUrl: `https://explorer.test/tx/${keys[0]}`, expiresAt: last.createdAt + this.lifetimeMs })); // hardcode-ok: test fake proof link
+      if (this.holdCommits) this.held.push(done); else queueMicrotask(done);
+    });
+    committed.catch(() => undefined);
+    return { keys, roots, committed };
+  }
+
   release() {
     for (const f of this.held.splice(0)) f();
   }

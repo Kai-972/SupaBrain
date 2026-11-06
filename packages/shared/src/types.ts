@@ -3,12 +3,17 @@
 export type Vendor = "claude" | "gemini" | "openai" | "human";
 export type Trust = 1 | 2 | 3;                                   // evidence | agent | human
 export type Role = "owner" | "lead" | "worker" | "observer";
-export type MemoryKind = "fact" | "decision" | "plan" | "address" | "evidence" | "payment" | "ref";
+export type MemoryKind = "fact" | "decision" | "plan" | "address" | "evidence" | "payment" | "ref"
+  | "task" | "checkpoint" | "file";                              // continuity (pivot 2026-11-06): work items, commits, file versions
 export type Status = "active" | "quarantined" | "stale" | "expired" | "proposal" | "restored";
 
 export interface SourceRef { type: "email" | "web" | "file" | "tool" | "chat" | "notion" | "github"; id: string; url?: string; swarmRef?: string }
 // Private content stays off chain; Arkiv only holds this pointer + a non-secret label.
 export interface PrivateRef { kind: "github" | "notion" | "url"; locator: string; version?: string; label: string }
+// A checkpoint is a commit: what the agent did (text), what comes next, and the task keys it ticked.
+export interface CheckpointInfo { next?: string; done: string[] }
+// A file version (kind "file"): the content is the memory text; the parent is the checkpoint that wrote it.
+export interface FileInfo { path: string; size: number; sha256: string; deleted?: boolean }
 //   github: locator "owner/repo:path", version = commit SHA (required for github)
 //   notion: locator = page id or URL
 
@@ -21,6 +26,8 @@ export interface MemoryNode {
   source?: SourceRef;                                           // kind=evidence
   ref?: PrivateRef;                                             // kind=ref (or any memory pointing at private content)
   supersedes?: string;                                          // set by "Correct this"
+  checkpoint?: CheckpointInfo;                                  // kind=checkpoint
+  file?: FileInfo;                                              // kind=file (text = content; the dashboard API strips it)
   status: Status; pending?: boolean; proofUrl?: string; creator?: `0x${string}`;
 }
 export interface Edge { parent: string; child: string; tainted?: boolean }
@@ -67,6 +74,15 @@ export type StreamEvent =
   | { t: "payment"; payment: Payment } | { t: "approval"; approval: ApprovalView }
   | { t: "agent"; agent: AgentView }
   | { t: "write_failed"; key: string; error: string };          // an optimistic (pending) memory did not land on Arkiv: drop it
+
+// Continuity views (dashboard API). A task is "done" while a live checkpoint ticks it: revoke that checkpoint and the
+// task reopens. A file's current version is its newest version whose checkpoint is live (revoke rolls it back).
+export interface TaskView { key: string; title: string; status: "open" | "done" | "quarantined"; createdBy: string; vendor: Vendor;
+  trust: Trust; createdAt: number; doneBy?: string; doneAt?: number; doneIn?: string; why?: string }
+export interface FileView { path: string; size: number; sha256: string; agent: string; vendor: Vendor; checkpoint: string;
+  key: string; at: number; versions: number; proofUrl?: string }
+export interface CheckpointView { key: string; agent: string; vendor: Vendor; summary: string; next?: string; done: string[];
+  files: string[]; parents: string[]; trust: Trust; status: Status; createdAt: number; pending?: boolean; proofUrl?: string; why?: string }
 
 // Dashboard API client ids (CLAUDE.md §6.4).
 export type Client = "claude-code" | "claude-ai" | "antigravity" | "gemini-cli" | "chatgpt";

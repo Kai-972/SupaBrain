@@ -308,3 +308,53 @@ describe("decidePayment: red team (V3)", () => {
     expect(d.rootIds).toEqual(["0xH1", "0xH2"]);
   });
 });
+
+describe("decidePayment: V3 red team round 2 (each was ALLOWED before the fix)", () => {
+  const AGENT_W = "0xA000000000000000000000000000000000000001"; // lead-claude's wallet in this fixture
+  const VAULT = "0x2DA794b8dD00AfC970B372D7Cf960EcD1f190Ec8";
+  const TOKEN = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+  const ZERO = "0x0000000000000000000000000000000000000000";
+  const guarded = () => {
+    f.ctx.protectedPayees = new Map([
+      [AGENT_W.toLowerCase(), "agent wallet lead-claude"],
+      [VAULT.toLowerCase(), "BrainVault"],
+      [TOKEN.toLowerCase(), "USDC token"],
+    ]);
+  };
+
+  it.each([
+    ["an agent's own (server-held) wallet", AGENT_W],
+    ["the vault itself", VAULT],
+    ["the token contract", TOKEN],
+  ])("R1/R2: %s can't be paid even after a prior approval and a clean memory", async (_n, addr) => {
+    guarded();
+    f.paid.add(addr.toLowerCase()); // a human approved one payment there before
+    f.graph.add(node("0xR1", { trust: 2, kind: "address", address: addr, roots: [] })); // a clean agent memory
+    const d = await decidePayment(f.ctx, { agent: "lead-claude", payee: addr, amount: "1" });
+    expect(d.outcome).toBe("blocked");
+    if (d.outcome === "error") throw new Error();
+    expect(d.hard).toEqual([{ code: "AGENT_NOT_AUTHORIZED", detail: expect.stringMatching(/team-controlled/) }]);
+  });
+
+  it("R1: an agent's ENS name (which resolves to its wallet) can't be paid either", async () => {
+    guarded();
+    f.ens.names[`lead-claude.${TEAM}`] = AGENT_W;
+    f.paid.add(AGENT_W.toLowerCase());
+    f.graph.add(node("0xR2", { trust: 2, kind: "address", subject: `lead-claude.${TEAM}`, address: AGENT_W, roots: [] }));
+    const d = await decidePayment(f.ctx, { agent: "gem-research", payee: `lead-claude.${TEAM}`, amount: "1" });
+    expect(d.outcome).toBe("blocked");
+  });
+
+  it("R2: the zero address is never a payee", async () => {
+    f.paid.add(ZERO);
+    f.graph.add(node("0xR3", { trust: 2, kind: "address", address: ZERO, roots: [] }));
+    const d = await decidePayment(f.ctx, { agent: "lead-claude", payee: ZERO, amount: "1" });
+    expect(d.outcome).toBe("blocked");
+  });
+
+  it("control: the owner/refund address is still payable (not team-controlled by the server)", async () => {
+    guarded();
+    const d = await decidePayment(f.ctx, { agent: "lead-claude", payee: HUMAN_PAYEE, amount: "1" });
+    expect(d.outcome).toBe("allow");
+  });
+});

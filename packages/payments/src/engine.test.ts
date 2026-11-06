@@ -126,6 +126,14 @@ function setup() {
   return { engine, ens, graph, arkiv, events, pays, vault, vaultCalls, pending, advance: (ms: number) => (clock += ms) };
 }
 
+function setupWith(extra: Partial<PaymentsRuntime>) {
+  const base = setup();
+  const rt = (base.engine as unknown as { __rt?: PaymentsRuntime }).__rt;
+  if (!rt) throw new Error("engine does not expose its runtime for tests");
+  const engine = createPaymentsEngine({ ens: base.ens, graph: base.graph, arkiv: base.arkiv, emit: (e) => base.events.push(e), config: {} as never }, { ...rt, ...extra });
+  return { ...base, engine };
+}
+
 let s: ReturnType<typeof setup>;
 beforeEach(() => {
   s = setup();
@@ -397,5 +405,28 @@ describe("onRevoke / pauseAgent", () => {
 
   it("status of an unknown intent is failed", async () => {
     expect(await s.engine.status("0xnope")).toEqual({ status: "failed", error: "unknown intent", intentId: "0xnope" });
+  });
+});
+
+describe("V3 red team round 2: engine", () => {
+  it("R3: concurrent payments can't jointly exceed the ENS daily limit", async () => {
+    // lead-claude: cap 4, daily 30 (ENS). Eight concurrent 4 USDC payments = 32 > 30.
+    const realPay = s.vault.pay.bind(s.vault);
+    s.vault.pay = (async (...a: Parameters<typeof realPay>) => {
+      await new Promise((r) => setTimeout(r, 5)); // chain latency: spend lands only when mined
+      return realPay(...a);
+    }) as typeof realPay;
+    const ds = await Promise.all(Array.from({ length: 8 }, () => s.engine.pay("lead-claude", { payee: ACME, amount: "4", memo: "split" })));
+    const paid = ds.filter((d) => d.status === "paid").length;
+    expect(paid).toBe(7);
+    expect(s.vault.spent).toBe(28n * U);
+    const held = ds.find((d) => d.status === "pending_human");
+    if (!held || held.status !== "pending_human") throw new Error("expected one payment to need a human");
+    expect(held.reasons.map((r) => r.code)).toEqual(["OVER_DAILY"]);
+  });
+
+  it("R1 wiring: the runtime's protected payees reach the policy", async () => {
+    const d = await setupWith({ protectedPayees: new Map([[BAD2.toLowerCase(), "agent wallet x"]]) }).engine.pay("lead-claude", { payee: BAD2, amount: "1", memo: "" });
+    expect(d.status).toBe("blocked");
   });
 });

@@ -40,6 +40,7 @@ export type PolicyDecision =
       payeeEns?: string;
       payeeVerified: boolean;
       payeeNodes: string[];
+      lineage: string[]; // payee memories that support THIS address (incl. quarantined): the intent's blast radius
       path: string[]; // the offending lineage, cite → payee memory → evidence
       rootIds: string[]; // sorted, unique, quarantined lineage excluded
       roots: Hex[]; // keccak256(utf8(rootId)), same order: the vault attestation's roots
@@ -61,7 +62,7 @@ function parseAmount(s: string, decimals: number): bigint | null {
 function blockedEarly(reason: PayReason, amountUnits: bigint, agent?: AgentView): PolicyDecision {
   return {
     outcome: "blocked", reasons: [reason], hard: [reason], soft: [], agent, payeeVerified: false,
-    payeeNodes: [], path: [], rootIds: [], roots: [], amountUnits,
+    payeeNodes: [], lineage: [], path: [], rootIds: [], roots: [], amountUnits,
   };
 }
 
@@ -225,6 +226,6 @@ async function decide(ctx: PolicyContext, req: PolicyRequest, amountUnits: bigin
   const outcome = hard.length ? "blocked" : soft.length ? "pending_human" : "allow";
   return {
     outcome, reasons, hard, soft, agent: a, payee, payeeEns, payeeVerified,
-    payeeNodes: payeeNodes.map((n) => n.key), path, rootIds, roots, amountUnits,
+    payeeNodes: payeeNodes.map((n) => n.key), lineage: payeeNodes.filter(supports).map((n) => n.key), path, rootIds, roots, amountUnits,
   };
 }

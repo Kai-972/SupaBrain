@@ -179,6 +179,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane A (Brain)
 
+### 2026-11-07 03:30 IST · A (Srijit's Claude) · final verification before submission
+- did: full check of the hosted stack. Tests 535/535, typecheck clean, lint:hardcode + check:secrets ok; every page (13 routes) and API read 200 on https://supabrain-eth.vercel.app; pairing from the hosted site for claude + gemini (snippets and QR carry the hosted URLs from env, nothing fixed); MCP over the hosted server as `claude-code` and `antigravity`, by Bearer header and by path token, all four `continue` ok and each knows its ENS name; public `/api/pair/:code` ok; sb.deny refusal live (Gemini → `.github/workflows/deploy.yml` → DENIED); owner sign-in through the proxy ok
+- fixed: brain mode no longer offers `pay` / `pay_status` (payments are off there, so an AI was offered a tool that could only fail; tests updated first); the landing hero card and the More menu read the live brain instead of fixed text ("otter", "10 brains"); Render now redeploys only when server code, packages or config change (docs commits no longer restart it and wipe the refusal log)
+- local clients: `~/.claude.json` (user `supabrain-claude`) and Antigravity's `~/.gemini/config/mcp_config.json` (`supabrain-gemini`) now point at the hosted MCP with fresh tokens (7-day); the old localhost entries are backed up next to each file as `*.bak-supabrain-localhost`
+- not verified by me: the Claude Code and Gemini CLIs on this Mac are not signed in, so a real app chat needs Srijit (reconnect `supabrain-claude`, open Antigravity, say "continue")
+- known limit: ENS refusals (SCOPE/DENIED/RATE_LIMIT) live in the server's refusal log on Render's ephemeral disk, so a server redeploy empties that list; injection stops are Arkiv revocations and always rebuild
+- commit: aba99bb
+
 ### 2026-11-07 02:45 IST · A (Srijit's Claude) · v2 Step 6 hosted judge scene
 - did: ran `pnpm demo:injection --base https://supabrain-otter.onrender.com` (token secret = the host's, read from Render, never printed) on otter; Gemini's scope restored to `*` (it was `*` before). Website: under 360px the top bar drops the logo icon so "Sign in" stays on screen at 320px
 - proof: 10/10 checks · Claude's commit 0x0f001406…6e4e · scope → docs/ https://sepolia.etherscan.io/tx/0xcb2d2eb8e26ab574a280c06b8ba6c38dbc902e397fa222e816a1046d1d1e5e2f · STOPPED (instruction-override) · SCOPE refusal for .github/workflows · HEAD https://sepolia.etherscan.io/tx/0xf08c00305bca6c653ac624d88dfcd504a1fece6460f1f41af5321de707f3cf75 · restore https://sepolia.etherscan.io/tx/0xddf70fc25ac22848970ec5d47788cb0b11351ddb15035221a9576564f77c1484 · https://supabrain-eth.vercel.app/b/otter headline moved 4·3·0 → 5·4·1

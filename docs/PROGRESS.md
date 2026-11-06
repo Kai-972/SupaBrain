@@ -75,7 +75,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S8: Ship
 - [ ] A: `seed.ts` on a fresh team · Arkiv docs · README addresses · V5 + V6
-- [ ] B: SECURITY.md ✓ cbb5549 · WORLD_DEBRIEF.md · V3 red team
+- [ ] B: SECURITY.md ✓ cbb5549 · WORLD_DEBRIEF.md ✓ 7540d6e · SPONSORS World/Vault ✓ fdf684b · V3 red team
 - [ ] C: DEMO_SCRIPT.md · video · README · Vercel · V2 sponsor audit
 - [ ] Rehearsal 1 · Rehearsal 2 · Rehearsal 3 · **Submitted** (link: ___)
 
@@ -163,6 +163,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S8 / WORLD_DEBRIEF.md final
+- did: restructured to the spec (summary, time to first success ≈2 h incl. OIDC dead end / ≈25 min from RP registration, flow, backend validation, denied/expired/cancelled/failed paths with code + proof, timeline, friction by product, missing capability, single most important improvement); removed an overclaim (Sepolia approve → paid is pending the server mount; proven on anvil)
+- proof: cited lines checked at 7540d6e
+- result: PASS
+- commit: 7540d6e
+- next: V3 policy red team (failing tests first, then fixes)
+- asks/blockers: video timestamp later (C)
 
 ### 2026-11-06 IST · B · S8 / SPONSORS.md World + Vault rows
 - did: World section (what breaks, 6 feature rows with file:line, live run results, §6.3 checklist with open items stated) and an "ENS × money: BrainVault" subsection under ENS (on-chain getOwner kill, set-agents, ENS caps, mismatch block, fork test, deployment) with Sepolia tx proof

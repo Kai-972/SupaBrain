@@ -141,7 +141,7 @@ export function createContinuityService(d: ServiceDeps & { service: MemoryServic
     const unchanged: string[] = [];
     for (const f of files) {
       try { validatePath(f.path); } catch (e) { bad((e as Error).message); }
-      if (!scopeAllows(a.scope, f.path)) throw new ToolError("SCOPE", `${a.ens} may only write files under "${a.scope}/" (its ENS sb.scope record), not "${f.path}"`, d.config.app.ens.textKeys.scope);
+      if (!scopeAllows(a.scope, f.path)) throw new ToolError("SCOPE", `${a.ens} may only write files under "${a.scope.replace(/\/+$/, "")}/" (its ENS sb.scope record), not "${f.path}"`, d.config.app.ens.textKeys.scope);
       if (f.delete) { if (current.has(f.path)) fileDrafts.push({ path: f.path, content: "", deleted: true }); continue; }
       if (typeof f.content !== "string") bad(`file "${f.path}" needs its full content (or delete: true)`);
       if (f.content!.includes("\u0000")) bad(`"${f.path}" is binary; only text files are stored`);

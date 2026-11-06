@@ -67,6 +67,7 @@ export function validateFolder(folder: string): void {
 /** `sb.scope` from ENS: "*" (lead) writes anywhere; otherwise only that folder and its sub-folders. */
 export function scopeAllows(scope: string, folder: string): boolean {
   if (scope === "*") return true;
-  if (!scope) return false;
-  return folder === scope || folder.startsWith(`${scope}/`);
+  const s = scope.replace(/\/+$/, ""); // the website writes "docs/"; ENS may hold either form
+  if (!s) return false;
+  return folder === s || folder.startsWith(`${s}/`);
 }

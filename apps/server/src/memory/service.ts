@@ -69,7 +69,8 @@ export function createMemoryService(d: ServiceDeps) {
   async function authority(agent: string): Promise<AgentView & { recordsOk: boolean }> {
     try {
       return await d.ens.getAgentAuthority(agent);
-    } catch {
+    } catch (e) {
+      log(`ENS authority for ${agent} unreadable: ${(e as Error).message.split("\n")[0]}`);
       throw new ToolError("AUTHORITY_UNKNOWN", `ENS authority for ${agent} is unknown right now (ENS could not be read), so reads, writes and payments are paused. Try again shortly.`, "ens-unreadable");
     }
   }

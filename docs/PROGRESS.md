@@ -18,7 +18,7 @@ Stage plan: `CLAUDE.md` §8. Step details: `docs/lanes/*.md`.
 |---|---|---|---|---|---|
 | A: Brain (server, memory, Arkiv, ENS) | Kai | #1 | S1 ENS ✅ → S1 Arkiv spike | 🔨 in progress | – (wallets funded, Arkiv key set) |
 | C: Face (dashboard, onboarding, demo) | Kai | #2 | S0 (A's scaffold is pushed: pull) | ⏳ | – |
-| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), 3 agents set, funded, **first real pay ✓**. Next: step-kill (gem-research) | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
+| B: Money & Security (policy, vault, World) | Srijit | #3 | BrainVault live on Sepolia (0x2da7…0ec8), **S2 ✅ on Sepolia**: deployed, agents set, funded, real pay ✓, on-chain kill ✓. Next: guardian ETH, then S6 live World → paid | 🔨 | A: S0 scaffold (for `packages/payments`), A: S1 `ens.sepolia.json` (for fork test + deploy) |
 
 Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked · ⚠️ fallback taken
 
@@ -41,7 +41,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ### S2: Memory core
 - [ ] A: whoami/recall/remember/explain · lineage + trust tests · Arkiv batch writes · startup rebuild · ENS check per call · SSE · `/api/team` `/api/graph` `/api/memory/:key`
-- [ ] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ✓ [0x2da7…0ec8](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8) · 1-USDC pay tx ✓ [0x9ab2…06ae](https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae) · `step-kill` revert tx ☐ · `decidePayment` table tests ✓ 202d16e
+- [ ] B: fork test vs the real team registry ✓ e4fcbf5 · V1 review ✓ · deployed ✓ [0x2da7…0ec8](https://sepolia.etherscan.io/address/0x2da794b8dd00afc970b372d7cf960ecd1f190ec8) · 1-USDC pay tx ✓ [0x9ab2…06ae](https://sepolia.etherscan.io/tx/0x9ab200485f3fbf0c5f39a832d9c19a00e31cfaab0b04d1d52009f6c7f2a806ae) · `step-kill` revert tx ✓ [0x516b…4579](https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579) · `decidePayment` table tests ✓ 202d16e
 - [ ] C: drawer · agents rail · feed · **switched to real graph + SSE**
 - [ ] **Gate:** Claude Code + Antigravity write to one graph, live in the UI
 
@@ -153,6 +153,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S2 / on-chain kill proven (step-kill)
+- did: `pnpm demo:step-kill gem-research --yes --revive` after the ASK go. Signed a valid 1-USDC attestation while registered (simulated ok) → Lane A's `ens:unregister` → the same pay sent from gem-research's own wallet with fixed gas → mined revert → `ens:add-agent` revive
+- proof: unregister https://sepolia.etherscan.io/tx/0xe89f464acea50e816ca326308f0d3c5206eb9cb43ea6c92daa343adb9e126fc7 · grant revoked https://sepolia.etherscan.io/tx/0x33abd6ef77cb9a881f6c368ee71f7ac736dffb88eff538e2e1ebaea905147190 · **pay reverted `AgentNotRegistered()`** https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579 · revive grant https://sepolia.etherscan.io/tx/0x76cc00f796d76eaab792569d29b43f2d1b7d37f7cf104fb396dcb70dee24720d · re-register https://sepolia.etherscan.io/tx/0x65b618fc1e80cb73f8537d854cb2d540d8f9ce239b0fc02156c2e0ed710adf0e · vault status after: gem-research getOwner = wallet ✓
+- result: PASS (S2 gate: paid tx + AgentNotRegistered revert tx logged)
+- commit: c8fd46d (script) + this entry (`ens.sepolia.json` updated by Lane A's scripts)
+- next: guardian ETH; mount `createPayments` (A) → P1 blocked / P3 World-approved paid from a real MCP client
+- asks/blockers: guardian 0x2782…4D51 still 0 ETH (revokeRoot/pauseAgent can't broadcast)
 
 ### 2026-11-06 IST · B · S2 / first real vault payment
 - did: `pnpm vault:pay-proof lead-claude <owner> 1 --yes` after the ASK go: policy-signer attestation + lead-claude's own key → `BrainVault.pay`

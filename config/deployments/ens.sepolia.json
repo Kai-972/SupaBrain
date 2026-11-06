@@ -57,7 +57,7 @@
       "wallet": "0x6c57ACAA7116c8b539EbA60698B7b644C6b4590c",
       "resolver": "0x5f849E68CbF67Fc4219Fe7E2f810e725afA960c4",
       "resolverSalt": "94853881797011628856930975040099737134094331491718103066147848143316101708384",
-      "expiry": 1794537636,
+      "expiry": 1794540528,
       "txs": {
         "deployResolver": {
           "hash": "0xafb80af59904e3577d12fa36af590ede933f5b91171c54b63c5a0865d1b491b8",
@@ -65,14 +65,14 @@
           "at": "2026-11-06T02:41:02.422Z"
         },
         "grantMemoryHead": {
-          "hash": "0x29eb861b19b729b35c1c033bf21634c2c7014081badf344fdea73feaf7b534e6",
-          "url": "https://sepolia.etherscan.io/tx/0x29eb861b19b729b35c1c033bf21634c2c7014081badf344fdea73feaf7b534e6",
-          "at": "2026-11-06T02:41:14.265Z"
+          "hash": "0x76cc00f796d76eaab792569d29b43f2d1b7d37f7cf104fb396dcb70dee24720d",
+          "url": "https://sepolia.etherscan.io/tx/0x76cc00f796d76eaab792569d29b43f2d1b7d37f7cf104fb396dcb70dee24720d",
+          "at": "2026-11-06T03:29:03.984Z"
         },
         "register": {
-          "hash": "0xa5dff4507edbaba49e6723e82ed28450dd3aee00ba32380a592ce11a80ed38e9",
-          "url": "https://sepolia.etherscan.io/tx/0xa5dff4507edbaba49e6723e82ed28450dd3aee00ba32380a592ce11a80ed38e9",
-          "at": "2026-11-06T02:41:26.299Z"
+          "hash": "0x65b618fc1e80cb73f8537d854cb2d540d8f9ce239b0fc02156c2e0ed710adf0e",
+          "url": "https://sepolia.etherscan.io/tx/0x65b618fc1e80cb73f8537d854cb2d540d8f9ce239b0fc02156c2e0ed710adf0e",
+          "at": "2026-11-06T03:29:14.027Z"
         },
         "proofSetMemoryHead": {
           "hash": "0xb5099e2a35ea59028b453c4a1d9c11ff409bf3da52a1a3f81d6f279dcad5604a",
@@ -88,6 +88,16 @@
           "hash": "0xa4d3b7fc76072e44d8cc3314dbb8b37ec1e9649bf1f3bb12682ffcc16145dd57",
           "url": "https://sepolia.etherscan.io/tx/0xa4d3b7fc76072e44d8cc3314dbb8b37ec1e9649bf1f3bb12682ffcc16145dd57",
           "at": "2026-11-06T02:46:11.009Z"
+        },
+        "unregister": {
+          "hash": "0xe89f464acea50e816ca326308f0d3c5206eb9cb43ea6c92daa343adb9e126fc7",
+          "url": "https://sepolia.etherscan.io/tx/0xe89f464acea50e816ca326308f0d3c5206eb9cb43ea6c92daa343adb9e126fc7",
+          "at": "2026-11-06T03:28:01.979Z"
+        },
+        "revokeGrant": {
+          "hash": "0x33abd6ef77cb9a881f6c368ee71f7ac736dffb88eff538e2e1ebaea905147190",
+          "url": "https://sepolia.etherscan.io/tx/0x33abd6ef77cb9a881f6c368ee71f7ac736dffb88eff538e2e1ebaea905147190",
+          "at": "2026-11-06T03:28:29.643Z"
         }
       },
       "records": {

@@ -58,7 +58,7 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 - [ ] **Gate:** a stranger's AI connects from the QR
 
 ### S5: Money
-- [ ] A: acme vendor ENS (own resolver) · `EnsAuthority` vendor fns · `GraphView`/`ArkivWriter` · `pay`/`pay_status` mounted
+- [ ] A: acme vendor ENS (own resolver) ✓ by B (vendors.acme, acme.supabrain.eth → acme wallet) · `EnsAuthority` vendor fns · `GraphView`/`ArkivWriter` · `pay`/`pay_status` mounted
 - [ ] B: `createPayments` end to end (policy ✓ 30f99b8 · attestation ✓ f59b6b9 · vault client ✓ 1973e38 · engine + pending-human ✓ 26d47f0 · createPayments ✓ 30a54e6 · Sepolia deploy ✓ 7c1429e)
 - [ ] C: payments page
 - [ ] **Gate:** P1 BLOCKED (ENS mismatch) from a real client · paid tx on Etherscan
@@ -198,6 +198,14 @@ Status icons: ⏳ not started · 🔨 in progress · ✅ done · 🛑 blocked ·
 
 ## Log: Lane B (Money & Security)
 <!-- newest first -->
+
+### 2026-11-06 IST · B · S5 / acme.supabrain.eth vendor name
+- did: received the full env from Kai (merged names only into `.env.local`, no conflicts). `pnpm ens:add-vendor acme` dry run found acme **already set up** with the add-vendor flow (on chain ~1 h earlier, deployment file not committed). Re-verified on chain read-only, recovered the 4 tx hashes from logs, recorded `vendors.acme` in `config/deployments/ens.sepolia.json` (via `updateEnsDeployment`, schema-validated). No new transactions
+- proof: deploy resolver https://sepolia.etherscan.io/tx/0xefc515bb376d9fbfde9b0a957be5d5aa23476e5cfdbc6551c0c5f82de82cda5b (owner) · register https://sepolia.etherscan.io/tx/0x25a8962d747350b84d65529cf1c40bd27095552c88285dd17aa5ce939f3659d3 (owner) · setAddr https://sepolia.etherscan.io/tx/0x11fd62aef5ba892bd74dbc866ed9f094aa1ec1808693f7e26bc2410b3b533ee4 (**acme wallet**) · sb.vendor https://sepolia.etherscan.io/tx/0xf87bd4678c1487e502b1b9b23dbdfadf73b82b591de9b79a64fa061fe8130104 (**acme wallet**). Checks: getOwner = acme wallet, no roles on the name, resolver roles vendor-only (team owner can't set addr or text), UR addr = acme wallet, sb.vendor "Acme Studio", `findVendorEns` = acme.supabrain.eth; `pnpm ens:status`: `acme.supabrain.eth → 0xf15f…B5A5`
+- result: PASS
+- commit: (this entry)
+- next: live P1/P3 via `pnpm demo:step blocked|approve` once A mounts `registerPaymentTools` + `createPayments`
+- asks/blockers: none for acme. Kai: please push config changes after on-chain runs, so two people don't both run the scripts
 
 ### 2026-11-06 IST · B · S5 / add-vendor script, demo fallbacks, PROJECT.md
 - did: (a) `scripts/ens/add-vendor.ts` (`pnpm ens:add-vendor acme`): owner deploys a resolver whose roles go to the vendor wallet only, registers `acme.<team>.eth` to the vendor with no roles on the name; the vendor wallet itself sets addr(60) + `sb.vendor`; post-checks incl. `EnsAuthority.findVendorEns` → writes `vendors.acme`. Not broadcast yet: needs VENDOR_ACME_PRIVATE_KEY. (b) `registerPaymentTools` (MCP `pay` / `pay_status`) in `packages/payments/src/mcp-tools.ts` for A to mount; `pnpm demo:step blocked|approve` drives those tools on the running server as the lead agent (same createPayments path). (c) PROJECT.md World text → IDKit 4 / Human-in-the-loop, real proofs, action = intent hash

@@ -239,32 +239,33 @@
       "resolverSalt": "100819744167451832164536899582779342847724548613050361841351039545235927574697",
       "resolverOwner": "0xf15ff64150Aa01391B6C831DBE6e14df445dB5A5",
       "expiry": 1796351784,
+      "records": {
+        "addr60": "0xf15ff64150Aa01391B6C831DBE6e14df445dB5A5",
+        "sb.vendor": "Acme Studio"
+      },
       "txs": {
         "deployResolver": {
           "hash": "0xefc515bb376d9fbfde9b0a957be5d5aa23476e5cfdbc6551c0c5f82de82cda5b",
           "url": "https://sepolia.etherscan.io/tx/0xefc515bb376d9fbfde9b0a957be5d5aa23476e5cfdbc6551c0c5f82de82cda5b",
-          "at": "2026-11-06T05:36:05.696Z"
+          "at": "block 12074538"
         },
         "register": {
           "hash": "0x25a8962d747350b84d65529cf1c40bd27095552c88285dd17aa5ce939f3659d3",
           "url": "https://sepolia.etherscan.io/tx/0x25a8962d747350b84d65529cf1c40bd27095552c88285dd17aa5ce939f3659d3",
-          "at": "2026-11-06T05:36:35.177Z"
+          "at": "block 12074540"
         },
         "setAddr": {
           "hash": "0x11fd62aef5ba892bd74dbc866ed9f094aa1ec1808693f7e26bc2410b3b533ee4",
           "url": "https://sepolia.etherscan.io/tx/0x11fd62aef5ba892bd74dbc866ed9f094aa1ec1808693f7e26bc2410b3b533ee4",
-          "at": "2026-11-06T05:37:02.481Z"
+          "at": "block 12074543"
         },
         "setVendor": {
           "hash": "0xf87bd4678c1487e502b1b9b23dbdfadf73b82b591de9b79a64fa061fe8130104",
           "url": "https://sepolia.etherscan.io/tx/0xf87bd4678c1487e502b1b9b23dbdfadf73b82b591de9b79a64fa061fe8130104",
-          "at": "2026-11-06T05:37:27.320Z"
+          "at": "block 12074544"
         }
       },
-      "records": {
-        "addr60": "0xf15ff64150Aa01391B6C831DBE6e14df445dB5A5",
-        "sb.vendor": "Acme Studio"
-      }
+      "note": "Set up with scripts/ens/add-vendor.ts (owner: deployResolver, register; acme wallet: setAddr, setVendor). Tx hashes recovered from chain logs; state re-verified by Lane B."
     }
   }
 }

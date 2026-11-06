@@ -160,17 +160,35 @@ async function main() {
   else await checkChain("Rabdi (access key, path auth)", createPublicClient({ transport: http(`${config.networks.rabdi.rpc}/${arkivKey}`) }), config.networks.rabdi.chainId);
 
   section("World");
-  const issuer = config.world?.issuer;
-  if (!issuer) info("no issuer in config/world.json yet (Lane B, S4)");
-  else {
-    try {
-      const res = await fetch(new URL(".well-known/openid-configuration", issuer.endsWith("/") ? issuer : `${issuer}/`));
-      const doc = (await res.json()) as { grant_types_supported?: string[] };
-      const device = doc.grant_types_supported?.includes("urn:ietf:params:oauth:grant-type:device_code");
-      if (res.ok) ok(`discovery reachable; device grant ${device ? "listed" : "NOT listed"}`);
-      else bad(`discovery HTTP ${res.status}`);
-    } catch (e) {
-      bad(`discovery unreachable: ${errMsg(e)}`);
+  const world = config.world as { mode?: string; issuer?: string | null; idkit?: { verifyBaseUrl?: string } } | null;
+  if (world?.mode === "idkit") {
+    for (const name of ["WORLD_APP_ID", "WORLD_RP_ID", "WORLD_SIGNING_KEY"]) {
+      if (process.env[name]?.trim()) ok(`${name} set`);
+      else warn(`${name} missing: payments stay disabled until set (Lane B, World Developer Portal)`);
+    }
+    const base = world.idkit?.verifyBaseUrl;
+    if (!base) bad("config/world.json idkit.verifyBaseUrl missing");
+    else {
+      try {
+        const res = await fetch(base, { method: "HEAD" });
+        ok(`World verify host reachable (HTTP ${res.status})`);
+      } catch (e) {
+        bad(`World verify host unreachable: ${errMsg(e)}`);
+      }
+    }
+  } else {
+    const issuer = world?.issuer;
+    if (!issuer) info("no World mode/issuer in config/world.json yet (Lane B)");
+    else {
+      try {
+        const res = await fetch(new URL(".well-known/openid-configuration", issuer.endsWith("/") ? issuer : `${issuer}/`));
+        const doc = (await res.json()) as { grant_types_supported?: string[] };
+        const device = doc.grant_types_supported?.includes("urn:ietf:params:oauth:grant-type:device_code");
+        if (res.ok) ok(`discovery reachable; device grant ${device ? "listed" : "NOT listed"}`);
+        else bad(`discovery HTTP ${res.status}`);
+      } catch (e) {
+        bad(`discovery unreachable: ${errMsg(e)}`);
+      }
     }
   }
 

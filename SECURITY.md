@@ -39,6 +39,8 @@ Line numbers refer to the commit that last updated this file.
 - **T4:** the over-cap P3 needs World. Approved in World App → [PAID](https://sepolia.etherscan.io/tx/0x7b983ad5aafadce22a1fdd98da09a3710be64be673f96c39602c5663de517528) with `humanApproved=true`. Denied → nothing moved ([Arkiv](https://rabdi.explorer.arkiv.network/tx/0xc272dd7fa0e51ad5ea40c64a06cb1255bc70ad7f4546c2a8dc0c8e8708a8aa39)). Owner cancel → nothing moved ([Arkiv](https://rabdi.explorer.arkiv.network/tx/0x926cd6ffe99f47e3efc53db12ad2debf94e39cb32864ad5d2cc46afa8eba1128)).
 - **T6:** [`AgentNotRegistered` mined revert](https://sepolia.etherscan.io/tx/0x516b96da3c4df023563178a2a2f71cb6d351b48abcc945d8d09d3380d53e4579).
 
+**Address in text (Supermemory review, 2026-11-06):** live models often state an address only in a memory's text. A memory explicitly tagged with a team vendor that names an address in its text now ties that address to the vendor, so `ENS_MISMATCH` fires, and such a memory never counts as lineage for the honest payee. **Trade-off:** a vendor-tagged memory naming a third party's address hard-blocks payments to that address. That is the "pay our partner instead" attack, and the block fails safe. Untagged memories are not matched, so the partner beat stays a World approval. `packages/payments/src/policy.ts` (`mentioned`, `supports`).
+
 ### 2.1 V3 policy red team (2026-11-06)
 Goal: find inputs that get a **bad payment allowed**. Each attack was written as a failing test first (`packages/payments/src/policy.test.ts`, `engine.test.ts`, commit b228947), then fixed (1c8ae65). Each fix was then disabled on purpose to confirm its test fails without it.
 

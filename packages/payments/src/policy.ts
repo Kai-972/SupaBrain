@@ -54,6 +54,10 @@ export type PolicyDecision =
   | { outcome: "error"; error: string };
 
 const AMOUNT = /^(0|[1-9]\d*)(\.\d+)?$/;
+// An address stated in a memory's text: exactly 40 hex digits between word boundaries, so 64-hex keys and tx hashes
+// never match. Live models often put the address in the text and skip the `address` field.
+const ADDRESS_IN_TEXT = /\b0x[0-9a-fA-F]{40}\b/g;
+const mentioned = (text: string): string[] => [...new Set((text.match(ADDRESS_IN_TEXT) ?? []).map((a) => a.toLowerCase()))];
 const NAME = /^[^\s.]+(\.[^\s.]+)+$/;
 
 function parseAmount(s: string, decimals: number): bigint | null {
@@ -144,6 +148,12 @@ async function decide(ctx: PolicyContext, req: PolicyRequest, amountUnits: bigin
   for (const n of addrNodes) if (n.subject) subjects.add(n.subject.toLowerCase());
   const vendorName = await ens.findVendorEns(payee);
   if (vendorName) subjects.add(vendorName.toLowerCase());
+  // A memory explicitly tagged with a team vendor that names this address in its TEXT ties the address to that vendor
+  // too. Only explicit vendor subjects count (never inferred from text), so an untagged "pay our partner" email stays
+  // a new-payee case for a human, not an ENS block.
+  for (const v of vendors) {
+    if (graph.memoriesBySubject(v).some((n) => mentioned(n.text).includes(payee.toLowerCase()))) subjects.add(v);
+  }
 
   // Mismatch runs for names too (stricter than the lane spec): if memories tie this address to a name whose
   // own ENS record says otherwise, block however the payee was written.
@@ -198,7 +208,9 @@ async function decide(ctx: PolicyContext, req: PolicyRequest, amountUnits: bigin
   // ---- attestation roots: clean payee lineage ∪ clean cited lineage ----
   // Only memories that support THIS address count: a memory about the same subject that claims another address
   // isn't this payee's lineage (otherwise revoking a phishing email would block the honest vendor on chain).
-  const supports = (n: MemoryNode) => !n.address || n.address.toLowerCase() === payee.toLowerCase();
+  // A memory with no address field supports the payee only if every address its text names is this payee.
+  const supports = (n: MemoryNode) =>
+    n.address ? n.address.toLowerCase() === payee.toLowerCase() : mentioned(n.text).every((x) => x === payee.toLowerCase());
   const rootSet = new Set<string>();
   for (const n of payeeNodes) if (supports(n) && !quarantined(n.key)) for (const r of n.roots) rootSet.add(r);
   const cites = (req.cites ?? []).filter((c) => !quarantined(c));

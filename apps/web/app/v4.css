@@ -356,3 +356,5 @@ a.link:hover, .lede4 a:hover, .p-proof a:hover, .bk-proof a:hover, .res4 a:hover
 .linkstack { display: inline-flex; flex-direction: column; gap: 4px; }
 /* Smallest phones (320px): keep "Sign in" on screen. */
 @media (max-width: 360px) { .topbar4 .in { gap: 4px; padding: 0 10px; } .navlink { padding: 0 6px; font-size: .9rem; } .topbar4 .btn.sm { padding: 0 10px; } .topbar4 .logo { display: none; } }
+/* Connect: an AI's full ENS name wraps inside its card instead of spilling into the next one. */
+.tile2 { min-width: 0; overflow: hidden; } .tile2 > .mono { overflow-wrap: anywhere; font-size: 13px; line-height: 1.35; }

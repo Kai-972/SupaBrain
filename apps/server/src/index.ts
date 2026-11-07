@@ -89,7 +89,14 @@ async function main() {
     log(`supabrain server on :${port} (app=${config.app.appNamespace}, team=${config.app.team.id})`);
     log(`MCP ${publicBaseUrl ?? `http://localhost:${port}`}/mcp (Bearer) and /mcp/t/<token> · tokens: pnpm mcp:token <agent>`); // hardcode-ok: local fallback when PUBLIC_BASE_URL is unset
   });
-  const stop = () => { sync.stop(); server.close(); process.exit(0); };
+  // Free hosts (Render) put a server to sleep after ~15 idle minutes, which drops the refusal log and makes the next
+  // visitor wait for a cold start. SUPABRAIN_KEEP_WARM_SEC=<n> pings our own public URL every n seconds (off by default).
+  const keepWarmSec = Number(process.env.SUPABRAIN_KEEP_WARM_SEC ?? 0);
+  const keepWarm = publicBaseUrl && keepWarmSec >= 60
+    ? setInterval(() => { fetch(`${publicBaseUrl.replace(/\/+$/, "")}/healthz`).catch(() => undefined); }, keepWarmSec * 1000)
+    : undefined;
+  if (keepWarm) log(`keep-warm: pinging the public URL every ${keepWarmSec}s`);
+  const stop = () => { sync.stop(); if (keepWarm) clearInterval(keepWarm); server.close(); process.exit(0); };
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
 }

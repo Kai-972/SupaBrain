@@ -109,8 +109,8 @@ body { line-height: 1.55; }
 .panel4 header { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid var(--line); }
 .p-who { font-family: var(--mono); font-size: 15px; font-weight: 600; word-break: break-all; }
 .p-meta { font-size: 14px; color: var(--muted); }
-.p-body { flex: 1; overflow: auto; padding: 8px 24px 40px; display: grid; gap: 4px; align-content: start; }
-.p-body section { padding: 18px 0; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.p-body { flex: 1; overflow: auto; padding: 8px 24px 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-content: start; }
+.p-body section { padding: 18px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; overflow-wrap: anywhere; }
 .p-body section:last-child { border-bottom: 0; }
 .p-body h4 { margin: 0; font: 600 13px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .p-text { font-family: var(--serif); font-size: 1.35rem; line-height: 1.35; margin: 0; white-space: pre-wrap; word-break: break-word; }
